@@ -1,0 +1,18 @@
+[package]
+name = "mailerlite-rust"
+version = "0.1.0"
+authors = ["Shuvro Roy <shuvro@mailerlite.com>"]
+edition = "2021"
+description = "MailerLite Rust SDK"
+readme = "README.md"
+repository = "https://github.com/mailerlite/mailerlite-rust"
+license = "MIT"
+keywords = ["MailerLite", "mailerlite", "sdk", "email", "marketing"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+reqwest = { version = "0.11", features = ["json"] }
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
