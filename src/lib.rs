@@ -1,6 +1,7 @@
 use client::Client;
 
 pub mod client;
+pub mod form;
 pub mod parameter;
 pub mod response;
 
