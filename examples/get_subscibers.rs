@@ -1,47 +1,3 @@
-<a href="https://www.mailerlite.com"><img src="https://app.mailerlite.com/assets/images/logo-color.png" width="200px"/></a>
-
-MailerLite Rust SDK
-
-[![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
-
-# Table of Contents
-
-- [Installation](#installation)
-- [Usage](#usage)
-    - [Subscribers](#subscribers)
-        - [Get a list of subscribers](#get-a-list-of-subscribers)
-
-# Installation
-
-Run the following Cargo command in your project directory:
-
-```shell
-cargo add mailerlite-rust
-```
-
-Or add the following line to your Cargo.toml:
-
-```shell
-mailerlite-rust = "0.1.0"
-```
-
-# Usage
-
-## Subscribers
-
-### Get a list of subscribers
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rust --example get_subscibers
-```
-</details>
-
-```rust
 use mailerlite_rust::{parameter::Parameter, response::Response, MailerLite};
 
 #[tokio::main]
@@ -58,4 +14,3 @@ async fn main() {
 
     println!("{:#?}", response);
 }
-```
