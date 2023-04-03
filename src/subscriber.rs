@@ -27,4 +27,19 @@ impl Subscriber {
         )
         .await
     }
+
+    pub async fn find(&self, data: Parameter) -> Response {
+        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, data.data[0].1);
+
+        Response::new(
+            self.mailerlite
+                .client
+                .request
+                .get(url)
+                .send()
+                .await
+                .expect("Failed to send request"),
+        )
+        .await
+    }
 }
