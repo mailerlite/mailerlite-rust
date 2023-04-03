@@ -1,6 +1,7 @@
 use client::Client;
 
 pub mod client;
+pub mod response;
 
 const BASE_PATH: &str = "https://dashboard.mailerlite.dev/api/";
 
