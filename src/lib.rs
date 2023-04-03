@@ -1,9 +1,11 @@
 use client::Client;
+use subscriber::Subscriber;
 
 pub mod client;
 pub mod form;
 pub mod parameter;
 pub mod response;
+pub mod subscriber;
 
 const BASE_PATH: &str = "https://dashboard.mailerlite.dev/api/";
 
@@ -17,5 +19,9 @@ impl MailerLite {
         Self {
             client: Client::new(api_key),
         }
+    }
+
+    pub fn subscriber(&self) -> Subscriber {
+        Subscriber::new(self.clone())
     }
 }
