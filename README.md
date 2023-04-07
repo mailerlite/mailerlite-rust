@@ -2,6 +2,7 @@
 
 MailerLite Rust SDK
 
+[![Run Tests](https://github.com/mailerlite/mailerlite-rust/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/mailerlite/mailerlite-rust/actions/workflows/test.yml)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
 # Table of Contents
