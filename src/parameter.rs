@@ -14,3 +14,22 @@ impl Parameter {
         self
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parameter_new() {
+        let parameter: Parameter = Parameter::new();
+
+        assert_eq!(parameter.data, Vec::new());
+    }
+
+    #[test]
+    fn parameter_add() {
+        let parameter: Parameter = Parameter::new().add("key", "value");
+
+        assert_eq!(parameter.data, vec![("key", "value")]);
+    }
+}
