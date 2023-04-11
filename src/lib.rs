@@ -1,6 +1,8 @@
+use campaign::Campaign;
 use client::Client;
 use subscriber::Subscriber;
 
+pub mod campaign;
 pub mod client;
 pub mod form;
 pub mod parameter;
@@ -23,5 +25,9 @@ impl MailerLite {
 
     pub fn subscriber(&self) -> Subscriber {
         Subscriber::new(self.clone())
+    }
+
+    pub fn campaign(&self) -> Campaign {
+        Campaign::new(self.clone())
     }
 }
