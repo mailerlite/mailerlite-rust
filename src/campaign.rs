@@ -1,4 +1,4 @@
-use crate::MailerLite;
+use crate::{parameter::Parameter, response::Response, MailerLite, BASE_PATH};
 
 const END_POINT: &str = "campaigns";
 
@@ -10,5 +10,21 @@ pub struct Campaign {
 impl Campaign {
     pub fn new(mailerlite: MailerLite) -> Self {
         Self { mailerlite }
+    }
+
+    pub async fn get(&self, data: Parameter) -> Response {
+        let url: String = format!("{}{}", BASE_PATH, END_POINT);
+
+        Response::new(
+            self.mailerlite
+                .client
+                .request
+                .get(url)
+                .query(&data.data)
+                .send()
+                .await
+                .expect("Failed to send request"),
+        )
+        .await
     }
 }
