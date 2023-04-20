@@ -74,4 +74,19 @@ impl Campaign {
         )
         .await
     }
+
+    pub async fn delete(&self, parameter: Parameter) -> Response {
+        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, parameter.data[0].1);
+
+        Response::new(
+            self.mailerlite
+                .client
+                .request
+                .delete(url)
+                .send()
+                .await
+                .expect("Failed to send request"),
+        )
+        .await
+    }
 }
