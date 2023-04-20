@@ -58,4 +58,20 @@ impl Campaign {
         )
         .await
     }
+
+    pub async fn update(&self, parameter: Parameter, form: Form) -> Response {
+        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, parameter.data[0].1);
+
+        Response::new(
+            self.mailerlite
+                .client
+                .request
+                .put(url)
+                .form(&form.data)
+                .send()
+                .await
+                .expect("Failed to send request"),
+        )
+        .await
+    }
 }
