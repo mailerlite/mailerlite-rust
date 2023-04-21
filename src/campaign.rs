@@ -108,4 +108,19 @@ impl Campaign {
         )
         .await
     }
+
+    pub async fn cancel(&self, parameter: Parameter) -> Response {
+        let url: String = format!("{}{}/{}/cancel", BASE_PATH, END_POINT, parameter.data[0].1);
+
+        Response::new(
+            self.mailerlite
+                .client
+                .request
+                .post(url)
+                .send()
+                .await
+                .expect("Failed to send request"),
+        )
+        .await
+    }
 }
