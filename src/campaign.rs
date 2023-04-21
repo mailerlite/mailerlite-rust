@@ -89,4 +89,23 @@ impl Campaign {
         )
         .await
     }
+
+    pub async fn schedule(&self, parameter: Parameter, form: Form) -> Response {
+        let url: String = format!(
+            "{}{}/{}/schedule",
+            BASE_PATH, END_POINT, parameter.data[0].1
+        );
+
+        Response::new(
+            self.mailerlite
+                .client
+                .request
+                .post(url)
+                .form(&form.data)
+                .send()
+                .await
+                .expect("Failed to send request"),
+        )
+        .await
+    }
 }
