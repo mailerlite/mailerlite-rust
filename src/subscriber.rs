@@ -28,8 +28,8 @@ impl Subscriber {
         .await
     }
 
-    pub async fn find(&self, data: Parameter) -> Response {
-        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, data.data[0].1);
+    pub async fn find(&self, id: String) -> Response {
+        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id);
 
         Response::new(
             self.mailerlite
@@ -59,8 +59,8 @@ impl Subscriber {
         .await
     }
 
-    pub async fn update(&self, parameter: Parameter, form: Form) -> Response {
-        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, parameter.data[0].1);
+    pub async fn update(&self, id: String, form: Form) -> Response {
+        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id);
 
         Response::new(
             self.mailerlite
@@ -75,8 +75,8 @@ impl Subscriber {
         .await
     }
 
-    pub async fn delete(&self, parameter: Parameter) -> Response {
-        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, parameter.data[0].1);
+    pub async fn delete(&self, id: String) -> Response {
+        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id);
 
         Response::new(
             self.mailerlite
