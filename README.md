@@ -29,13 +29,13 @@ MailerLite Rust SDK
 Run the following Cargo command in your project directory:
 
 ```shell
-cargo add mailerlite-rust
+cargo add mailerlite-rs
 ```
 
 Or add the following line to your Cargo.toml:
 
 ```shell
-mailerlite-rust = "0.1.0"
+mailerlite-rs = "0.2.0"
 ```
 
 # Usage
@@ -50,12 +50,12 @@ You can test out the example by running it with the command provided.
 </summary>
 
 ```bash
-cargo run --package mailerlite-rust --example get_subscibers
+cargo run --package mailerlite-rs --example get_subscibers
 ```
 </details>
 
 ```rust
-use mailerlite_rust::{parameter::Parameter, response::Response, MailerLite};
+use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
 
 #[tokio::main]
 async fn main() {
@@ -81,12 +81,12 @@ You can test out the example by running it with the command provided.
 </summary>
 
 ```bash
-cargo run --package mailerlite-rust --example find_subsciber
+cargo run --package mailerlite-rs --example find_subsciber
 ```
 </details>
 
 ```rust
-use mailerlite_rust::{response::Response, MailerLite};
+use mailerlite_rs::{response::Response, MailerLite};
 
 #[tokio::main]
 async fn main() {
@@ -110,12 +110,12 @@ You can test out the example by running it with the command provided.
 </summary>
 
 ```bash
-cargo run --package mailerlite-rust --example create_subsciber
+cargo run --package mailerlite-rs --example create_subsciber
 ```
 </details>
 
 ```rust
-use mailerlite_rust::{form::Form, response::Response, MailerLite};
+use mailerlite_rs::{form::Form, response::Response, MailerLite};
 
 #[tokio::main]
 async fn main() {
@@ -139,12 +139,12 @@ You can test out the example by running it with the command provided.
 </summary>
 
 ```bash
-cargo run --package mailerlite-rust --example update_subsciber
+cargo run --package mailerlite-rs --example update_subsciber
 ```
 </details>
 
 ```rust
-use mailerlite_rust::{form::Form, response::Response, MailerLite};
+use mailerlite_rs::{form::Form, response::Response, MailerLite};
 
 #[tokio::main]
 async fn main() {
@@ -172,12 +172,12 @@ You can test out the example by running it with the command provided.
 </summary>
 
 ```bash
-cargo run --package mailerlite-rust --example delete_subsciber
+cargo run --package mailerlite-rs --example delete_subsciber
 ```
 </details>
 
 ```rust
-use mailerlite_rust::{response::Response, MailerLite};
+use mailerlite_rs::{response::Response, MailerLite};
 
 #[tokio::main]
 async fn main() {
@@ -203,12 +203,12 @@ You can test out the example by running it with the command provided.
 </summary>
 
 ```bash
-cargo run --package mailerlite-rust --example get_campaigns
+cargo run --package mailerlite-rs --example get_campaigns
 ```
 </details>
 
 ```rust
-use mailerlite_rust::{parameter::Parameter, response::Response, MailerLite};
+use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
 
 #[tokio::main]
 async fn main() {
@@ -232,12 +232,12 @@ You can test out the example by running it with the command provided.
 </summary>
 
 ```bash
-cargo run --package mailerlite-rust --example find_campaign
+cargo run --package mailerlite-rs --example find_campaign
 ```
 </details>
 
 ```rust
-use mailerlite_rust::{response::Response, MailerLite};
+use mailerlite_rs::{response::Response, MailerLite};
 
 #[tokio::main]
 async fn main() {
@@ -261,12 +261,12 @@ You can test out the example by running it with the command provided.
 </summary>
 
 ```bash
-cargo run --package mailerlite-rust --example create_campaign
+cargo run --package mailerlite-rs --example create_campaign
 ```
 </details>
 
 ```rust
-use mailerlite_rust::{form::Form, response::Response, MailerLite};
+use mailerlite_rs::{form::Form, response::Response, MailerLite};
 
 #[tokio::main]
 async fn main() {
@@ -296,12 +296,12 @@ You can test out the example by running it with the command provided.
 </summary>
 
 ```bash
-cargo run --package mailerlite-rust --example update_campaign
+cargo run --package mailerlite-rs --example update_campaign
 ```
 </details>
 
 ```rust
-use mailerlite_rust::{form::Form, response::Response, MailerLite};
+use mailerlite_rs::{form::Form, response::Response, MailerLite};
 
 #[tokio::main]
 async fn main() {
@@ -331,12 +331,12 @@ You can test out the example by running it with the command provided.
 </summary>
 
 ```bash
-cargo run --package mailerlite-rust --example delete_campaign
+cargo run --package mailerlite-rs --example delete_campaign
 ```
 </details>
 
 ```rust
-use mailerlite_rust::{response::Response, MailerLite};
+use mailerlite_rs::{response::Response, MailerLite};
 
 #[tokio::main]
 async fn main() {
@@ -360,12 +360,12 @@ You can test out the example by running it with the command provided.
 </summary>
 
 ```bash
-cargo run --package mailerlite-rust --example schedule_campaign
+cargo run --package mailerlite-rs --example schedule_campaign
 ```
 </details>
 
 ```rust
-use mailerlite_rust::{form::Form, response::Response, MailerLite};
+use mailerlite_rs::{form::Form, response::Response, MailerLite};
 
 #[tokio::main]
 async fn main() {
@@ -391,12 +391,12 @@ You can test out the example by running it with the command provided.
 </summary>
 
 ```bash
-cargo run --package mailerlite-rust --example cancel_campaign
+cargo run --package mailerlite-rs --example cancel_campaign
 ```
 </details>
 
 ```rust
-use mailerlite_rust::{response::Response, MailerLite};
+use mailerlite_rs::{response::Response, MailerLite};
 
 #[tokio::main]
 async fn main() {

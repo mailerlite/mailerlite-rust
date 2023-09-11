@@ -1,4 +1,4 @@
-use mailerlite_rust::{response::Response, MailerLite};
+use mailerlite_rs::{response::Response, MailerLite};
 
 #[tokio::main]
 async fn main() {
