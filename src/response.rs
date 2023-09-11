@@ -10,14 +10,17 @@ pub struct Response {
 impl Response {
     pub async fn new(response: reqwestResponse) -> Self {
         let status_code: StatusCode = response.status().clone();
+
         let content: Value = match status_code {
-            StatusCode::NO_CONTENT => json!({
-                "message": "No content",
-            }),
-            _ => response
+            StatusCode::OK | StatusCode::CREATED | StatusCode::ACCEPTED => response
                 .json::<Value>()
                 .await
                 .expect("Failed to parse response body"),
+            _ => json!({
+                "message": StatusCode::from_u16(status_code.as_u16())
+                    .expect("Failed to parse status code")
+                    .canonical_reason(),
+            }),
         };
 
         Self {
@@ -37,7 +40,7 @@ mod tests {
     async fn response_new() {
         let mut server: ServerGuard = Server::new_async().await;
         let mock: Mock = server
-            .mock("GET", "/hello")
+            .mock("GET", "/200")
             .with_status(200)
             .with_header("Accept", "application/json")
             .with_header("Content-Type", "application/json")
@@ -48,7 +51,7 @@ mod tests {
         let response: Response = Response::new(
             Client::new("api_key".to_string())
                 .request
-                .get(format!("{}/hello", server.url()))
+                .get(format!("{}/200", server.url()))
                 .send()
                 .await
                 .expect("Failed to send request"),
@@ -58,5 +61,28 @@ mod tests {
         mock.assert();
         assert_eq!(response.status_code, 200);
         assert_eq!(response.content, json!({"message": "Hello world"}));
+
+        let mock: Mock = server
+            .mock("DELETE", "/204")
+            .with_status(204)
+            .with_header("Accept", "application/json")
+            .with_header("Content-Type", "application/json")
+            .with_header("Authorization", "Bearer api_key")
+            .with_body(r#"{"message": "No Content"}"#)
+            .create();
+
+        let response: Response = Response::new(
+            Client::new("api_key".to_string())
+                .request
+                .delete(format!("{}/204", server.url()))
+                .send()
+                .await
+                .expect("Failed to send request"),
+        )
+        .await;
+
+        mock.assert();
+        assert_eq!(response.status_code, 204);
+        assert_eq!(response.content, json!({"message": "No Content"}));
     }
 }
