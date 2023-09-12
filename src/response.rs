@@ -12,7 +12,10 @@ impl Response {
         let status_code: StatusCode = response.status().clone();
 
         let content: Value = match status_code {
-            StatusCode::OK | StatusCode::CREATED | StatusCode::ACCEPTED => response
+            StatusCode::OK
+            | StatusCode::CREATED
+            | StatusCode::ACCEPTED
+            | StatusCode::UNPROCESSABLE_ENTITY => response
                 .json::<Value>()
                 .await
                 .expect("Failed to parse response body"),
