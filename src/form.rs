@@ -13,6 +13,16 @@ impl Form {
 
         self
     }
+
+    pub fn get(&self, key: &'static str) -> Option<&'static str> {
+        for (k, v) in &self.data {
+            if k == &key {
+                return Some(v);
+            }
+        }
+
+        None
+    }
 }
 
 #[cfg(test)]
@@ -31,5 +41,13 @@ mod tests {
         let form: Form = Form::new().add("key", "value");
 
         assert_eq!(form.data, vec![("key", "value")]);
+    }
+
+    #[test]
+    fn form_get() {
+        let form: Form = Form::new().add("key", "value");
+
+        assert_eq!(form.get("key"), Some("value"));
+        assert_eq!(form.get("key2"), None);
     }
 }

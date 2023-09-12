@@ -23,6 +23,14 @@ MailerLite Rust SDK
         - [Delete a campaign](#delete-a-campaign)
         - [Schedule a campaign](#schedule-a-campaign)
         - [Cancel a ready campaign](#schedule-a-ready-campaign)
+    - [Groups](#groups)
+        - [Get a list of groups](#get-a-list-of-groups)
+        - [Create a group](#create-a-group)
+        - [Update a group](#update-a-group)
+        - [Delete a group](#delete-a-group)
+        - [Get subscribers from a group](#get-subscribers-from-a-group)
+        - [Assign subscriber to a group](#assign-subscriber-to-a-group)
+        - [Unassign subscriber from a group](#unassign-subscriber-from-a-group)
 
 # Installation
 
@@ -35,7 +43,7 @@ cargo add mailerlite-rs
 Or add the following line to your Cargo.toml:
 
 ```shell
-mailerlite-rs = "0.2.0"
+mailerlite-rs = "0.3.0"
 ```
 
 # Usage
@@ -407,6 +415,219 @@ async fn main() {
     let id: String = String::from("Your Campaign ID");
 
     let response: Response = mailerlite.campaign().cancel(id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+## Groups
+
+### Get a list of groups
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_groups
+```
+</details>
+
+```rust
+use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let parameter: Parameter = Parameter::new().add("limit", "10");
+
+    let response: Response = mailerlite.group().get(parameter.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Create a group
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example create_group
+```
+</details>
+
+```rust
+use mailerlite_rs::{form::Form, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let form: Form = Form::new().add("name", "Dummy Group");
+
+    let response: Response = mailerlite.group().create(form.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Update a group
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example update_group
+```
+</details>
+
+```rust
+use mailerlite_rs::{form::Form, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Group ID");
+
+    let form: Form = Form::new().add("name", "Dummy Group");
+
+    let response: Response = mailerlite.group().update(id, form.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Delete a group
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example delete_group
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Group ID");
+
+    let response: Response = mailerlite.group().delete(id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get subscribers from a group
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_group_subscribers
+```
+</details>
+
+```rust
+use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Group ID");
+
+    let parameter: Parameter = Parameter::new().add("filter[status]", "unsubscribed");
+
+    let response: Response = mailerlite.group().get_subscribers(id, parameter.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Assign subscriber to a group
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example assign_subscriber_to_group
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let group_id: String = String::from("Your Group ID");
+
+    let subscriber_id: String = String::from("Your Subscriber ID");
+
+    let response: Response = mailerlite.group().assign_subscriber(group_id, subscriber_id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Unassign subscriber from a group
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example unassign_subscriber_from_group
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let group_id: String = String::from("Your Group ID");
+
+    let subscriber_id: String = String::from("Your Subscriber ID");
+
+    let response: Response = mailerlite.group().unassign_subscriber(group_id, subscriber_id).await;
 
     println!("{:#?}", response);
 }
