@@ -1,6 +1,7 @@
 use campaign::Campaign;
 use client::Client;
 use group::Group;
+use segment::Segment;
 use subscriber::Subscriber;
 
 pub mod campaign;
@@ -9,6 +10,7 @@ pub mod form;
 pub mod group;
 pub mod parameter;
 pub mod response;
+pub mod segment;
 pub mod subscriber;
 
 const BASE_PATH: &str = "https://connect.mailerlite.com/api/";
@@ -35,5 +37,9 @@ impl MailerLite {
 
     pub fn group(&self) -> Group {
         Group::new(self.clone())
+    }
+
+    pub fn segment(&self) -> Segment {
+        Segment::new(self.clone())
     }
 }

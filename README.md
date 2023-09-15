@@ -31,6 +31,12 @@ MailerLite Rust SDK
         - [Get subscribers from a group](#get-subscribers-from-a-group)
         - [Assign subscriber to a group](#assign-subscriber-to-a-group)
         - [Unassign subscriber from a group](#unassign-subscriber-from-a-group)
+    - [Segments](#segments)
+        - [Get a list of segments](#get-a-list-of-segments)
+        - [Update a segment](#update-a-segment)
+        - [Delete a segment](#delete-a-segment)
+        - [Get subscribers from a segment](#get-subscribers-from-a-segment)
+        - [Get subscribers from a segment](#get-subscribers-from-a-segment)
 
 # Installation
 
@@ -628,6 +634,128 @@ async fn main() {
     let subscriber_id: String = String::from("Your Subscriber ID");
 
     let response: Response = mailerlite.group().unassign_subscriber(group_id, subscriber_id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+## Segments
+
+### Get a list of segments
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_segments
+```
+</details>
+
+```rust
+use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let parameter: Parameter = Parameter::new().add("page", "1");
+
+    let response: Response = mailerlite.segment().get(parameter.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Update a segment
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example update_segment
+```
+</details>
+
+```rust
+use mailerlite_rs::{form::Form, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Segment ID");
+
+    let form: Form = Form::new().add("name", "Dummy Segment");
+
+    let response: Response = mailerlite.segment().update(id, form.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Delete a segment
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example delete_segment
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Segment ID");
+
+    let response: Response = mailerlite.segment().delete(id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get subscribers from a segment
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_segment_subscribers
+```
+</details>
+
+```rust
+use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Segment ID");
+
+    let parameter: Parameter = Parameter::new().add("filter[status]", "unsubscribed");
+
+    let response: Response = mailerlite.segment().get_subscribers(id, parameter.clone()).await;
 
     println!("{:#?}", response);
 }
