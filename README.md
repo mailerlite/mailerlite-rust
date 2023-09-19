@@ -37,6 +37,11 @@ MailerLite Rust SDK
         - [Delete a segment](#delete-a-segment)
         - [Get subscribers from a segment](#get-subscribers-from-a-segment)
         - [Get subscribers from a segment](#get-subscribers-from-a-segment)
+    - [Field](#fields)
+        - [Get a list of fields](#get-a-list-of-fields)
+        - [Create a field](#create-a-field)
+        - [Update a field](#update-a-field)
+        - [Delete a field](#delete-a-field)
 
 # Installation
 
@@ -49,7 +54,7 @@ cargo add mailerlite-rs
 Or add the following line to your Cargo.toml:
 
 ```shell
-mailerlite-rs = "0.3.0"
+mailerlite-rs = "0.4.0"
 ```
 
 # Usage
@@ -756,6 +761,126 @@ async fn main() {
     let parameter: Parameter = Parameter::new().add("filter[status]", "unsubscribed");
 
     let response: Response = mailerlite.segment().get_subscribers(id, parameter.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+## Fields
+
+### Get a list of fields
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_fields
+```
+</details>
+
+```rust
+use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let parameter: Parameter = Parameter::new().add("filter[type]", "number");
+
+    let response: Response = mailerlite.field().get(parameter.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Create a field
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example create_field
+```
+</details>
+
+```rust
+use mailerlite_rs::{form::Form, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let form: Form = Form::new().add("name", "Dummy Field").add("type", "text");
+
+    let response: Response = mailerlite.field().create(form.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Update a field
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example update_field
+```
+</details>
+
+```rust
+use mailerlite_rs::{form::Form, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Field ID");
+
+    let form: Form = Form::new().add("name", "Dummy Field");
+
+    let response: Response = mailerlite.field().update(id, form.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Delete a field
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example delete_field
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Field ID");
+
+    let response: Response = mailerlite.field().delete(id).await;
 
     println!("{:#?}", response);
 }
