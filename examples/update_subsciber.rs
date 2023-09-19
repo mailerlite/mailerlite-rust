@@ -1,4 +1,4 @@
-use mailerlite_rs::{form::Form, response::Response, MailerLite};
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
 
 #[tokio::main]
 async fn main() {
@@ -8,11 +8,11 @@ async fn main() {
 
     let id: String = String::from("Your Subscriber ID");
 
-    let form: Form = Form::new()
+    let data: Data = Data::new()
         .add("fields[name]", "John")
         .add("fields[last_name]", "Doe");
 
-    let response: Response = mailerlite.subscriber().update(id, form.clone()).await;
+    let response: Response = mailerlite.subscriber().update(id, data.clone()).await;
 
     println!("{:#?}", response);
 }

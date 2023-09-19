@@ -1,4 +1,4 @@
-use mailerlite_rs::{form::Form, response::Response, MailerLite};
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
 
 #[tokio::main]
 async fn main() {
@@ -6,9 +6,9 @@ async fn main() {
 
     let mailerlite: MailerLite = MailerLite::new(api_key);
 
-    let form: Form = Form::new().add("name", "Dummy Group");
+    let data: Data = Data::new().add("name", "Dummy Group");
 
-    let response: Response = mailerlite.group().create(form.clone()).await;
+    let response: Response = mailerlite.group().create(data.clone()).await;
 
     println!("{:#?}", response);
 }

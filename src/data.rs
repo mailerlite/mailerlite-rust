@@ -1,9 +1,9 @@
 #[derive(Debug, Clone)]
-pub struct Form {
+pub struct Data {
     pub data: Vec<(&'static str, &'static str)>,
 }
 
-impl Form {
+impl Data {
     pub fn new() -> Self {
         Self { data: Vec::new() }
     }
@@ -30,24 +30,24 @@ mod tests {
     use super::*;
 
     #[test]
-    fn form_new() {
-        let form: Form = Form::new();
+    fn data_new() {
+        let data: Data = Data::new();
 
-        assert_eq!(form.data, Vec::new());
+        assert_eq!(data.data, Vec::new());
     }
 
     #[test]
-    fn form_add() {
-        let form: Form = Form::new().add("key", "value");
+    fn data_add() {
+        let data: Data = Data::new().add("key", "value");
 
-        assert_eq!(form.data, vec![("key", "value")]);
+        assert_eq!(data.data, vec![("key", "value")]);
     }
 
     #[test]
-    fn form_get() {
-        let form: Form = Form::new().add("key", "value");
+    fn data_get() {
+        let data: Data = Data::new().add("key", "value");
 
-        assert_eq!(form.get("key"), Some("value"));
-        assert_eq!(form.get("key2"), None);
+        assert_eq!(data.get("key"), Some("value"));
+        assert_eq!(data.get("key2"), None);
     }
 }

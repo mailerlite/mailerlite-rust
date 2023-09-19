@@ -1,4 +1,4 @@
-use mailerlite_rs::{form::Form, response::Response, MailerLite};
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
 
 #[tokio::main]
 async fn main() {
@@ -8,9 +8,9 @@ async fn main() {
 
     let id: String = String::from("Your Campaign ID");
 
-    let form: Form = Form::new().add("delivery", "instant");
+    let data: Data = Data::new().add("delivery", "instant");
 
-    let response: Response = mailerlite.campaign().schedule(id, form.clone()).await;
+    let response: Response = mailerlite.campaign().schedule(id, data.clone()).await;
 
     println!("{:#?}", response);
 }

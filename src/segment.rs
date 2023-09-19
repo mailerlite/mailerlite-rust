@@ -1,4 +1,4 @@
-use crate::{form::Form, parameter::Parameter, response::Response, MailerLite, BASE_PATH};
+use crate::{data::Data, parameter::Parameter, response::Response, MailerLite, BASE_PATH};
 
 const END_POINT: &str = "segments";
 
@@ -12,7 +12,7 @@ impl Segment {
         Self { mailerlite }
     }
 
-    pub async fn get(&self, data: Parameter) -> Response {
+    pub async fn get(&self, query: Parameter) -> Response {
         let url: String = format!("{}{}", BASE_PATH, END_POINT);
 
         Response::new(
@@ -20,7 +20,7 @@ impl Segment {
                 .client
                 .request
                 .get(url)
-                .query(&data.data)
+                .query(&query.data)
                 .send()
                 .await
                 .expect("Failed to send request"),
@@ -28,7 +28,7 @@ impl Segment {
         .await
     }
 
-    pub async fn update(&self, id: String, form: Form) -> Response {
+    pub async fn update(&self, id: String, form: Data) -> Response {
         let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id);
 
         Response::new(
@@ -59,7 +59,7 @@ impl Segment {
         .await
     }
 
-    pub async fn get_subscribers(&self, id: String, data: Parameter) -> Response {
+    pub async fn get_subscribers(&self, id: String, query: Parameter) -> Response {
         let url: String = format!("{}{}/{}/subscribers", BASE_PATH, END_POINT, id);
 
         Response::new(
@@ -67,7 +67,7 @@ impl Segment {
                 .client
                 .request
                 .get(url)
-                .query(&data.data)
+                .query(&query.data)
                 .send()
                 .await
                 .expect("Failed to send request"),

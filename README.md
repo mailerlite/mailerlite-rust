@@ -36,8 +36,7 @@ MailerLite Rust SDK
         - [Update a segment](#update-a-segment)
         - [Delete a segment](#delete-a-segment)
         - [Get subscribers from a segment](#get-subscribers-from-a-segment)
-        - [Get subscribers from a segment](#get-subscribers-from-a-segment)
-    - [Field](#fields)
+    - [Fields](#fields)
         - [Get a list of fields](#get-a-list-of-fields)
         - [Create a field](#create-a-field)
         - [Update a field](#update-a-field)
@@ -134,7 +133,7 @@ cargo run --package mailerlite-rs --example create_subsciber
 </details>
 
 ```rust
-use mailerlite_rs::{form::Form, response::Response, MailerLite};
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
 
 #[tokio::main]
 async fn main() {
@@ -142,9 +141,9 @@ async fn main() {
 
     let mailerlite: MailerLite = MailerLite::new(api_key);
 
-    let form: Form = Form::new().add("email", "john@gmail.com");
+    let data: Data = Data::new().add("email", "john@gmail.com");
 
-    let response: Response = mailerlite.subscriber().create(form.clone()).await;
+    let response: Response = mailerlite.subscriber().create(data.clone()).await;
 
     println!("{:#?}", response);
 }
@@ -163,7 +162,7 @@ cargo run --package mailerlite-rs --example update_subsciber
 </details>
 
 ```rust
-use mailerlite_rs::{form::Form, response::Response, MailerLite};
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
 
 #[tokio::main]
 async fn main() {
@@ -173,11 +172,11 @@ async fn main() {
 
     let id: String = String::from("Your Subscriber ID");
 
-    let form: Form = Form::new()
+    let data: Data = Data::new()
         .add("fields[name]", "John")
         .add("fields[last_name]", "Doe");
 
-    let response: Response = mailerlite.subscriber().update(id, form.clone()).await;
+    let response: Response = mailerlite.subscriber().update(id, data.clone()).await;
 
     println!("{:#?}", response);
 }
@@ -285,7 +284,7 @@ cargo run --package mailerlite-rs --example create_campaign
 </details>
 
 ```rust
-use mailerlite_rs::{form::Form, response::Response, MailerLite};
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
 
 #[tokio::main]
 async fn main() {
@@ -293,14 +292,14 @@ async fn main() {
 
     let mailerlite: MailerLite = MailerLite::new(api_key);
 
-    let form: Form = Form::new()
+    let data: Data = Data::new()
         .add("name", "Regular Campaign")
         .add("type", "regular")
         .add("emails[0][subject]", "Test Subject")
         .add("emails[0][from_name]", "John Doe")
         .add("emails[0][from]", "john@gmail.com");
 
-    let response: Response = mailerlite.campaign().create(form.clone()).await;
+    let response: Response = mailerlite.campaign().create(data.clone()).await;
 
     println!("{:#?}", response);
 }
@@ -320,7 +319,7 @@ cargo run --package mailerlite-rs --example update_campaign
 </details>
 
 ```rust
-use mailerlite_rs::{form::Form, response::Response, MailerLite};
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
 
 #[tokio::main]
 async fn main() {
@@ -330,13 +329,13 @@ async fn main() {
 
     let id: String = String::from("Your Campaign ID");
 
-    let form: Form = Form::new()
+    let data: Data = Data::new()
         .add("name", "Regular Campaign")
         .add("emails[0][subject]", "Test Subject")
         .add("emails[0][from_name]", "John Doe")
         .add("emails[0][from]", "john@gmail.com");
 
-    let response: Response = mailerlite.campaign().update(id, form.clone()).await;
+    let response: Response = mailerlite.campaign().update(id, data.clone()).await;
 
     println!("{:#?}", response);
 }
@@ -384,7 +383,7 @@ cargo run --package mailerlite-rs --example schedule_campaign
 </details>
 
 ```rust
-use mailerlite_rs::{form::Form, response::Response, MailerLite};
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
 
 #[tokio::main]
 async fn main() {
@@ -394,9 +393,9 @@ async fn main() {
 
     let id: String = String::from("Your Campaign ID");
 
-    let form: Form = Form::new().add("delivery", "instant");
+    let data: Data = Data::new().add("delivery", "instant");
 
-    let response: Response = mailerlite.campaign().schedule(id, form.clone()).await;
+    let response: Response = mailerlite.campaign().schedule(id, data.clone()).await;
 
     println!("{:#?}", response);
 }
@@ -475,7 +474,7 @@ cargo run --package mailerlite-rs --example create_group
 </details>
 
 ```rust
-use mailerlite_rs::{form::Form, response::Response, MailerLite};
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
 
 #[tokio::main]
 async fn main() {
@@ -483,9 +482,9 @@ async fn main() {
 
     let mailerlite: MailerLite = MailerLite::new(api_key);
 
-    let form: Form = Form::new().add("name", "Dummy Group");
+    let data: Data = Data::new().add("name", "Dummy Group");
 
-    let response: Response = mailerlite.group().create(form.clone()).await;
+    let response: Response = mailerlite.group().create(data.clone()).await;
 
     println!("{:#?}", response);
 }
@@ -504,7 +503,7 @@ cargo run --package mailerlite-rs --example update_group
 </details>
 
 ```rust
-use mailerlite_rs::{form::Form, response::Response, MailerLite};
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
 
 #[tokio::main]
 async fn main() {
@@ -514,9 +513,9 @@ async fn main() {
 
     let id: String = String::from("Your Group ID");
 
-    let form: Form = Form::new().add("name", "Dummy Group");
+    let data: Data = Data::new().add("name", "Dummy Group");
 
-    let response: Response = mailerlite.group().update(id, form.clone()).await;
+    let response: Response = mailerlite.group().update(id, data.clone()).await;
 
     println!("{:#?}", response);
 }
@@ -688,7 +687,7 @@ cargo run --package mailerlite-rs --example update_segment
 </details>
 
 ```rust
-use mailerlite_rs::{form::Form, response::Response, MailerLite};
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
 
 #[tokio::main]
 async fn main() {
@@ -698,9 +697,9 @@ async fn main() {
 
     let id: String = String::from("Your Segment ID");
 
-    let form: Form = Form::new().add("name", "Dummy Segment");
+    let data: Data = Data::new().add("name", "Dummy Segment");
 
-    let response: Response = mailerlite.segment().update(id, form.clone()).await;
+    let response: Response = mailerlite.segment().update(id, data.clone()).await;
 
     println!("{:#?}", response);
 }
@@ -810,7 +809,7 @@ cargo run --package mailerlite-rs --example create_field
 </details>
 
 ```rust
-use mailerlite_rs::{form::Form, response::Response, MailerLite};
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
 
 #[tokio::main]
 async fn main() {
@@ -818,9 +817,9 @@ async fn main() {
 
     let mailerlite: MailerLite = MailerLite::new(api_key);
 
-    let form: Form = Form::new().add("name", "Dummy Field").add("type", "text");
+    let data: Data = Data::new().add("name", "Dummy Field").add("type", "text");
 
-    let response: Response = mailerlite.field().create(form.clone()).await;
+    let response: Response = mailerlite.field().create(data.clone()).await;
 
     println!("{:#?}", response);
 }
@@ -839,7 +838,7 @@ cargo run --package mailerlite-rs --example update_field
 </details>
 
 ```rust
-use mailerlite_rs::{form::Form, response::Response, MailerLite};
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
 
 #[tokio::main]
 async fn main() {
@@ -849,9 +848,9 @@ async fn main() {
 
     let id: String = String::from("Your Field ID");
 
-    let form: Form = Form::new().add("name", "Dummy Field");
+    let data: Data = Data::new().add("name", "Dummy Field");
 
-    let response: Response = mailerlite.field().update(id, form.clone()).await;
+    let response: Response = mailerlite.field().update(id, data.clone()).await;
 
     println!("{:#?}", response);
 }

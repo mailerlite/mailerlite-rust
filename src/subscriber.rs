@@ -1,4 +1,4 @@
-use crate::{form::Form, parameter::Parameter, response::Response, MailerLite, BASE_PATH};
+use crate::{data::Data, parameter::Parameter, response::Response, MailerLite, BASE_PATH};
 
 const END_POINT: &str = "subscribers";
 
@@ -12,7 +12,7 @@ impl Subscriber {
         Self { mailerlite }
     }
 
-    pub async fn get(&self, data: Parameter) -> Response {
+    pub async fn get(&self, query: Parameter) -> Response {
         let url: String = format!("{}{}", BASE_PATH, END_POINT);
 
         Response::new(
@@ -20,7 +20,7 @@ impl Subscriber {
                 .client
                 .request
                 .get(url)
-                .query(&data.data)
+                .query(&query.data)
                 .send()
                 .await
                 .expect("Failed to send request"),
@@ -43,7 +43,7 @@ impl Subscriber {
         .await
     }
 
-    pub async fn create(&self, form: Form) -> Response {
+    pub async fn create(&self, form: Data) -> Response {
         let url: String = format!("{}{}", BASE_PATH, END_POINT);
 
         Response::new(
@@ -59,7 +59,7 @@ impl Subscriber {
         .await
     }
 
-    pub async fn update(&self, id: String, form: Form) -> Response {
+    pub async fn update(&self, id: String, form: Data) -> Response {
         let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id);
 
         Response::new(
