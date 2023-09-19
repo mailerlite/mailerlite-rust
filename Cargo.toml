@@ -1,6 +1,6 @@
 [package]
 name = "mailerlite-rs"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["Shuvro Roy <shuvro@mailerlite.com>"]
 edition = "2021"
 description = "MailerLite Rust SDK"
