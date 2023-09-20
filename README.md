@@ -41,6 +41,12 @@ MailerLite Rust SDK
         - [Create a field](#create-a-field)
         - [Update a field](#update-a-field)
         - [Delete a field](#delete-a-field)
+    - [Forms](#forms)
+        - [Get a list of forms](#get-a-list-of-forms)
+        - [Get a form](#get-a-form)
+        - [Update a form](#update-a-form)
+        - [Delete a form](#delete-a-form)
+        - [Get subscribers who signed up to a specific form](#get-subscribers-who-signed-up-to-a-specific-form)
 
 # Installation
 
@@ -53,7 +59,7 @@ cargo add mailerlite-rs
 Or add the following line to your Cargo.toml:
 
 ```shell
-mailerlite-rs = "0.4.0"
+mailerlite-rs = "0.5.0"
 ```
 
 # Usage
@@ -880,6 +886,159 @@ async fn main() {
     let id: String = String::from("Your Field ID");
 
     let response: Response = mailerlite.field().delete(id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+## Forms
+
+### Get a list of forms
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_forms
+```
+</details>
+
+```rust
+use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let form_type: String = String::from("Your Form Type");
+
+    let parameter: Parameter = Parameter::new().add("sort", "created_at");
+
+    let response: Response = mailerlite.form().get(form_type, parameter.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get a form
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example find_form
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Form ID");
+
+    let response: Response = mailerlite.form().find(id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Update a form
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example update_form
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Group ID");
+
+    let data: Data = Data::new().add("name", "Dummy Group");
+
+    let response: Response = mailerlite.group().update(id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Delete a form
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example delete_form
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Form ID");
+
+    let response: Response = mailerlite.form().delete(id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get subscribers who signed up to a specific form
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_form_subscribers
+```
+</details>
+
+```rust
+use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Form ID");
+
+    let parameter: Parameter = Parameter::new().add("filter[status]", "unsubscribed");
+
+    let response: Response = mailerlite.form().get_subscribers(id, parameter.clone()).await;
 
     println!("{:#?}", response);
 }
