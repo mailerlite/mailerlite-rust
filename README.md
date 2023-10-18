@@ -64,7 +64,7 @@ cargo add mailerlite-rs
 Or add the following line to your Cargo.toml:
 
 ```shell
-mailerlite-rs = "0.5.0"
+mailerlite-rs = "0.6.0"
 ```
 
 # Usage
