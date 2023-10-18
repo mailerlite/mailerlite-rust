@@ -120,4 +120,20 @@ impl Campaign {
         )
         .await
     }
+
+    pub async fn subscribers_activity(&self, id: String, query: Parameter) -> Response {
+        let url: String = format!("{}{}/{}/reports/subscriber-activity", BASE_PATH, END_POINT, id);
+
+        Response::new(
+            self.mailerlite
+                .client
+                .request
+                .get(url)
+                .query(&query.data)
+                .send()
+                .await
+                .expect("Failed to send request"),
+        )
+        .await
+    }
 }

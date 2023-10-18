@@ -22,7 +22,8 @@ MailerLite Rust SDK
         - [Update a campaign](#update-a-campaign)
         - [Delete a campaign](#delete-a-campaign)
         - [Schedule a campaign](#schedule-a-campaign)
-        - [Cancel a ready campaign](#schedule-a-ready-campaign)
+        - [Cancel a ready campaign](#cancel-a-ready-campaign)
+        - [Get subscribers activity of sent campaign](#get-subscribers-activity-of-sent-campaign)
     - [Groups](#groups)
         - [Get a list of groups](#get-a-list-of-groups)
         - [Create a group](#create-a-group)
@@ -47,6 +48,10 @@ MailerLite Rust SDK
         - [Update a form](#update-a-form)
         - [Delete a form](#delete-a-form)
         - [Get subscribers who signed up to a specific form](#get-subscribers-who-signed-up-to-a-specific-form)
+    - [Automations](#automations)
+        - [Get a list of automations](#get-a-list-of-automations)
+        - [Get a automation](#get-a-automation)
+        - [Get the subscribers activity for an automation](#get-the-subscribers-activity-for-an-automation)
 
 # Installation
 
@@ -59,7 +64,7 @@ cargo add mailerlite-rs
 Or add the following line to your Cargo.toml:
 
 ```shell
-mailerlite-rs = "0.5.0"
+mailerlite-rs = "0.6.0"
 ```
 
 # Usage
@@ -431,6 +436,37 @@ async fn main() {
     let id: String = String::from("Your Campaign ID");
 
     let response: Response = mailerlite.campaign().cancel(id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get subscribers activity of sent campaign
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_subscribers_activity_for_campaign
+```
+</details>
+
+```rust
+use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Campaign ID");
+
+    let parameter: Parameter = Parameter::new().add("filter[type]", "opened");
+
+    let response: Response = mailerlite.campaign().subscribers_activity(id, parameter.clone()).await;
 
     println!("{:#?}", response);
 }
@@ -1039,6 +1075,97 @@ async fn main() {
     let parameter: Parameter = Parameter::new().add("filter[status]", "unsubscribed");
 
     let response: Response = mailerlite.form().get_subscribers(id, parameter.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+## Automations
+
+### Get a list of automations
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_automations
+```
+</details>
+
+```rust
+use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let parameter: Parameter = Parameter::new().add("filter[enabled]", "true");
+
+    let response: Response = mailerlite.automation().get(parameter.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get a automation
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example find_automation
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Automation ID");
+
+    let response: Response = mailerlite.automation().find(id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get the subscribers activity for an automation
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_subscribers_activity_for_automation
+```
+</details>
+
+```rust
+use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Automation ID");
+
+    let parameter: Parameter = Parameter::new().add("filter[status]", "completed");
+
+    let response: Response = mailerlite.automation().subscribers_activity(id, parameter.clone()).await;
 
     println!("{:#?}", response);
 }

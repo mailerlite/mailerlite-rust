@@ -1,3 +1,4 @@
+use automation::Automation;
 use campaign::Campaign;
 use client::Client;
 use field::Field;
@@ -6,6 +7,7 @@ use group::Group;
 use segment::Segment;
 use subscriber::Subscriber;
 
+pub mod automation;
 pub mod campaign;
 pub mod client;
 pub mod data;
@@ -53,5 +55,9 @@ impl MailerLite {
 
     pub fn form(&self) -> Form {
         Form::new(self.clone())
+    }
+
+    pub fn automation(&self) -> Automation {
+        Automation::new(self.clone())
     }
 }
