@@ -6,6 +6,7 @@ use form::Form;
 use group::Group;
 use segment::Segment;
 use subscriber::Subscriber;
+use webhook::Webhook;
 
 pub mod automation;
 pub mod campaign;
@@ -18,6 +19,7 @@ pub mod parameter;
 pub mod response;
 pub mod segment;
 pub mod subscriber;
+pub mod webhook;
 
 const BASE_PATH: &str = "https://connect.mailerlite.com/api/";
 
@@ -59,5 +61,9 @@ impl MailerLite {
 
     pub fn automation(&self) -> Automation {
         Automation::new(self.clone())
+    }
+
+    pub fn webhook(&self) -> Webhook {
+        Webhook::new(self.clone())
     }
 }

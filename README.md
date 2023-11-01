@@ -52,6 +52,12 @@ MailerLite Rust SDK
         - [Get a list of automations](#get-a-list-of-automations)
         - [Get a automation](#get-a-automation)
         - [Get the subscribers activity for an automation](#get-the-subscribers-activity-for-an-automation)
+    - [Webhooks](#webhooks)
+        - [Get a list of webhooks](#get-a-list-of-webhooks)
+        - [Get a webhook](#get-a-webhook)
+        - [Create a webhook](#create-a-webhook)
+        - [Update a webhook](#update-a-webhook)
+        - [Delete a webhook](#delete-a-webhook)
 
 # Installation
 
@@ -64,7 +70,7 @@ cargo add mailerlite-rs
 Or add the following line to your Cargo.toml:
 
 ```shell
-mailerlite-rs = "0.6.0"
+mailerlite-rs = "0.7.0"
 ```
 
 # Usage
@@ -1166,6 +1172,158 @@ async fn main() {
     let parameter: Parameter = Parameter::new().add("filter[status]", "completed");
 
     let response: Response = mailerlite.automation().subscribers_activity(id, parameter.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+## Webhooks
+
+### Get a list of webhooks
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_webhooks
+```
+</details>
+
+```rust
+use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let parameter: Parameter = Parameter::new();
+
+    let response: Response = mailerlite.webhook().get(parameter.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get a webhook
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example find_webhook
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Webhook ID");
+
+    let response: Response = mailerlite.webhook().find(id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Create a webhook
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example create_webhook
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let data: Data = Data::new()
+        .add("name", "Dummy Webhook")
+        .add("events[]", "subscriber.created")
+        .add("url", "https://www.cartwright.info/eligendi-soluta-corporis-in-quod-ullam");
+
+    let response: Response = mailerlite.webhook().create(data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Update a webhook
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example update_webhook
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Webhook ID");
+
+    let data: Data = Data::new().add("name", "Dummy Webhook");
+
+    let response: Response = mailerlite.webhook().update(id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Delete a webhook
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example delete_webhook
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Webhook ID");
+
+    let response: Response = mailerlite.webhook().delete(id).await;
 
     println!("{:#?}", response);
 }
