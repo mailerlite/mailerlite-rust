@@ -1,4 +1,5 @@
 use automation::Automation;
+use batch::Batch;
 use campaign::Campaign;
 use client::Client;
 use field::Field;
@@ -6,9 +7,11 @@ use form::Form;
 use group::Group;
 use segment::Segment;
 use subscriber::Subscriber;
+use timezone::Timezone;
 use webhook::Webhook;
 
 pub mod automation;
+pub mod batch;
 pub mod campaign;
 pub mod client;
 pub mod data;
@@ -19,6 +22,7 @@ pub mod parameter;
 pub mod response;
 pub mod segment;
 pub mod subscriber;
+pub mod timezone;
 pub mod webhook;
 
 const BASE_PATH: &str = "https://connect.mailerlite.com/api/";
@@ -65,5 +69,13 @@ impl MailerLite {
 
     pub fn webhook(&self) -> Webhook {
         Webhook::new(self.clone())
+    }
+
+    pub fn batch(&self) -> Batch {
+        Batch::new(self.clone())
+    }
+
+    pub fn timezone(&self) -> Timezone {
+        Timezone::new(self.clone())
     }
 }
