@@ -58,6 +58,12 @@ MailerLite Rust SDK
         - [Create a webhook](#create-a-webhook)
         - [Update a webhook](#update-a-webhook)
         - [Delete a webhook](#delete-a-webhook)
+    - [Batch](#batch)
+        - [Create a batch](#create-a-batch)
+    - [Timezones](#timezones)
+        - [Get a list of timezones](#get-a-list-of-timezones)
+    - [Campaign languages](#campaign-languages)
+        - [Get a list of campaign languages](#get-a-list-of-campaign-languages)
 
 # Installation
 
@@ -70,7 +76,7 @@ cargo add mailerlite-rs
 Or add the following line to your Cargo.toml:
 
 ```shell
-mailerlite-rs = "0.7.0"
+mailerlite-rs = "1.0.0"
 ```
 
 # Usage
@@ -1324,6 +1330,98 @@ async fn main() {
     let id: String = String::from("Your Webhook ID");
 
     let response: Response = mailerlite.webhook().delete(id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+## Batch
+
+### Create a batch
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example create_batch
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let data: Data = Data::new()
+        .add("requests[0][method]", "POST")
+        .add("requests[0][path]", "api/subscribers")
+        .add("requests[0][body][email]", "dummy@example.com");
+
+    let response: Response = mailerlite.batch().create(data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+## Timezones
+
+### Get a list of timezones
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_timezones
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let response: Response = mailerlite.timezone().get().await;
+
+    println!("{:#?}", response);
+}
+```
+
+## Campaign languages
+
+### Get a list of campaign languages
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_campaign_languages
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let response: Response = mailerlite.campaign().languages().await;
 
     println!("{:#?}", response);
 }

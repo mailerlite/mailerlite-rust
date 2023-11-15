@@ -136,4 +136,19 @@ impl Campaign {
         )
         .await
     }
+
+    pub async fn languages(&self) -> Response {
+        let url: String = format!("{}{}/languages", BASE_PATH, END_POINT);
+
+        Response::new(
+            self.mailerlite
+                .client
+                .request
+                .get(url)
+                .send()
+                .await
+                .expect("Failed to send request"),
+        )
+        .await
+    }
 }
