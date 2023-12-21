@@ -1,0 +1,32 @@
+name: Run Tests
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-test:
+    name: Build and test (${{ matrix.toolchain }})
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        toolchain:
+          - stable
+          - beta
+          - nightly
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: swatinem/rust-cache@v2
+      - run: rustup update ${{ matrix.toolchain }} && rustup default ${{ matrix.toolchain }}
+
+      - name: Build
+        run: cargo build --verbose
+
+      - name: Test
+        run: cargo test --verbose
