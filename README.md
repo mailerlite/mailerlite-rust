@@ -2,8 +2,10 @@
 
 MailerLite Rust SDK
 
-[![Release](https://github.com/mailerlite/mailerlite-rust/actions/workflows/main.yaml/badge.svg?branch=main)](https://github.com/mailerlite/mailerlite-rust/actions/workflows/main.yaml)
-[![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+![Build](https://img.shields.io/github/actions/workflow/status/mailerlite/mailerlite-rust/main.yaml)
+![Downloads](https://img.shields.io/crates/d/mailerlite-rs?label=downloads)
+![Crates.io](https://img.shields.io/crates/v/mailerlite-rs)
+![License](https://img.shields.io/crates/l/mailerlite-rs)
 
 # Table of Contents
 
