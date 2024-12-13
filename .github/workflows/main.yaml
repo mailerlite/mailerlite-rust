@@ -10,7 +10,7 @@ jobs:
   build-test:
     name: Build and test (${{ matrix.toolchain }})
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     strategy:
       matrix:
@@ -37,7 +37,7 @@ jobs:
       contents: write
       pull-requests: write
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: build-test
 
     outputs:
@@ -54,7 +54,7 @@ jobs:
   publish:
     name: Publish to crates.io
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: release-please
     if: needs.release-please.outputs.created
 
