@@ -56,7 +56,7 @@ MailerLite Rust SDK
         - [Get subscribers who signed up to a specific form](#get-subscribers-who-signed-up-to-a-specific-form)
     - [Automations](#automations)
         - [Get a list of automations](#get-a-list-of-automations)
-        - [Get a automation](#get-a-automation)
+        - [Get an automation](#get-an-automation)
         - [Get the subscribers activity for an automation](#get-the-subscribers-activity-for-an-automation)
         - [Create an automation](#create-an-automation)
         - [Delete an automation](#delete-an-automation)
@@ -165,7 +165,7 @@ You can test out the example by running it with the command provided.
 </summary>
 
 ```bash
-cargo run --package mailerlite-rs --example get_subscibers
+cargo run --package mailerlite-rs --example get_subscribers
 ```
 </details>
 
@@ -196,7 +196,7 @@ You can test out the example by running it with the command provided.
 </summary>
 
 ```bash
-cargo run --package mailerlite-rs --example find_subsciber
+cargo run --package mailerlite-rs --example find_subscriber
 ```
 </details>
 
@@ -225,7 +225,7 @@ You can test out the example by running it with the command provided.
 </summary>
 
 ```bash
-cargo run --package mailerlite-rs --example create_subsciber
+cargo run --package mailerlite-rs --example create_subscriber
 ```
 </details>
 
@@ -254,7 +254,7 @@ You can test out the example by running it with the command provided.
 </summary>
 
 ```bash
-cargo run --package mailerlite-rs --example update_subsciber
+cargo run --package mailerlite-rs --example update_subscriber
 ```
 </details>
 
@@ -287,7 +287,7 @@ You can test out the example by running it with the command provided.
 </summary>
 
 ```bash
-cargo run --package mailerlite-rs --example delete_subsciber
+cargo run --package mailerlite-rs --example delete_subscriber
 ```
 </details>
 
@@ -1319,7 +1319,7 @@ async fn main() {
 }
 ```
 
-### Get a automation
+### Get an automation
 
 <details>
 <summary>
@@ -1521,7 +1521,7 @@ async fn main() {
     let data: Data = Data::new()
         .add("name", "Dummy Webhook")
         .add("events[]", "subscriber.created")
-        .add("url", "https://www.cartwright.info/eligendi-soluta-corporis-in-quod-ullam");
+        .add("url", "https://example.com/webhook");
 
     let response: Response = mailerlite.webhook().create(data.clone()).await;
 
