@@ -66,6 +66,13 @@ MailerLite Rust SDK
         - [Get a list of timezones](#get-a-list-of-timezones)
     - [Campaign languages](#campaign-languages)
         - [Get a list of campaign languages](#get-a-list-of-campaign-languages)
+    - [E-commerce](#e-commerce)
+        - [Shops](#shops)
+        - [Products and variants](#products-and-variants)
+        - [Categories](#categories)
+        - [Customers, orders and carts](#customers-orders-and-carts)
+        - [Imports](#imports)
+        - [Revenue reports and settings](#revenue-reports-and-settings)
 
 # Installation
 
@@ -1427,4 +1434,105 @@ async fn main() {
 
     println!("{:#?}", response);
 }
+```
+
+## E-commerce
+
+Every e-commerce call takes IDs as `String`s, with the shop ID first. Request bodies are `serde_json::Value`s, so nested data like order carts and variant lists can be sent as JSON. The examples below run inside an async function with:
+
+```rust
+use mailerlite_rs::{parameter::Parameter, MailerLite};
+use serde_json::json;
+
+let mailerlite: MailerLite = MailerLite::new(String::from("Your MailerLite API Key"));
+let shop_id: String = String::from("Your Shop ID");
+```
+
+### Shops
+
+```rust
+mailerlite.ecommerce_shop().get(Parameter::new().add("limit", "25")).await;
+mailerlite.ecommerce_shop().find(shop_id.clone()).await;
+mailerlite.ecommerce_shop().create(json!({ "name": "My shop", "url": "https://shop.example.com", "currency": "EUR" })).await;
+mailerlite.ecommerce_shop().update(shop_id.clone(), json!({ "name": "New name" })).await;
+mailerlite.ecommerce_shop().delete(shop_id.clone()).await;
+```
+
+### Products and variants
+
+```rust
+mailerlite.ecommerce_product().get(shop_id.clone(), Parameter::new().add("filter[enabled]", "true")).await;
+mailerlite.ecommerce_product().find(shop_id.clone(), String::from("Your Product ID")).await;
+mailerlite.ecommerce_product().create(shop_id.clone(), json!({ "name": "Red T-shirt", "price": 19.99 })).await;
+mailerlite.ecommerce_product().update(shop_id.clone(), String::from("Your Product ID"), json!({ "price": 24.99 })).await;
+mailerlite.ecommerce_product().delete(shop_id.clone(), String::from("Your Product ID")).await;
+mailerlite.ecommerce_product().change_status(shop_id.clone(), String::from("Your Product ID"), false).await;
+mailerlite.ecommerce_product().assign_categories(shop_id.clone(), String::from("Your Product ID"), vec![String::from("Your Category ID")], true).await;
+
+mailerlite.ecommerce_product_variant().get(shop_id.clone(), String::from("Your Product ID")).await;
+mailerlite.ecommerce_product_variant().sync(shop_id.clone(), String::from("Your Product ID"), json!([{ "name": "Large", "attributes": { "size": "L" }, "resource_id": "variant-l" }])).await;
+mailerlite.ecommerce_product_variant().update(shop_id.clone(), String::from("Your Product ID"), String::from("Your Variant ID"), json!({ "name": "Extra large", "attributes": { "size": "XL" } })).await;
+mailerlite.ecommerce_product_variant().delete(shop_id.clone(), String::from("Your Product ID"), String::from("Your Variant ID")).await;
+```
+
+### Categories
+
+```rust
+mailerlite.ecommerce_category().get(shop_id.clone(), Parameter::new()).await;
+mailerlite.ecommerce_category().create(shop_id.clone(), json!({ "name": "Hats" })).await;
+mailerlite.ecommerce_category().update(shop_id.clone(), String::from("Your Category ID"), json!({ "name": "Caps" })).await;
+mailerlite.ecommerce_category().delete(shop_id.clone(), String::from("Your Category ID")).await;
+mailerlite.ecommerce_category().products(shop_id.clone(), String::from("Your Category ID"), Parameter::new()).await;
+mailerlite.ecommerce_category().assign_product(shop_id.clone(), String::from("Your Category ID"), String::from("Your Product ID")).await;
+mailerlite.ecommerce_category().unassign_product(shop_id.clone(), String::from("Your Category ID"), String::from("Your Product ID")).await;
+```
+
+### Customers, orders and carts
+
+```rust
+mailerlite.ecommerce_customer().get(shop_id.clone(), Parameter::new().add("filter[email]", "customer@example.com")).await;
+mailerlite.ecommerce_customer().create(shop_id.clone(), json!({ "email": "customer@example.com", "create_subscriber": true })).await;
+mailerlite.ecommerce_customer().update(shop_id.clone(), String::from("Your Customer ID"), json!({ "name": "Jane" })).await;
+mailerlite.ecommerce_customer().delete(shop_id.clone(), String::from("Your Customer ID")).await;
+
+mailerlite.ecommerce_order().get(shop_id.clone(), Parameter::new().add("filter[attributed]", "true")).await;
+mailerlite.ecommerce_order().create(shop_id.clone(), json!({
+    "customer": { "email": "customer@example.com" },
+    "cart": { "items": [{ "ecommerce_product_id": "Your Product ID", "quantity": 1, "price": 19.99 }] },
+    "status": "complete"
+})).await;
+mailerlite.ecommerce_order().update(shop_id.clone(), String::from("Your Order ID"), json!({ "status": "complete" })).await;
+mailerlite.ecommerce_order().delete(shop_id.clone(), String::from("Your Order ID")).await;
+
+mailerlite.ecommerce_cart().get(shop_id.clone(), Parameter::new()).await;
+mailerlite.ecommerce_cart().update(shop_id.clone(), String::from("Your Cart ID"), json!({ "checkout_url": "https://shop.example.com/cart" })).await;
+mailerlite.ecommerce_cart_item().get(shop_id.clone(), String::from("Your Cart ID"), Parameter::new()).await;
+mailerlite.ecommerce_cart_item().update(shop_id.clone(), String::from("Your Cart ID"), String::from("Your Item ID"), json!({ "quantity": 2 })).await;
+mailerlite.ecommerce_cart_item().delete(shop_id.clone(), String::from("Your Cart ID"), String::from("Your Item ID")).await;
+```
+
+### Imports
+
+```rust
+mailerlite.ecommerce_import().products(shop_id.clone(), json!([{ "name": "Red T-shirt", "price": 19.99 }])).await;
+mailerlite.ecommerce_import().categories(shop_id.clone(), json!([{ "name": "Hats" }])).await;
+mailerlite.ecommerce_import().customers(shop_id.clone(), json!([{ "email": "customer@example.com" }])).await;
+```
+
+### Revenue reports and settings
+
+```rust
+mailerlite.ecommerce_shop().stats(shop_id.clone(), String::from("2026-10-01"), String::from("2026-10-31")).await;
+
+mailerlite.campaign().ecommerce_stats(String::from("Your Campaign ID"), shop_id.clone()).await;
+mailerlite.campaign().ecommerce_orders(String::from("Your Campaign ID"), shop_id.clone(), Parameter::new()).await;
+
+mailerlite.subscriber().ecommerce_stats(String::from("Your Subscriber ID"), shop_id.clone()).await;
+mailerlite.subscriber().ecommerce_orders(String::from("Your Subscriber ID"), shop_id.clone(), Parameter::new()).await;
+
+mailerlite.automation().ecommerce_stats(String::from("Your Automation ID"), Parameter::new()).await;
+mailerlite.automation().email_ecommerce_stats(String::from("Your Automation ID"), String::from("Your Email ID"), Parameter::new()).await;
+mailerlite.automation().ecommerce_orders(String::from("Your Automation ID"), Parameter::new().add("time_frame", "all_time")).await;
+
+mailerlite.ecommerce_setting().find().await;
 ```

@@ -2,6 +2,16 @@ use automation::Automation;
 use batch::Batch;
 use campaign::Campaign;
 use client::Client;
+use ecommerce_cart::EcommerceCart;
+use ecommerce_cart_item::EcommerceCartItem;
+use ecommerce_category::EcommerceCategory;
+use ecommerce_customer::EcommerceCustomer;
+use ecommerce_import::EcommerceImport;
+use ecommerce_order::EcommerceOrder;
+use ecommerce_product::EcommerceProduct;
+use ecommerce_product_variant::EcommerceProductVariant;
+use ecommerce_setting::EcommerceSetting;
+use ecommerce_shop::EcommerceShop;
 use field::Field;
 use form::Form;
 use group::Group;
@@ -15,6 +25,17 @@ pub mod batch;
 pub mod campaign;
 pub mod client;
 pub mod data;
+pub mod ecommerce;
+pub mod ecommerce_cart;
+pub mod ecommerce_cart_item;
+pub mod ecommerce_category;
+pub mod ecommerce_customer;
+pub mod ecommerce_import;
+pub mod ecommerce_order;
+pub mod ecommerce_product;
+pub mod ecommerce_product_variant;
+pub mod ecommerce_setting;
+pub mod ecommerce_shop;
 pub mod field;
 pub mod form;
 pub mod group;
@@ -77,5 +98,45 @@ impl MailerLite {
 
     pub fn timezone(&self) -> Timezone {
         Timezone::new(self.clone())
+    }
+
+    pub fn ecommerce_shop(&self) -> EcommerceShop {
+        EcommerceShop::new(self.clone())
+    }
+
+    pub fn ecommerce_product(&self) -> EcommerceProduct {
+        EcommerceProduct::new(self.clone())
+    }
+
+    pub fn ecommerce_product_variant(&self) -> EcommerceProductVariant {
+        EcommerceProductVariant::new(self.clone())
+    }
+
+    pub fn ecommerce_category(&self) -> EcommerceCategory {
+        EcommerceCategory::new(self.clone())
+    }
+
+    pub fn ecommerce_customer(&self) -> EcommerceCustomer {
+        EcommerceCustomer::new(self.clone())
+    }
+
+    pub fn ecommerce_order(&self) -> EcommerceOrder {
+        EcommerceOrder::new(self.clone())
+    }
+
+    pub fn ecommerce_cart(&self) -> EcommerceCart {
+        EcommerceCart::new(self.clone())
+    }
+
+    pub fn ecommerce_cart_item(&self) -> EcommerceCartItem {
+        EcommerceCartItem::new(self.clone())
+    }
+
+    pub fn ecommerce_import(&self) -> EcommerceImport {
+        EcommerceImport::new(self.clone())
+    }
+
+    pub fn ecommerce_setting(&self) -> EcommerceSetting {
+        EcommerceSetting::new(self.clone())
     }
 }
