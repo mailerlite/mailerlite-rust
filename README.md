@@ -17,6 +17,9 @@ MailerLite Rust SDK
         - [Create a subscriber](#create-a-subscriber)
         - [Update a subscriber](#update-a-subscriber)
         - [Delete a subscriber](#delete-a-subscriber)
+        - [Get subscriber activity](#get-subscriber-activity)
+        - [Forget a subscriber](#forget-a-subscriber)
+        - [Get a subscriber import status](#get-a-subscriber-import-status)
     - [Campaigns](#campaigns)
         - [Get a list of campaigns](#get-a-list-of-campaigns)
         - [Get a campaign](#get-a-campaign)
@@ -34,6 +37,7 @@ MailerLite Rust SDK
         - [Get subscribers from a group](#get-subscribers-from-a-group)
         - [Assign subscriber to a group](#assign-subscriber-to-a-group)
         - [Unassign subscriber from a group](#unassign-subscriber-from-a-group)
+        - [Import subscribers to a group](#import-subscribers-to-a-group)
     - [Segments](#segments)
         - [Get a list of segments](#get-a-list-of-segments)
         - [Update a segment](#update-a-segment)
@@ -54,6 +58,8 @@ MailerLite Rust SDK
         - [Get a list of automations](#get-a-list-of-automations)
         - [Get a automation](#get-a-automation)
         - [Get the subscribers activity for an automation](#get-the-subscribers-activity-for-an-automation)
+        - [Create an automation](#create-an-automation)
+        - [Delete an automation](#delete-an-automation)
     - [Webhooks](#webhooks)
         - [Get a list of webhooks](#get-a-list-of-webhooks)
         - [Get a webhook](#get-a-webhook)
@@ -297,6 +303,95 @@ async fn main() {
     let id: String = String::from("Your Subscriber ID");
 
     let response: Response = mailerlite.subscriber().delete(id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get subscriber activity
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_subscriber_activity
+```
+</details>
+
+```rust
+use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Subscriber ID");
+
+    let parameter: Parameter = Parameter::new().add("filter[log_name]", "email_open");
+
+    let response: Response = mailerlite.subscriber().activity(id, parameter.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Forget a subscriber
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example forget_subscriber
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Subscriber ID");
+
+    let response: Response = mailerlite.subscriber().forget(id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get a subscriber import status
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_subscriber_import_status
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let import_id: String = String::from("Your Import ID");
+
+    let response: Response = mailerlite.subscriber().import_status(import_id).await;
 
     println!("{:#?}", response);
 }
@@ -760,6 +855,39 @@ async fn main() {
     let subscriber_id: String = String::from("Your Subscriber ID");
 
     let response: Response = mailerlite.group().unassign_subscriber(group_id, subscriber_id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Import subscribers to a group
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example import_subscribers_to_group
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Group ID");
+
+    let data: Data = Data::new()
+        .add("subscribers[0][email]", "dummy@example.com")
+        .add("subscribers[0][fields][name]", "Dummy");
+
+    let response: Response = mailerlite.group().import_subscribers(id, data.clone()).await;
 
     println!("{:#?}", response);
 }
@@ -1246,6 +1374,64 @@ async fn main() {
     let parameter: Parameter = Parameter::new().add("filter[status]", "completed");
 
     let response: Response = mailerlite.automation().subscribers_activity(id, parameter.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Create an automation
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example create_automation
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let data: Data = Data::new().add("name", "Dummy Automation");
+
+    let response: Response = mailerlite.automation().create(data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Delete an automation
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example delete_automation
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Automation ID");
+
+    let response: Response = mailerlite.automation().delete(id).await;
 
     println!("{:#?}", response);
 }

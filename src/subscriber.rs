@@ -90,6 +90,52 @@ impl Subscriber {
         .await
     }
 
+    pub async fn activity(&self, id: String, query: Parameter) -> Response {
+        let url: String = format!("{}{}/{}/activity-log", BASE_PATH, END_POINT, id);
+
+        Response::new(
+            self.mailerlite
+                .client
+                .request
+                .get(url)
+                .query(&query.data)
+                .send()
+                .await
+                .expect("Failed to send request"),
+        )
+        .await
+    }
+
+    pub async fn forget(&self, id: String) -> Response {
+        let url: String = format!("{}{}/{}/forget", BASE_PATH, END_POINT, id);
+
+        Response::new(
+            self.mailerlite
+                .client
+                .request
+                .post(url)
+                .send()
+                .await
+                .expect("Failed to send request"),
+        )
+        .await
+    }
+
+    pub async fn import_status(&self, import_id: String) -> Response {
+        let url: String = format!("{}{}/import/{}", BASE_PATH, END_POINT, import_id);
+
+        Response::new(
+            self.mailerlite
+                .client
+                .request
+                .get(url)
+                .send()
+                .await
+                .expect("Failed to send request"),
+        )
+        .await
+    }
+
     pub async fn ecommerce_stats(&self, id: String, shop_id: String) -> Response {
         let url: String = format!("{}{}/{}/reports/ecommerce", BASE_PATH, END_POINT, id);
 
