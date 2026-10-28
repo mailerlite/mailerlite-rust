@@ -91,6 +91,22 @@ impl Group {
         .await
     }
 
+    pub async fn import_subscribers(&self, id: String, form: Data) -> Response {
+        let url: String = format!("{}{}/{}/import-subscribers", BASE_PATH, END_POINT, id);
+
+        Response::new(
+            self.mailerlite
+                .client
+                .request
+                .post(url)
+                .form(&form.data)
+                .send()
+                .await
+                .expect("Failed to send request"),
+        )
+        .await
+    }
+
     pub async fn assign_subscriber(&self, group_id: String, subscriber_id: String) -> Response {
         let url: String = format!(
             "{}subscribers/{}/groups/{}",

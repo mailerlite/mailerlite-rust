@@ -9,7 +9,7 @@ async fn main() {
     let data: Data = Data::new()
         .add("name", "Dummy Webhook")
         .add("events[]", "subscriber.created")
-        .add("url", "https://www.cartwright.info/eligendi-soluta-corporis-in-quod-ullam");
+        .add("url", "https://example.com/webhook");
 
     let response: Response = mailerlite.webhook().create(data.clone()).await;
 

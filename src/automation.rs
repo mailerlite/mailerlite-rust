@@ -1,4 +1,4 @@
-use crate::{parameter::Parameter, response::Response, MailerLite, BASE_PATH};
+use crate::{data::Data, parameter::Parameter, response::Response, MailerLite, BASE_PATH};
 
 const END_POINT: &str = "automations";
 
@@ -36,6 +36,37 @@ impl Automation {
                 .client
                 .request
                 .get(url)
+                .send()
+                .await
+                .expect("Failed to send request"),
+        )
+        .await
+    }
+
+    pub async fn create(&self, form: Data) -> Response {
+        let url: String = format!("{}{}", BASE_PATH, END_POINT);
+
+        Response::new(
+            self.mailerlite
+                .client
+                .request
+                .post(url)
+                .form(&form.data)
+                .send()
+                .await
+                .expect("Failed to send request"),
+        )
+        .await
+    }
+
+    pub async fn delete(&self, id: String) -> Response {
+        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id);
+
+        Response::new(
+            self.mailerlite
+                .client
+                .request
+                .delete(url)
                 .send()
                 .await
                 .expect("Failed to send request"),
