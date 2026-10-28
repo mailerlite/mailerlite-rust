@@ -1,0 +1,17 @@
+use mailerlite_rs::{response::Response, MailerLite};
+use serde_json::{json, Value};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let body: Value = json!({ "email": "dummy@example.com", "create_subscriber": true });
+
+    let response: Response = mailerlite.ecommerce_customer().create(shop_id, body).await;
+
+    println!("{:#?}", response);
+}

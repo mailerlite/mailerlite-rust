@@ -1,6 +1,4 @@
 use crate::{parameter::Parameter, response::Response, MailerLite, BASE_PATH};
-use crate::ecommerce::{query_of, send};
-use reqwest::Method;
 
 const END_POINT: &str = "automations";
 
@@ -62,34 +60,49 @@ impl Automation {
     }
 
     pub async fn ecommerce_stats(&self, id: String, query: Parameter) -> Response {
-        send(
-            &self.mailerlite,
-            Method::GET,
-            format!("{}/{}/monthly-totals/ecommerce", END_POINT, id),
-            query_of(query),
-            None,
+        let url: String = format!("{}{}/{}/monthly-totals/ecommerce", BASE_PATH, END_POINT, id);
+
+        Response::new(
+            self.mailerlite
+                .client
+                .request
+                .get(url)
+                .query(&query.data)
+                .send()
+                .await
+                .expect("Failed to send request"),
         )
         .await
     }
 
     pub async fn email_ecommerce_stats(&self, id: String, email_id: String, query: Parameter) -> Response {
-        send(
-            &self.mailerlite,
-            Method::GET,
-            format!("{}/{}/emails/{}/ecommerce-overview-stats", END_POINT, id, email_id),
-            query_of(query),
-            None,
+        let url: String = format!("{}{}/{}/emails/{}/ecommerce-overview-stats", BASE_PATH, END_POINT, id, email_id);
+
+        Response::new(
+            self.mailerlite
+                .client
+                .request
+                .get(url)
+                .query(&query.data)
+                .send()
+                .await
+                .expect("Failed to send request"),
         )
         .await
     }
 
     pub async fn ecommerce_orders(&self, id: String, query: Parameter) -> Response {
-        send(
-            &self.mailerlite,
-            Method::GET,
-            format!("{}/{}/order-activity", END_POINT, id),
-            query_of(query),
-            None,
+        let url: String = format!("{}{}/{}/order-activity", BASE_PATH, END_POINT, id);
+
+        Response::new(
+            self.mailerlite
+                .client
+                .request
+                .get(url)
+                .query(&query.data)
+                .send()
+                .await
+                .expect("Failed to send request"),
         )
         .await
     }

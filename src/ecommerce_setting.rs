@@ -1,6 +1,6 @@
-use reqwest::Method;
+use crate::{response::Response, MailerLite, BASE_PATH};
 
-use crate::{ecommerce::send, response::Response, MailerLite};
+const END_POINT: &str = "ecommerce/settings";
 
 #[derive(Debug)]
 pub struct EcommerceSetting {
@@ -13,6 +13,17 @@ impl EcommerceSetting {
     }
 
     pub async fn find(&self) -> Response {
-        send(&self.mailerlite, Method::GET, "ecommerce/settings".to_string(), Vec::new(), None).await
+        let url: String = format!("{}{}", BASE_PATH, END_POINT);
+
+        Response::new(
+            self.mailerlite
+                .client
+                .request
+                .get(url)
+                .send()
+                .await
+                .expect("Failed to send request"),
+        )
+        .await
     }
 }

@@ -1523,7 +1523,7 @@ mailerlite.ecommerce_import().orders(shop_id.clone(), json!([{
 }])).await;
 ```
 
-Every import takes a list of records. The orders import sends them as `{ "orders": [...] }`, which is the body that endpoint expects, so pass the list itself rather than an object that already has an `orders` key.
+Every import takes a bare JSON array of records as its body.
 
 ### Revenue reports and settings
 

@@ -25,7 +25,6 @@ pub mod batch;
 pub mod campaign;
 pub mod client;
 pub mod data;
-pub mod ecommerce;
 pub mod ecommerce_cart;
 pub mod ecommerce_cart_item;
 pub mod ecommerce_category;

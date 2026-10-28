@@ -1,6 +1,4 @@
 use crate::{data::Data, parameter::Parameter, response::Response, MailerLite, BASE_PATH};
-use crate::ecommerce::{query_of, send};
-use reqwest::Method;
 
 const END_POINT: &str = "campaigns";
 
@@ -155,26 +153,35 @@ impl Campaign {
     }
 
     pub async fn ecommerce_stats(&self, id: String, shop_id: String) -> Response {
-        send(
-            &self.mailerlite,
-            Method::GET,
-            format!("{}/{}/reports/ecommerce", END_POINT, id),
-            vec![("shop_id", shop_id)],
-            None,
+        let url: String = format!("{}{}/{}/reports/ecommerce", BASE_PATH, END_POINT, id);
+
+        Response::new(
+            self.mailerlite
+                .client
+                .request
+                .get(url)
+                .query(&[("shop_id", shop_id)])
+                .send()
+                .await
+                .expect("Failed to send request"),
         )
         .await
     }
 
     pub async fn ecommerce_orders(&self, id: String, shop_id: String, query: Parameter) -> Response {
-        let mut query: Vec<(&'static str, String)> = query_of(query);
-        query.push(("shop_id", shop_id));
+        let url: String = format!("{}{}/{}/reports/ecommerce/orders", BASE_PATH, END_POINT, id);
+        let query: Vec<(&str, &str)> = query.data.into_iter().filter(|(key, _)| *key != "shop_id").collect();
 
-        send(
-            &self.mailerlite,
-            Method::GET,
-            format!("{}/{}/reports/ecommerce/orders", END_POINT, id),
-            query,
-            None,
+        Response::new(
+            self.mailerlite
+                .client
+                .request
+                .get(url)
+                .query(&[("shop_id", shop_id)])
+                .query(&query)
+                .send()
+                .await
+                .expect("Failed to send request"),
         )
         .await
     }

@@ -1,7 +1,7 @@
-use reqwest::Method;
+use crate::{response::Response, MailerLite, BASE_PATH};
 use serde_json::Value;
 
-use crate::{ecommerce::send, ecommerce::shop_path, response::Response, MailerLite};
+const END_POINT: &str = "ecommerce/shops";
 
 #[derive(Debug)]
 pub struct EcommerceProductVariant {
@@ -14,18 +14,64 @@ impl EcommerceProductVariant {
     }
 
     pub async fn get(&self, shop_id: String, product_id: String) -> Response {
-        send(&self.mailerlite, Method::GET, shop_path(&shop_id, &format!("/products/{}/variants", product_id)), Vec::new(), None).await
+        let url: String = format!("{}{}/{}/products/{}/variants", BASE_PATH, END_POINT, shop_id, product_id);
+
+        Response::new(
+            self.mailerlite
+                .client
+                .request
+                .get(url)
+                .send()
+                .await
+                .expect("Failed to send request"),
+        )
+        .await
     }
 
-    pub async fn sync(&self, shop_id: String, product_id: String, variants: Value) -> Response {
-        send(&self.mailerlite, Method::POST, shop_path(&shop_id, &format!("/products/{}/variants", product_id)), Vec::new(), Some(variants)).await
+    pub async fn sync(&self, shop_id: String, product_id: String, body: Value) -> Response {
+        let url: String = format!("{}{}/{}/products/{}/variants", BASE_PATH, END_POINT, shop_id, product_id);
+
+        Response::new(
+            self.mailerlite
+                .client
+                .request
+                .post(url)
+                .json(&body)
+                .send()
+                .await
+                .expect("Failed to send request"),
+        )
+        .await
     }
 
     pub async fn update(&self, shop_id: String, product_id: String, variant_id: String, body: Value) -> Response {
-        send(&self.mailerlite, Method::PUT, shop_path(&shop_id, &format!("/products/{}/variants/{}", product_id, variant_id)), Vec::new(), Some(body)).await
+        let url: String = format!("{}{}/{}/products/{}/variants/{}", BASE_PATH, END_POINT, shop_id, product_id, variant_id);
+
+        Response::new(
+            self.mailerlite
+                .client
+                .request
+                .put(url)
+                .json(&body)
+                .send()
+                .await
+                .expect("Failed to send request"),
+        )
+        .await
     }
 
     pub async fn delete(&self, shop_id: String, product_id: String, variant_id: String) -> Response {
-        send(&self.mailerlite, Method::DELETE, shop_path(&shop_id, &format!("/products/{}/variants/{}", product_id, variant_id)), Vec::new(), None).await
+        let url: String = format!("{}{}/{}/products/{}/variants/{}", BASE_PATH, END_POINT, shop_id, product_id, variant_id);
+
+        Response::new(
+            self.mailerlite
+                .client
+                .request
+                .delete(url)
+                .send()
+                .await
+                .expect("Failed to send request"),
+        )
+        .await
     }
 }
