@@ -89,4 +89,38 @@ impl Subscriber {
         )
         .await
     }
+
+    pub async fn ecommerce_stats(&self, id: String, shop_id: String) -> Response {
+        let url: String = format!("{}{}/{}/reports/ecommerce", BASE_PATH, END_POINT, id);
+
+        Response::new(
+            self.mailerlite
+                .client
+                .request
+                .get(url)
+                .query(&[("shop_id", shop_id)])
+                .send()
+                .await
+                .expect("Failed to send request"),
+        )
+        .await
+    }
+
+    pub async fn ecommerce_orders(&self, id: String, shop_id: String, query: Parameter) -> Response {
+        let url: String = format!("{}{}/{}/reports/ecommerce/orders", BASE_PATH, END_POINT, id);
+        let query: Vec<(&str, &str)> = query.data.into_iter().filter(|(key, _)| *key != "shop_id").collect();
+
+        Response::new(
+            self.mailerlite
+                .client
+                .request
+                .get(url)
+                .query(&[("shop_id", shop_id)])
+                .query(&query)
+                .send()
+                .await
+                .expect("Failed to send request"),
+        )
+        .await
+    }
 }
