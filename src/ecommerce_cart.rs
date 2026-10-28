@@ -1,5 +1,4 @@
-use crate::{parameter::Parameter, response::Response, MailerLite, BASE_PATH};
-use serde_json::Value;
+use crate::{data::Data, parameter::Parameter, response::Response, MailerLite, BASE_PATH};
 
 const END_POINT: &str = "ecommerce/shops";
 
@@ -44,7 +43,7 @@ impl EcommerceCart {
         .await
     }
 
-    pub async fn update(&self, shop_id: String, cart_id: String, body: Value) -> Response {
+    pub async fn update(&self, shop_id: String, cart_id: String, form: Data) -> Response {
         let url: String = format!("{}{}/{}/carts/{}", BASE_PATH, END_POINT, shop_id, cart_id);
 
         Response::new(
@@ -52,7 +51,7 @@ impl EcommerceCart {
                 .client
                 .request
                 .put(url)
-                .json(&body)
+                .form(&form.data)
                 .send()
                 .await
                 .expect("Failed to send request"),

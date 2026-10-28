@@ -1,5 +1,4 @@
-use crate::{response::Response, MailerLite, BASE_PATH};
-use serde_json::Value;
+use crate::{data::Data, response::Response, MailerLite, BASE_PATH};
 
 const END_POINT: &str = "ecommerce/shops";
 
@@ -28,7 +27,7 @@ impl EcommerceProductVariant {
         .await
     }
 
-    pub async fn sync(&self, shop_id: String, product_id: String, body: Value) -> Response {
+    pub async fn sync(&self, shop_id: String, product_id: String, form: Data) -> Response {
         let url: String = format!("{}{}/{}/products/{}/variants", BASE_PATH, END_POINT, shop_id, product_id);
 
         Response::new(
@@ -36,7 +35,7 @@ impl EcommerceProductVariant {
                 .client
                 .request
                 .post(url)
-                .json(&body)
+                .form(&form.data)
                 .send()
                 .await
                 .expect("Failed to send request"),
@@ -44,7 +43,7 @@ impl EcommerceProductVariant {
         .await
     }
 
-    pub async fn update(&self, shop_id: String, product_id: String, variant_id: String, body: Value) -> Response {
+    pub async fn update(&self, shop_id: String, product_id: String, variant_id: String, form: Data) -> Response {
         let url: String = format!("{}{}/{}/products/{}/variants/{}", BASE_PATH, END_POINT, shop_id, product_id, variant_id);
 
         Response::new(
@@ -52,7 +51,7 @@ impl EcommerceProductVariant {
                 .client
                 .request
                 .put(url)
-                .json(&body)
+                .form(&form.data)
                 .send()
                 .await
                 .expect("Failed to send request"),

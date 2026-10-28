@@ -1,5 +1,4 @@
-use crate::{parameter::Parameter, response::Response, MailerLite, BASE_PATH};
-use serde_json::{json, Value};
+use crate::{data::Data, parameter::Parameter, response::Response, MailerLite, BASE_PATH};
 
 const END_POINT: &str = "ecommerce/shops";
 
@@ -44,7 +43,7 @@ impl EcommerceProduct {
         .await
     }
 
-    pub async fn create(&self, shop_id: String, body: Value) -> Response {
+    pub async fn create(&self, shop_id: String, form: Data) -> Response {
         let url: String = format!("{}{}/{}/products", BASE_PATH, END_POINT, shop_id);
 
         Response::new(
@@ -52,7 +51,7 @@ impl EcommerceProduct {
                 .client
                 .request
                 .post(url)
-                .json(&body)
+                .form(&form.data)
                 .send()
                 .await
                 .expect("Failed to send request"),
@@ -60,7 +59,7 @@ impl EcommerceProduct {
         .await
     }
 
-    pub async fn update(&self, shop_id: String, product_id: String, body: Value) -> Response {
+    pub async fn update(&self, shop_id: String, product_id: String, form: Data) -> Response {
         let url: String = format!("{}{}/{}/products/{}", BASE_PATH, END_POINT, shop_id, product_id);
 
         Response::new(
@@ -68,7 +67,7 @@ impl EcommerceProduct {
                 .client
                 .request
                 .put(url)
-                .json(&body)
+                .form(&form.data)
                 .send()
                 .await
                 .expect("Failed to send request"),
@@ -91,7 +90,7 @@ impl EcommerceProduct {
         .await
     }
 
-    pub async fn change_status(&self, shop_id: String, product_id: String, status: bool) -> Response {
+    pub async fn change_status(&self, shop_id: String, product_id: String, form: Data) -> Response {
         let url: String = format!("{}{}/{}/products/{}/change-status", BASE_PATH, END_POINT, shop_id, product_id);
 
         Response::new(
@@ -99,7 +98,7 @@ impl EcommerceProduct {
                 .client
                 .request
                 .put(url)
-                .json(&json!({ "status": status }))
+                .form(&form.data)
                 .send()
                 .await
                 .expect("Failed to send request"),
@@ -107,7 +106,7 @@ impl EcommerceProduct {
         .await
     }
 
-    pub async fn assign_categories(&self, shop_id: String, product_id: String, category_ids: Vec<String>, replace: bool) -> Response {
+    pub async fn assign_categories(&self, shop_id: String, product_id: String, form: Data) -> Response {
         let url: String = format!("{}{}/{}/products/{}/categories/multiple", BASE_PATH, END_POINT, shop_id, product_id);
 
         Response::new(
@@ -115,7 +114,7 @@ impl EcommerceProduct {
                 .client
                 .request
                 .put(url)
-                .json(&json!({ "categories": category_ids, "replace": replace }))
+                .form(&form.data)
                 .send()
                 .await
                 .expect("Failed to send request"),

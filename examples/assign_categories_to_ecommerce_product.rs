@@ -1,4 +1,4 @@
-use mailerlite_rs::{response::Response, MailerLite};
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
 
 #[tokio::main]
 async fn main() {
@@ -10,9 +10,11 @@ async fn main() {
 
     let product_id: String = String::from("Your Product ID");
 
-    let category_ids: Vec<String> = vec![String::from("Your Category ID")];
+    let data: Data = Data::new()
+        .add("categories[]", "Your Category ID")
+        .add("replace", "0");
 
-    let response: Response = mailerlite.ecommerce_product().assign_categories(shop_id, product_id, category_ids, false).await;
+    let response: Response = mailerlite.ecommerce_product().assign_categories(shop_id, product_id, data.clone()).await;
 
     println!("{:#?}", response);
 }

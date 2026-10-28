@@ -1,5 +1,4 @@
-use mailerlite_rs::{response::Response, MailerLite};
-use serde_json::{json, Value};
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
 
 #[tokio::main]
 async fn main() {
@@ -9,13 +8,15 @@ async fn main() {
 
     let shop_id: String = String::from("Your Shop ID");
 
-    let body: Value = json!({
-        "customer": { "email": "dummy@example.com", "create_subscriber": true },
-        "cart": { "items": [{ "ecommerce_product_id": "Your Product ID", "quantity": 1, "price": 19.99 }] },
-        "status": "complete"
-    });
+    let data: Data = Data::new()
+        .add("customer[email]", "dummy@example.com")
+        .add("customer[create_subscriber]", "1")
+        .add("cart[items][0][ecommerce_product_id]", "Your Product ID")
+        .add("cart[items][0][quantity]", "1")
+        .add("cart[items][0][price]", "19.99")
+        .add("status", "complete");
 
-    let response: Response = mailerlite.ecommerce_order().create(shop_id, body).await;
+    let response: Response = mailerlite.ecommerce_order().create(shop_id, data.clone()).await;
 
     println!("{:#?}", response);
 }

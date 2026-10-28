@@ -66,13 +66,72 @@ MailerLite Rust SDK
         - [Get a list of timezones](#get-a-list-of-timezones)
     - [Campaign languages](#campaign-languages)
         - [Get a list of campaign languages](#get-a-list-of-campaign-languages)
-    - [E-commerce](#e-commerce)
-        - [Shops](#shops)
-        - [Products and variants](#products-and-variants)
-        - [Categories](#categories)
-        - [Customers, orders and carts](#customers-orders-and-carts)
-        - [Imports](#imports)
-        - [Revenue reports and settings](#revenue-reports-and-settings)
+    - [E-commerce shops](#e-commerce-shops)
+        - [Get a list of shops](#get-a-list-of-shops)
+        - [Get a shop](#get-a-shop)
+        - [Create a shop](#create-a-shop)
+        - [Update a shop](#update-a-shop)
+        - [Delete a shop](#delete-a-shop)
+        - [Get shop stats](#get-shop-stats)
+    - [E-commerce products](#e-commerce-products)
+        - [Get a list of products](#get-a-list-of-products)
+        - [Get a product](#get-a-product)
+        - [Create a product](#create-a-product)
+        - [Update a product](#update-a-product)
+        - [Delete a product](#delete-a-product)
+        - [Enable or disable a product](#enable-or-disable-a-product)
+        - [Assign categories to a product](#assign-categories-to-a-product)
+    - [E-commerce product variants](#e-commerce-product-variants)
+        - [Get a list of product variants](#get-a-list-of-product-variants)
+        - [Sync product variants](#sync-product-variants)
+        - [Update a product variant](#update-a-product-variant)
+        - [Delete a product variant](#delete-a-product-variant)
+    - [E-commerce categories](#e-commerce-categories)
+        - [Get a list of categories](#get-a-list-of-categories)
+        - [Get a category](#get-a-category)
+        - [Create a category](#create-a-category)
+        - [Update a category](#update-a-category)
+        - [Delete a category](#delete-a-category)
+        - [Get a list of category products](#get-a-list-of-category-products)
+        - [Assign a product to a category](#assign-a-product-to-a-category)
+        - [Unassign a product from a category](#unassign-a-product-from-a-category)
+    - [E-commerce customers](#e-commerce-customers)
+        - [Get a list of customers](#get-a-list-of-customers)
+        - [Get a customer](#get-a-customer)
+        - [Create a customer](#create-a-customer)
+        - [Update a customer](#update-a-customer)
+        - [Delete a customer](#delete-a-customer)
+    - [E-commerce orders](#e-commerce-orders)
+        - [Get a list of orders](#get-a-list-of-orders)
+        - [Get an order](#get-an-order)
+        - [Create an order](#create-an-order)
+        - [Update an order](#update-an-order)
+        - [Delete an order](#delete-an-order)
+    - [E-commerce carts](#e-commerce-carts)
+        - [Get a list of carts](#get-a-list-of-carts)
+        - [Get a cart](#get-a-cart)
+        - [Update a cart](#update-a-cart)
+    - [E-commerce cart items](#e-commerce-cart-items)
+        - [Get a list of cart items](#get-a-list-of-cart-items)
+        - [Get a cart item](#get-a-cart-item)
+        - [Create a cart item](#create-a-cart-item)
+        - [Update a cart item](#update-a-cart-item)
+        - [Delete a cart item](#delete-a-cart-item)
+    - [E-commerce imports](#e-commerce-imports)
+        - [Import products](#import-products)
+        - [Import categories](#import-categories)
+        - [Import customers](#import-customers)
+        - [Import orders](#import-orders)
+    - [E-commerce settings](#e-commerce-settings)
+        - [Get e-commerce settings](#get-e-commerce-settings)
+    - [E-commerce reports](#e-commerce-reports)
+        - [Get campaign e-commerce stats](#get-campaign-e-commerce-stats)
+        - [Get campaign e-commerce orders](#get-campaign-e-commerce-orders)
+        - [Get subscriber e-commerce stats](#get-subscriber-e-commerce-stats)
+        - [Get subscriber e-commerce orders](#get-subscriber-e-commerce-orders)
+        - [Get automation e-commerce stats](#get-automation-e-commerce-stats)
+        - [Get automation email e-commerce stats](#get-automation-email-e-commerce-stats)
+        - [Get automation e-commerce orders](#get-automation-e-commerce-orders)
 
 # Installation
 
@@ -1436,109 +1495,1810 @@ async fn main() {
 }
 ```
 
-## E-commerce
+## E-commerce shops
 
-Every e-commerce call takes IDs as `String`s, with the shop ID first. Request bodies are `serde_json::Value`s, so nested data like order carts and variant lists can be sent as JSON. The examples below run inside an async function with:
+### Get a list of shops
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_ecommerce_shops
+```
+</details>
 
 ```rust
-use mailerlite_rs::{parameter::Parameter, MailerLite};
-use serde_json::json;
+use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
 
-let mailerlite: MailerLite = MailerLite::new(String::from("Your MailerLite API Key"));
-let shop_id: String = String::from("Your Shop ID");
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let parameter: Parameter = Parameter::new().add("limit", "25");
+
+    let response: Response = mailerlite.ecommerce_shop().get(parameter.clone()).await;
+
+    println!("{:#?}", response);
+}
 ```
 
-### Shops
+### Get a shop
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example find_ecommerce_shop
+```
+</details>
 
 ```rust
-mailerlite.ecommerce_shop().get(Parameter::new().add("limit", "25")).await;
-mailerlite.ecommerce_shop().find(shop_id.clone()).await;
-mailerlite.ecommerce_shop().create(json!({ "name": "My shop", "url": "https://shop.example.com", "currency": "EUR" })).await;
-mailerlite.ecommerce_shop().update(shop_id.clone(), json!({ "name": "New name" })).await;
-mailerlite.ecommerce_shop().delete(shop_id.clone()).await;
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let response: Response = mailerlite.ecommerce_shop().find(shop_id).await;
+
+    println!("{:#?}", response);
+}
 ```
 
-### Products and variants
+### Create a shop
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example create_ecommerce_shop
+```
+</details>
 
 ```rust
-mailerlite.ecommerce_product().get(shop_id.clone(), Parameter::new().add("filter[enabled]", "true")).await;
-mailerlite.ecommerce_product().find(shop_id.clone(), String::from("Your Product ID")).await;
-mailerlite.ecommerce_product().create(shop_id.clone(), json!({ "name": "Red T-shirt", "price": 19.99 })).await;
-mailerlite.ecommerce_product().update(shop_id.clone(), String::from("Your Product ID"), json!({ "price": 24.99 })).await;
-mailerlite.ecommerce_product().delete(shop_id.clone(), String::from("Your Product ID")).await;
-mailerlite.ecommerce_product().change_status(shop_id.clone(), String::from("Your Product ID"), false).await;
-mailerlite.ecommerce_product().assign_categories(shop_id.clone(), String::from("Your Product ID"), vec![String::from("Your Category ID")], true).await;
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
 
-mailerlite.ecommerce_product_variant().get(shop_id.clone(), String::from("Your Product ID")).await;
-mailerlite.ecommerce_product_variant().sync(shop_id.clone(), String::from("Your Product ID"), json!([{ "name": "Large", "attributes": { "size": "L" }, "resource_id": "variant-l" }])).await;
-mailerlite.ecommerce_product_variant().update(shop_id.clone(), String::from("Your Product ID"), String::from("Your Variant ID"), json!({ "name": "Extra large", "attributes": { "size": "XL" } })).await;
-mailerlite.ecommerce_product_variant().delete(shop_id.clone(), String::from("Your Product ID"), String::from("Your Variant ID")).await;
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let data: Data = Data::new()
+        .add("name", "Dummy Shop")
+        .add("url", "https://shop.example.com")
+        .add("currency", "EUR");
+
+    let response: Response = mailerlite.ecommerce_shop().create(data.clone()).await;
+
+    println!("{:#?}", response);
+}
 ```
 
-### Categories
+### Update a shop
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example update_ecommerce_shop
+```
+</details>
 
 ```rust
-mailerlite.ecommerce_category().get(shop_id.clone(), Parameter::new()).await;
-mailerlite.ecommerce_category().create(shop_id.clone(), json!({ "name": "Hats" })).await;
-mailerlite.ecommerce_category().update(shop_id.clone(), String::from("Your Category ID"), json!({ "name": "Caps" })).await;
-mailerlite.ecommerce_category().delete(shop_id.clone(), String::from("Your Category ID")).await;
-mailerlite.ecommerce_category().products(shop_id.clone(), String::from("Your Category ID"), Parameter::new()).await;
-mailerlite.ecommerce_category().assign_product(shop_id.clone(), String::from("Your Category ID"), String::from("Your Product ID")).await;
-mailerlite.ecommerce_category().unassign_product(shop_id.clone(), String::from("Your Category ID"), String::from("Your Product ID")).await;
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let data: Data = Data::new()
+        .add("name", "Dummy Shop");
+
+    let response: Response = mailerlite.ecommerce_shop().update(shop_id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
 ```
 
-### Customers, orders and carts
+### Delete a shop
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example delete_ecommerce_shop
+```
+</details>
 
 ```rust
-mailerlite.ecommerce_customer().get(shop_id.clone(), Parameter::new().add("filter[email]", "customer@example.com")).await;
-mailerlite.ecommerce_customer().create(shop_id.clone(), json!({ "email": "customer@example.com", "create_subscriber": true })).await;
-mailerlite.ecommerce_customer().update(shop_id.clone(), String::from("Your Customer ID"), json!({ "name": "Jane" })).await;
-mailerlite.ecommerce_customer().delete(shop_id.clone(), String::from("Your Customer ID")).await;
+use mailerlite_rs::{response::Response, MailerLite};
 
-mailerlite.ecommerce_order().get(shop_id.clone(), Parameter::new().add("filter[attributed]", "true")).await;
-mailerlite.ecommerce_order().create(shop_id.clone(), json!({
-    "customer": { "email": "customer@example.com" },
-    "cart": { "items": [{ "ecommerce_product_id": "Your Product ID", "quantity": 1, "price": 19.99 }] },
-    "status": "complete"
-})).await;
-mailerlite.ecommerce_order().update(shop_id.clone(), String::from("Your Order ID"), json!({ "status": "complete" })).await;
-mailerlite.ecommerce_order().delete(shop_id.clone(), String::from("Your Order ID")).await;
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
 
-mailerlite.ecommerce_cart().get(shop_id.clone(), Parameter::new()).await;
-mailerlite.ecommerce_cart().update(shop_id.clone(), String::from("Your Cart ID"), json!({ "checkout_url": "https://shop.example.com/cart" })).await;
-mailerlite.ecommerce_cart_item().get(shop_id.clone(), String::from("Your Cart ID"), Parameter::new()).await;
-mailerlite.ecommerce_cart_item().update(shop_id.clone(), String::from("Your Cart ID"), String::from("Your Item ID"), json!({ "quantity": 2 })).await;
-mailerlite.ecommerce_cart_item().delete(shop_id.clone(), String::from("Your Cart ID"), String::from("Your Item ID")).await;
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let response: Response = mailerlite.ecommerce_shop().delete(shop_id).await;
+
+    println!("{:#?}", response);
+}
 ```
 
-### Imports
+### Get shop stats
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_ecommerce_shop_stats
+```
+</details>
 
 ```rust
-mailerlite.ecommerce_import().products(shop_id.clone(), json!([{ "name": "Red T-shirt", "price": 19.99 }])).await;
-mailerlite.ecommerce_import().categories(shop_id.clone(), json!([{ "name": "Hats" }])).await;
-mailerlite.ecommerce_import().customers(shop_id.clone(), json!([{ "email": "customer@example.com" }])).await;
-mailerlite.ecommerce_import().orders(shop_id.clone(), json!([{
-    "customer": { "email": "customer@example.com" },
-    "cart": { "items": [{ "ecommerce_product_id": "Your Product ID", "quantity": 1 }] }
-}])).await;
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let start_date: String = String::from("2026-10-01");
+
+    let end_date: String = String::from("2026-10-31");
+
+    let response: Response = mailerlite.ecommerce_shop().stats(shop_id, start_date, end_date).await;
+
+    println!("{:#?}", response);
+}
 ```
 
-Every import takes a bare JSON array of records as its body.
+## E-commerce products
 
-### Revenue reports and settings
+### Get a list of products
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_ecommerce_products
+```
+</details>
 
 ```rust
-mailerlite.ecommerce_shop().stats(shop_id.clone(), String::from("2026-10-01"), String::from("2026-10-31")).await;
+use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
 
-mailerlite.campaign().ecommerce_stats(String::from("Your Campaign ID"), shop_id.clone()).await;
-mailerlite.campaign().ecommerce_orders(String::from("Your Campaign ID"), shop_id.clone(), Parameter::new()).await;
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
 
-mailerlite.subscriber().ecommerce_stats(String::from("Your Subscriber ID"), shop_id.clone()).await;
-mailerlite.subscriber().ecommerce_orders(String::from("Your Subscriber ID"), shop_id.clone(), Parameter::new()).await;
+    let mailerlite: MailerLite = MailerLite::new(api_key);
 
-mailerlite.automation().ecommerce_stats(String::from("Your Automation ID"), Parameter::new()).await;
-mailerlite.automation().email_ecommerce_stats(String::from("Your Automation ID"), String::from("Your Email ID"), Parameter::new()).await;
-mailerlite.automation().ecommerce_orders(String::from("Your Automation ID"), Parameter::new().add("time_frame", "all_time")).await;
+    let shop_id: String = String::from("Your Shop ID");
 
-mailerlite.ecommerce_setting().find().await;
+    let parameter: Parameter = Parameter::new().add("filter[enabled]", "true");
+
+    let response: Response = mailerlite.ecommerce_product().get(shop_id, parameter.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get a product
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example find_ecommerce_product
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let product_id: String = String::from("Your Product ID");
+
+    let response: Response = mailerlite.ecommerce_product().find(shop_id, product_id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Create a product
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example create_ecommerce_product
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let data: Data = Data::new()
+        .add("name", "Dummy Product")
+        .add("price", "19.99")
+        .add("url", "https://shop.example.com/dummy-product");
+
+    let response: Response = mailerlite.ecommerce_product().create(shop_id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Update a product
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example update_ecommerce_product
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let product_id: String = String::from("Your Product ID");
+
+    let data: Data = Data::new()
+        .add("price", "24.99");
+
+    let response: Response = mailerlite.ecommerce_product().update(shop_id, product_id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Delete a product
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example delete_ecommerce_product
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let product_id: String = String::from("Your Product ID");
+
+    let response: Response = mailerlite.ecommerce_product().delete(shop_id, product_id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Enable or disable a product
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example change_ecommerce_product_status
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let product_id: String = String::from("Your Product ID");
+
+    let data: Data = Data::new()
+        .add("status", "0");
+
+    let response: Response = mailerlite.ecommerce_product().change_status(shop_id, product_id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Assign categories to a product
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example assign_categories_to_ecommerce_product
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let product_id: String = String::from("Your Product ID");
+
+    let data: Data = Data::new()
+        .add("categories[]", "Your Category ID")
+        .add("replace", "0");
+
+    let response: Response = mailerlite.ecommerce_product().assign_categories(shop_id, product_id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+## E-commerce product variants
+
+### Get a list of product variants
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_ecommerce_product_variants
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let product_id: String = String::from("Your Product ID");
+
+    let response: Response = mailerlite.ecommerce_product_variant().get(shop_id, product_id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Sync product variants
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example sync_ecommerce_product_variants
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let product_id: String = String::from("Your Product ID");
+
+    let data: Data = Data::new()
+        .add("0[name]", "Large")
+        .add("0[attributes][size]", "L")
+        .add("0[resource_id]", "variant-l");
+
+    let response: Response = mailerlite.ecommerce_product_variant().sync(shop_id, product_id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Update a product variant
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example update_ecommerce_product_variant
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let product_id: String = String::from("Your Product ID");
+
+    let variant_id: String = String::from("Your Variant ID");
+
+    let data: Data = Data::new()
+        .add("name", "Extra large")
+        .add("attributes[size]", "XL");
+
+    let response: Response = mailerlite.ecommerce_product_variant().update(shop_id, product_id, variant_id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Delete a product variant
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example delete_ecommerce_product_variant
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let product_id: String = String::from("Your Product ID");
+
+    let variant_id: String = String::from("Your Variant ID");
+
+    let response: Response = mailerlite.ecommerce_product_variant().delete(shop_id, product_id, variant_id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+## E-commerce categories
+
+### Get a list of categories
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_ecommerce_categories
+```
+</details>
+
+```rust
+use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let parameter: Parameter = Parameter::new().add("limit", "25");
+
+    let response: Response = mailerlite.ecommerce_category().get(shop_id, parameter.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get a category
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example find_ecommerce_category
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let category_id: String = String::from("Your Category ID");
+
+    let response: Response = mailerlite.ecommerce_category().find(shop_id, category_id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Create a category
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example create_ecommerce_category
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let data: Data = Data::new()
+        .add("name", "Dummy Category");
+
+    let response: Response = mailerlite.ecommerce_category().create(shop_id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Update a category
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example update_ecommerce_category
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let category_id: String = String::from("Your Category ID");
+
+    let data: Data = Data::new()
+        .add("name", "Dummy Category");
+
+    let response: Response = mailerlite.ecommerce_category().update(shop_id, category_id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Delete a category
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example delete_ecommerce_category
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let category_id: String = String::from("Your Category ID");
+
+    let response: Response = mailerlite.ecommerce_category().delete(shop_id, category_id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get a list of category products
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_ecommerce_category_products
+```
+</details>
+
+```rust
+use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let category_id: String = String::from("Your Category ID");
+
+    let parameter: Parameter = Parameter::new().add("limit", "25");
+
+    let response: Response = mailerlite.ecommerce_category().products(shop_id, category_id, parameter.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Assign a product to a category
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example assign_product_to_ecommerce_category
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let category_id: String = String::from("Your Category ID");
+
+    let product_id: String = String::from("Your Product ID");
+
+    let response: Response = mailerlite.ecommerce_category().assign_product(shop_id, category_id, product_id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Unassign a product from a category
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example unassign_product_from_ecommerce_category
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let category_id: String = String::from("Your Category ID");
+
+    let product_id: String = String::from("Your Product ID");
+
+    let response: Response = mailerlite.ecommerce_category().unassign_product(shop_id, category_id, product_id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+## E-commerce customers
+
+### Get a list of customers
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_ecommerce_customers
+```
+</details>
+
+```rust
+use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let parameter: Parameter = Parameter::new().add("filter[email]", "dummy@example.com");
+
+    let response: Response = mailerlite.ecommerce_customer().get(shop_id, parameter.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get a customer
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example find_ecommerce_customer
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let customer_id: String = String::from("Your Customer ID");
+
+    let response: Response = mailerlite.ecommerce_customer().find(shop_id, customer_id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Create a customer
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example create_ecommerce_customer
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let data: Data = Data::new()
+        .add("email", "dummy@example.com")
+        .add("create_subscriber", "1");
+
+    let response: Response = mailerlite.ecommerce_customer().create(shop_id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Update a customer
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example update_ecommerce_customer
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let customer_id: String = String::from("Your Customer ID");
+
+    let data: Data = Data::new()
+        .add("accepts_marketing", "1");
+
+    let response: Response = mailerlite.ecommerce_customer().update(shop_id, customer_id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Delete a customer
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example delete_ecommerce_customer
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let customer_id: String = String::from("Your Customer ID");
+
+    let response: Response = mailerlite.ecommerce_customer().delete(shop_id, customer_id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+## E-commerce orders
+
+### Get a list of orders
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_ecommerce_orders
+```
+</details>
+
+```rust
+use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let parameter: Parameter = Parameter::new().add("filter[attributed]", "true");
+
+    let response: Response = mailerlite.ecommerce_order().get(shop_id, parameter.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get an order
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example find_ecommerce_order
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let order_id: String = String::from("Your Order ID");
+
+    let response: Response = mailerlite.ecommerce_order().find(shop_id, order_id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Create an order
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example create_ecommerce_order
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let data: Data = Data::new()
+        .add("customer[email]", "dummy@example.com")
+        .add("customer[create_subscriber]", "1")
+        .add("cart[items][0][ecommerce_product_id]", "Your Product ID")
+        .add("cart[items][0][quantity]", "1")
+        .add("cart[items][0][price]", "19.99")
+        .add("status", "complete");
+
+    let response: Response = mailerlite.ecommerce_order().create(shop_id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Update an order
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example update_ecommerce_order
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let order_id: String = String::from("Your Order ID");
+
+    let data: Data = Data::new()
+        .add("status", "complete");
+
+    let response: Response = mailerlite.ecommerce_order().update(shop_id, order_id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Delete an order
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example delete_ecommerce_order
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let order_id: String = String::from("Your Order ID");
+
+    let response: Response = mailerlite.ecommerce_order().delete(shop_id, order_id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+## E-commerce carts
+
+### Get a list of carts
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_ecommerce_carts
+```
+</details>
+
+```rust
+use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let parameter: Parameter = Parameter::new().add("limit", "25");
+
+    let response: Response = mailerlite.ecommerce_cart().get(shop_id, parameter.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get a cart
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example find_ecommerce_cart
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let cart_id: String = String::from("Your Cart ID");
+
+    let response: Response = mailerlite.ecommerce_cart().find(shop_id, cart_id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Update a cart
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example update_ecommerce_cart
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let cart_id: String = String::from("Your Cart ID");
+
+    let data: Data = Data::new()
+        .add("checkout_url", "https://shop.example.com/cart");
+
+    let response: Response = mailerlite.ecommerce_cart().update(shop_id, cart_id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+## E-commerce cart items
+
+### Get a list of cart items
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_ecommerce_cart_items
+```
+</details>
+
+```rust
+use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let cart_id: String = String::from("Your Cart ID");
+
+    let parameter: Parameter = Parameter::new().add("limit", "25");
+
+    let response: Response = mailerlite.ecommerce_cart_item().get(shop_id, cart_id, parameter.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get a cart item
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example find_ecommerce_cart_item
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let cart_id: String = String::from("Your Cart ID");
+
+    let item_id: String = String::from("Your Item ID");
+
+    let response: Response = mailerlite.ecommerce_cart_item().find(shop_id, cart_id, item_id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Create a cart item
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example create_ecommerce_cart_item
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let cart_id: String = String::from("Your Cart ID");
+
+    let data: Data = Data::new()
+        .add("ecommerce_product_id", "Your Product ID")
+        .add("quantity", "1")
+        .add("price", "19.99");
+
+    let response: Response = mailerlite.ecommerce_cart_item().create(shop_id, cart_id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Update a cart item
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example update_ecommerce_cart_item
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let cart_id: String = String::from("Your Cart ID");
+
+    let item_id: String = String::from("Your Item ID");
+
+    let data: Data = Data::new()
+        .add("quantity", "2");
+
+    let response: Response = mailerlite.ecommerce_cart_item().update(shop_id, cart_id, item_id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Delete a cart item
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example delete_ecommerce_cart_item
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let cart_id: String = String::from("Your Cart ID");
+
+    let item_id: String = String::from("Your Item ID");
+
+    let response: Response = mailerlite.ecommerce_cart_item().delete(shop_id, cart_id, item_id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+## E-commerce imports
+
+### Import products
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example import_ecommerce_products
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let data: Data = Data::new()
+        .add("0[name]", "Dummy Product")
+        .add("0[price]", "19.99")
+        .add("0[url]", "https://shop.example.com/dummy-product");
+
+    let response: Response = mailerlite.ecommerce_import().products(shop_id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Import categories
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example import_ecommerce_categories
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let data: Data = Data::new()
+        .add("0[name]", "Dummy Category")
+        .add("0[exclude_from_automations]", "0");
+
+    let response: Response = mailerlite.ecommerce_import().categories(shop_id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Import customers
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example import_ecommerce_customers
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let data: Data = Data::new()
+        .add("0[email]", "dummy@example.com")
+        .add("0[accepts_marketing]", "1");
+
+    let response: Response = mailerlite.ecommerce_import().customers(shop_id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Import orders
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example import_ecommerce_orders
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let data: Data = Data::new()
+        .add("0[customer][email]", "dummy@example.com")
+        .add("0[cart][items][0][ecommerce_product_id]", "Your Product ID")
+        .add("0[cart][items][0][quantity]", "1")
+        .add("0[cart][items][0][price]", "19.99")
+        .add("0[status]", "complete");
+
+    let response: Response = mailerlite.ecommerce_import().orders(shop_id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+## E-commerce settings
+
+### Get e-commerce settings
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example find_ecommerce_settings
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let response: Response = mailerlite.ecommerce_setting().find().await;
+
+    println!("{:#?}", response);
+}
+```
+
+## E-commerce reports
+
+### Get campaign e-commerce stats
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_campaign_ecommerce_stats
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Campaign ID");
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let response: Response = mailerlite.campaign().ecommerce_stats(id, shop_id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get campaign e-commerce orders
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_campaign_ecommerce_orders
+```
+</details>
+
+```rust
+use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Campaign ID");
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let parameter: Parameter = Parameter::new().add("page", "1");
+
+    let response: Response = mailerlite.campaign().ecommerce_orders(id, shop_id, parameter.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get subscriber e-commerce stats
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_subscriber_ecommerce_stats
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Subscriber ID");
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let response: Response = mailerlite.subscriber().ecommerce_stats(id, shop_id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get subscriber e-commerce orders
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_subscriber_ecommerce_orders
+```
+</details>
+
+```rust
+use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Subscriber ID");
+
+    let shop_id: String = String::from("Your Shop ID");
+
+    let parameter: Parameter = Parameter::new().add("page", "1");
+
+    let response: Response = mailerlite.subscriber().ecommerce_orders(id, shop_id, parameter.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get automation e-commerce stats
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_automation_ecommerce_stats
+```
+</details>
+
+```rust
+use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Automation ID");
+
+    let parameter: Parameter = Parameter::new();
+
+    let response: Response = mailerlite.automation().ecommerce_stats(id, parameter.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get automation email e-commerce stats
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_automation_email_ecommerce_stats
+```
+</details>
+
+```rust
+use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Automation ID");
+
+    let email_id: String = String::from("Your Email ID");
+
+    let parameter: Parameter = Parameter::new().add("shop_id", "Your Shop ID");
+
+    let response: Response = mailerlite.automation().email_ecommerce_stats(id, email_id, parameter.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get automation e-commerce orders
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_automation_ecommerce_orders
+```
+</details>
+
+```rust
+use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Automation ID");
+
+    let parameter: Parameter = Parameter::new().add("time_frame", "all_time");
+
+    let response: Response = mailerlite.automation().ecommerce_orders(id, parameter.clone()).await;
+
+    println!("{:#?}", response);
+}
 ```
