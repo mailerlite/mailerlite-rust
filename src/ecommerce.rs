@@ -366,6 +366,16 @@ mod tests {
             |ml| async move { ml.ecommerce_import().customers(id("1"), json!([{ "email": "a@b.test" }])).await },
         )
         .await;
+        let order = json!({ "customer": { "email": "a@b.test" }, "cart": { "items": [{ "ecommerce_product_id": "7" }] } });
+        let orders = json!([order.clone()]);
+        check(
+            "POST",
+            "/ecommerce/shops/1/orders/import",
+            vec![],
+            Some(json!({ "orders": [order] })),
+            |ml| async move { ml.ecommerce_import().orders(id("1"), orders).await },
+        )
+        .await;
     }
 
     #[tokio::test]

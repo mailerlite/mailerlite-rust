@@ -1517,7 +1517,13 @@ mailerlite.ecommerce_cart_item().delete(shop_id.clone(), String::from("Your Cart
 mailerlite.ecommerce_import().products(shop_id.clone(), json!([{ "name": "Red T-shirt", "price": 19.99 }])).await;
 mailerlite.ecommerce_import().categories(shop_id.clone(), json!([{ "name": "Hats" }])).await;
 mailerlite.ecommerce_import().customers(shop_id.clone(), json!([{ "email": "customer@example.com" }])).await;
+mailerlite.ecommerce_import().orders(shop_id.clone(), json!([{
+    "customer": { "email": "customer@example.com" },
+    "cart": { "items": [{ "ecommerce_product_id": "Your Product ID", "quantity": 1 }] }
+}])).await;
 ```
+
+Every import takes a list of records. The orders import sends them as `{ "orders": [...] }`, which is the body that endpoint expects, so pass the list itself rather than an object that already has an `orders` key.
 
 ### Revenue reports and settings
 
