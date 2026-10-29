@@ -11,6 +11,7 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
+use std::collections::BTreeMap;
 
 const END_POINT: &str = "emails";
 
@@ -381,6 +382,39 @@ struct MoveBody<'a> {
     etag: &'a str,
 }
 
+/// The result of a validation. An invalid input is not an error: `valid` is `false`, and `errors` has
+/// the messages for each field.
+#[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
+pub struct Validation {
+    pub valid: bool,
+    /// The messages for each field path. Empty when the input is valid.
+    #[serde(default, deserialize_with = "object_or_empty_array")]
+    pub errors: BTreeMap<String, Vec<String>>,
+    pub schema: ValidationSchema,
+    /// The keys of the unsafe values that the API removed. Only the settings validation has it.
+    #[serde(default)]
+    pub rejected: Option<Rejected>,
+}
+
+/// The version of the rules that the validation used.
+#[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
+pub struct ValidationSchema {
+    pub version: String,
+    pub hash: String,
+}
+
+/// The unsafe values that the API removed or replaced.
+#[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
+pub struct Rejected {
+    pub message: String,
+    /// The paths of the keys, for example `footer.social_links[0].url`.
+    #[serde(default)]
+    pub keys: Vec<String>,
+}
+
 /// The email methods. Get it with `MailerLite::email`.
 #[derive(Debug)]
 pub struct Email {
@@ -556,6 +590,24 @@ impl Email {
             &format!("{END_POINT}/{email_id}/blocks/{block_id}/move"),
             &[],
             Some(&MoveBody { placement, etag }),
+            None,
+        )
+        .await
+    }
+
+    /// Checks a block with the rules of `create_block`. The API saves nothing. The method needs no email
+    /// and no etag.
+    pub async fn validate_block(&self, block: &NewBlock) -> Result<ApiResponse<Validation>, Error> {
+        if let Some(placement) = &block.placement {
+            placement.check()?;
+        }
+
+        http::send(
+            &self.mailerlite,
+            Method::POST,
+            &format!("{END_POINT}/blocks/validate"),
+            &[],
+            Some(block),
             None,
         )
         .await

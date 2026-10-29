@@ -37,6 +37,7 @@ MailerLite Rust SDK
         - [Update a block](#update-a-block)
         - [Delete a block](#delete-a-block)
         - [Move a block](#move-a-block)
+        - [Validate a block](#validate-a-block)
     - [Groups](#groups)
         - [Get a list of groups](#get-a-list-of-groups)
         - [Create a group](#create-a-group)
@@ -976,6 +977,58 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
 
     println!("New etag: {}", response.etag);
+
+    Ok(())
+}
+```
+
+### Validate a block
+
+Checks a block before you insert it. It needs no email and no etag. An invalid block is not an error: `valid` is `false`, and `errors` has the messages for each field.
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example validate_email_block
+```
+</details>
+
+```rust
+use mailerlite_rs::{
+    api_response::ApiResponse,
+    email::{BlockType, NewBlock, Validation},
+    MailerLite,
+};
+use serde_json::{json, Map, Value};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let editor_content: Map<String, Value> = json!({
+        "attrs": {"href": "https://example.com"},
+        "content": [{"type": "text", "text": "Buy now"}]
+    })
+    .as_object()
+    .cloned()
+    .unwrap_or_default();
+
+    let block: NewBlock = NewBlock {
+        block_type: BlockType::Button,
+        editor_content,
+        placement: None,
+    };
+
+    let response: ApiResponse<Validation> = mailerlite.email().validate_block(&block).await?;
+
+    if !response.valid {
+        println!("{:#?}", response.errors);
+    }
 
     Ok(())
 }

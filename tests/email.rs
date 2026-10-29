@@ -4,7 +4,7 @@ use common::{assert_no_request, expect_no_request, expect_request, fixture, mail
 use mailerlite_rs::{
     api_response::{ApiResponse, EtagOnly, WithEtag},
     email::{
-        BlockType, EmailBlock, EmailDocument, EmailHtml, NewBlock, Placement, Position,
+        BlockType, EmailBlock, EmailDocument, EmailHtml, NewBlock, Placement, Position, Validation,
         VERSION_CONFLICT,
     },
     error::Error,
@@ -810,4 +810,110 @@ async fn placement_with_an_unknown_position_sends_its_block_id() {
         .unwrap();
 
     mock.assert_async().await;
+}
+
+#[tokio::test]
+async fn validate_block_sends_the_block_without_an_etag() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mock: Mock = expect_request(
+        &mut server,
+        "POST",
+        "/emails/blocks/validate",
+        Some(json!({"type": "divider", "editor_content": {}})),
+        200,
+        &fixture("email_block_validation_valid"),
+    )
+    .await;
+
+    let block: NewBlock = NewBlock {
+        block_type: BlockType::Divider,
+        ..Default::default()
+    };
+    let response: ApiResponse<Validation> = mailerlite(&server)
+        .email()
+        .validate_block(&block)
+        .await
+        .unwrap();
+
+    mock.assert_async().await;
+    assert!(response.valid);
+    assert!(response.errors.is_empty());
+    assert_eq!(response.schema.version, "2.73.2");
+    assert_eq!(response.schema.hash, "0f3a9c");
+    assert!(response.rejected.is_none());
+}
+
+#[tokio::test]
+async fn validate_block_gives_the_errors_of_an_invalid_block() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mock: Mock = expect_request(
+        &mut server,
+        "POST",
+        "/emails/blocks/validate",
+        Some(json!({"type": "countdown", "editor_content": {}})),
+        200,
+        &fixture("email_block_validation_invalid"),
+    )
+    .await;
+
+    let block: NewBlock = NewBlock {
+        block_type: BlockType::Other("countdown".to_string()),
+        ..Default::default()
+    };
+    let response: ApiResponse<Validation> = mailerlite(&server)
+        .email()
+        .validate_block(&block)
+        .await
+        .unwrap();
+
+    mock.assert_async().await;
+    assert!(!response.valid);
+    assert_eq!(
+        response.errors["type"],
+        vec!["The selected type is invalid."]
+    );
+}
+
+#[tokio::test]
+async fn validate_block_accepts_an_empty_array_for_the_errors() {
+    let mut server: ServerGuard = Server::new_async().await;
+    expect_request(
+        &mut server,
+        "POST",
+        "/emails/blocks/validate",
+        Some(json!({"type": "divider", "editor_content": {}})),
+        200,
+        r#"{"valid": true, "errors": [], "schema": {"version": "2.73.2", "hash": "0f3a9c"}}"#,
+    )
+    .await;
+
+    let block: NewBlock = NewBlock {
+        block_type: BlockType::Divider,
+        ..Default::default()
+    };
+    let response: ApiResponse<Validation> = mailerlite(&server)
+        .email()
+        .validate_block(&block)
+        .await
+        .unwrap();
+
+    assert!(response.valid);
+    assert!(response.errors.is_empty());
+}
+
+#[tokio::test]
+async fn validate_block_checks_the_placement_without_a_request() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
+
+    let block: NewBlock = new_paragraph(Some(Placement::after("1/2")));
+    assert!(matches!(
+        mailerlite(&server).email().validate_block(&block).await,
+        Err(Error::InvalidId {
+            name: "placement.block_id",
+            ..
+        })
+    ));
+
+    assert_no_request(&mocks).await;
 }
