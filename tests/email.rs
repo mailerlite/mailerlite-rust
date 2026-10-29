@@ -1664,3 +1664,63 @@ async fn validate_block_decodes_a_null_schema() {
     assert_eq!(response.schema.version, None);
     assert_eq!(response.schema.hash, None);
 }
+
+#[tokio::test]
+async fn an_other_position_with_a_known_value_follows_the_rules_of_that_value() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
+
+    let before: Placement = Placement {
+        position: Position::Other("before".to_string()),
+        block_id: None,
+    };
+    let result = mailerlite(&server)
+        .email()
+        .move_block("123", "57", "45", &before)
+        .await;
+    assert!(
+        matches!(
+            result,
+            Err(Error::EmptyId {
+                name: "placement.block_id",
+                ..
+            })
+        ),
+        "got {result:?}"
+    );
+    assert_no_request(&mocks).await;
+
+    let end: Placement = Placement {
+        position: Position::Other("end".to_string()),
+        block_id: Some("12".to_string()),
+    };
+    assert_eq!(
+        serde_json::to_value(&end).unwrap(),
+        json!({"position": "end"})
+    );
+}
+
+#[test]
+fn an_other_value_equals_the_known_variant_with_the_same_value() {
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+
+    fn hash(value: &BlockType) -> u64 {
+        let mut hasher: DefaultHasher = DefaultHasher::new();
+        value.hash(&mut hasher);
+        hasher.finish()
+    }
+
+    let other: BlockType = BlockType::Other("paragraph".to_string());
+    assert_eq!(other, BlockType::Paragraph);
+    assert_eq!(hash(&other), hash(&BlockType::Paragraph));
+    assert_ne!(
+        BlockType::Other("countdown".to_string()),
+        BlockType::Paragraph
+    );
+    assert_eq!(Position::Other("end".to_string()), Position::End);
+    assert!(matches!(
+        BlockType::from("paragraph".to_string()),
+        BlockType::Paragraph
+    ));
+}

@@ -1,5 +1,8 @@
 /// Defines an enum for an open set of string values. A value that the SDK does not know goes into
 /// `Other`, so a new value of the API does not break the decode. The request side accepts `Other` too.
+///
+/// Equality and the hash use the value, so `Other("paragraph")` is equal to `Paragraph`. `From<String>`
+/// gives the known variant for a known value.
 macro_rules! open_enum {
     (
         $(#[$meta:meta])*
@@ -8,7 +11,7 @@ macro_rules! open_enum {
         }
     ) => {
         $(#[$meta])*
-        #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+        #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
         #[serde(from = "String", into = "String")]
         #[non_exhaustive]
         pub enum $name {
@@ -42,6 +45,20 @@ macro_rules! open_enum {
                     $name::Other(value) => value,
                     known => known.as_str().to_string(),
                 }
+            }
+        }
+
+        impl PartialEq for $name {
+            fn eq(&self, other: &Self) -> bool {
+                self.as_str() == other.as_str()
+            }
+        }
+
+        impl Eq for $name {}
+
+        impl std::hash::Hash for $name {
+            fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+                self.as_str().hash(state);
             }
         }
 

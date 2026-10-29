@@ -299,8 +299,8 @@ impl Serialize for Placement {
             block_id: Option<&'a str>,
         }
 
-        let block_id: Option<&str> = match self.position {
-            Position::Start | Position::End => None,
+        let block_id: Option<&str> = match self.position.as_str() {
+            "start" | "end" => None,
             _ => self.block_id.as_deref(),
         };
 
@@ -346,17 +346,16 @@ impl Placement {
     }
 
     /// Checks `block_id` for `Before` and `After`, where it is necessary. For an unknown position, the SDK
-    /// checks `block_id` only when it is set.
+    /// checks `block_id` only when it is set. The check uses the value of the position, so an `Other` with a
+    /// known value follows the rule of that value.
     fn check(&self) -> Result<(), Error> {
-        match (&self.position, self.block_id.as_deref()) {
-            (Position::Start | Position::End, _) => Ok(()),
-            (Position::Before | Position::After, block_id) => {
+        match (self.position.as_str(), self.block_id.as_deref()) {
+            ("start" | "end", _) => Ok(()),
+            ("before" | "after", block_id) => {
                 validate::path_id("placement.block_id", block_id.unwrap_or_default())
             }
-            (Position::Other(_), Some(block_id)) => {
-                validate::path_id("placement.block_id", block_id)
-            }
-            (Position::Other(_), None) => Ok(()),
+            (_, Some(block_id)) => validate::path_id("placement.block_id", block_id),
+            (_, None) => Ok(()),
         }
     }
 }
