@@ -31,6 +31,7 @@ MailerLite Rust SDK
         - [Get subscribers activity of sent campaign](#get-subscribers-activity-of-sent-campaign)
     - [Emails](#emails)
         - [Get an email](#get-an-email)
+        - [Get the HTML of an email](#get-the-html-of-an-email)
     - [Groups](#groups)
         - [Get a list of groups](#get-a-list-of-groups)
         - [Create a group](#create-a-group)
@@ -694,6 +695,44 @@ async fn main() -> Result<(), Error> {
 
     println!("{:#?}", response.data);
     println!("Etag: {}", response.etag);
+
+    Ok(())
+}
+```
+
+### Get the HTML of an email
+
+Returns the HTML that the email sends, and the etag of the email. The API can give a temporary `503` error. If it does, try again later.
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_email_html
+```
+</details>
+
+```rust
+use mailerlite_rs::{
+    api_response::{ApiResponse, WithEtag},
+    email::EmailHtml,
+    error::Error,
+    MailerLite,
+};
+
+#[tokio::main]
+async fn main() -> Result<(), Error> {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let email_id: String = String::from("Your Email ID");
+
+    let response: ApiResponse<WithEtag<EmailHtml>> = mailerlite.email().html(email_id).await?;
+
+    println!("{}", response.data.html);
 
     Ok(())
 }

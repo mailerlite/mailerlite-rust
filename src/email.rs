@@ -245,6 +245,13 @@ pub struct SocialLink {
     pub extra: Map<String, Value>,
 }
 
+/// The HTML of an email.
+#[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
+pub struct EmailHtml {
+    pub html: String,
+}
+
 /// The email methods. Get it with `MailerLite::email`.
 #[derive(Debug)]
 pub struct Email {
@@ -268,6 +275,27 @@ impl Email {
             &self.mailerlite,
             Method::GET,
             &format!("{END_POINT}/{email_id}"),
+            &[],
+            NO_BODY,
+            None,
+        )
+        .await
+    }
+
+    /// Gets the HTML of an email, and the etag of the email.
+    ///
+    /// The API can give a temporary `503` error. Its body can be other than JSON.
+    pub async fn html(
+        &self,
+        email_id: impl AsRef<str>,
+    ) -> Result<ApiResponse<WithEtag<EmailHtml>>, Error> {
+        let email_id: &str = email_id.as_ref();
+        validate::path_id("email_id", email_id)?;
+
+        http::send(
+            &self.mailerlite,
+            Method::GET,
+            &format!("{END_POINT}/{email_id}/html"),
             &[],
             NO_BODY,
             None,

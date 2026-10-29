@@ -3,7 +3,7 @@ mod common;
 use common::{assert_no_request, expect_no_request, expect_request, fixture, mailerlite, BAD_IDS};
 use mailerlite_rs::{
     api_response::{ApiResponse, WithEtag},
-    email::{BlockType, EmailDocument},
+    email::{BlockType, EmailDocument, EmailHtml},
     error::Error,
 };
 use mockito::{Mock, Server, ServerGuard};
@@ -130,6 +130,77 @@ async fn find_rejects_bad_ids_without_a_request() {
     for id in BAD_IDS {
         assert!(matches!(
             mailerlite.email().find(id).await,
+            Err(Error::InvalidId {
+                name: "email_id",
+                ..
+            })
+        ));
+    }
+
+    assert_no_request(&mocks).await;
+}
+
+#[tokio::test]
+async fn html_gets_the_html() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mock: Mock = expect_request(
+        &mut server,
+        "GET",
+        "/emails/123/html",
+        None,
+        200,
+        &fixture("email_html"),
+    )
+    .await;
+
+    let response: ApiResponse<WithEtag<EmailHtml>> =
+        mailerlite(&server).email().html("123").await.unwrap();
+
+    mock.assert_async().await;
+    assert_eq!(
+        response.data.html,
+        "<!doctype html><html><body><p>Hello</p></body></html>"
+    );
+    assert_eq!(response.etag, "42");
+}
+
+#[tokio::test]
+async fn html_gives_an_api_error_for_a_503_with_an_html_body() {
+    let mut server: ServerGuard = Server::new_async().await;
+    server
+        .mock("GET", "/emails/123/html")
+        .with_status(503)
+        .with_header("Content-Type", "text/html")
+        .with_body("<html><body>Service Unavailable</body></html>")
+        .create_async()
+        .await;
+
+    let error: Error = mailerlite(&server).email().html("123").await.unwrap_err();
+
+    match error {
+        Error::Api(error) => {
+            assert_eq!(error.status_code, 503);
+            assert_eq!(error.body, "<html><body>Service Unavailable</body></html>");
+            assert_eq!(error.message, None);
+            assert_eq!(error.code, None);
+        }
+        other => panic!("expected Error::Api, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn html_rejects_bad_ids_without_a_request() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
+    let mailerlite = mailerlite(&server);
+
+    assert!(matches!(
+        mailerlite.email().html("").await,
+        Err(Error::EmptyId { name: "email_id" })
+    ));
+    for id in BAD_IDS {
+        assert!(matches!(
+            mailerlite.email().html(id).await,
             Err(Error::InvalidId {
                 name: "email_id",
                 ..
