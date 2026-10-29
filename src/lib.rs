@@ -59,6 +59,7 @@ macro_rules! open_enum {
 
 use automation::Automation;
 use batch::Batch;
+use brand_style::BrandStyle;
 use campaign::Campaign;
 use client::Client;
 use ecommerce_cart::EcommerceCart;
@@ -83,6 +84,7 @@ use webhook::Webhook;
 pub mod api_response;
 pub mod automation;
 pub mod batch;
+pub mod brand_style;
 pub mod campaign;
 pub mod client;
 pub mod data;
@@ -156,6 +158,10 @@ impl MailerLite {
 
     pub fn email(&self) -> Email {
         Email::new(self.clone())
+    }
+
+    pub fn brand_style(&self) -> BrandStyle {
+        BrandStyle::new(self.clone())
     }
 
     pub fn group(&self) -> Group {

@@ -44,6 +44,8 @@ MailerLite Rust SDK
         - [Get a list of email versions](#get-a-list-of-email-versions)
         - [Save a version of an email](#save-a-version-of-an-email)
         - [Restore a version of an email](#restore-a-version-of-an-email)
+    - [Brand styles](#brand-styles)
+        - [Get the brand styles](#get-the-brand-styles)
     - [Groups](#groups)
         - [Get a list of groups](#get-a-list-of-groups)
         - [Create a group](#create-a-group)
@@ -1331,6 +1333,45 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
 
     println!("New etag: {}", response.etag);
+
+    Ok(())
+}
+```
+
+## Brand styles
+
+### Get the brand styles
+
+Returns the palettes of your account: `brand` (your brand styles, or `None` if your account has none), `default` and the `presets`. Match a palette on its `identifier`, not on its `name`. To apply a palette to an email, [update the design settings](#update-the-design-settings) with the `identifier` in `brand.style`.
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_brand_styles
+```
+</details>
+
+```rust
+use mailerlite_rs::{
+    api_response::{ApiResponse, DataOnly},
+    brand_style::BrandStyles,
+    MailerLite,
+};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let response: ApiResponse<DataOnly<BrandStyles>> = mailerlite.brand_style().get().await?;
+
+    for preset in &response.data.presets {
+        println!("{}: {}", preset.identifier, preset.name);
+    }
 
     Ok(())
 }
