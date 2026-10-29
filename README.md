@@ -38,6 +38,7 @@ MailerLite Rust SDK
         - [Delete a block](#delete-a-block)
         - [Move a block](#move-a-block)
         - [Validate a block](#validate-a-block)
+        - [Update the design settings](#update-the-design-settings)
     - [Groups](#groups)
         - [Get a list of groups](#get-a-list-of-groups)
         - [Create a group](#create-a-group)
@@ -1028,6 +1029,82 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if !response.valid {
         println!("{:#?}", response.errors);
+    }
+
+    Ok(())
+}
+```
+
+### Update the design settings
+
+Changes the design settings of the email. `EmailSettingsUpdate` has the groups `brand`, `layout`, `typography`, `button` and `footer`.
+
+- Each value has three states. `None` does not send the key, so the value does not change. `Some(value)` sets the value. `Some(String::new())` removes the value, so the email uses the value of your account again.
+- Send all style values as strings, for example `"16"` and not `16`.
+- The API stores each value that you send, also a value that the email gets from your account. Then the email no longer follows your account for that value. For this reason, set only the values to change, and do not copy the full settings of the email.
+- `footer.social_links` replaces the whole list. Keep the `link_id` of each link to keep its click history.
+- `brand.mode` is one of the `BrandMode` values. To apply a palette, send its `identifier` from the brand styles in `brand.style`.
+- Each group has an `extra` map for keys that the SDK does not know yet. Do not put `etag` in the `extra` map of `EmailSettingsUpdate`: this gives `Error::EtagInSettings`. Use the `etag` argument.
+- If the API removed unsafe values, `rejected` has the keys of these values.
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example update_email_settings
+```
+</details>
+
+```rust
+use mailerlite_rs::{
+    api_response::ApiResponse,
+    email::{
+        BrandMode, BrandUpdate, EmailSettingsUpdate, ParagraphStyleUpdate, SettingsResult,
+        TextStyleUpdate, TypographyUpdate,
+    },
+    MailerLite,
+};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let email_id: String = String::from("Your Email ID");
+
+    let etag: String = String::from("The etag from the last response");
+
+    let settings: EmailSettingsUpdate = EmailSettingsUpdate {
+        brand: Some(BrandUpdate {
+            mode: Some(BrandMode::Custom.into()),
+            background_color: Some(String::from("#f4f4f4")),
+            ..Default::default()
+        }),
+        typography: Some(TypographyUpdate {
+            paragraph: Some(ParagraphStyleUpdate {
+                p1: Some(TextStyleUpdate {
+                    size: Some(String::from("18")),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            }),
+            ..Default::default()
+        }),
+        ..Default::default()
+    };
+
+    let response: ApiResponse<SettingsResult> = mailerlite
+        .email()
+        .update_settings(email_id, etag, &settings)
+        .await?;
+
+    println!("New etag: {}", response.etag);
+
+    if let Some(rejected) = &response.rejected {
+        println!("Removed values: {:?}", rejected.keys);
     }
 
     Ok(())

@@ -415,6 +415,218 @@ pub struct Rejected {
     pub keys: Vec<String>,
 }
 
+/// A change to the design settings of an email, for `Email::update_settings` and `Email::validate_settings`.
+///
+/// Each value has three states:
+/// - `None`: the SDK does not send the key, and the value does not change;
+/// - `Some(value)`: the API stores the value;
+/// - `Some(String::new())`: the API removes the value, and the email uses the value of the account again.
+///
+/// Set only the values to change. The API stores each value that you send, also a value that is the same as
+/// the value of the account. Then the email no longer follows the account for that value. For this reason,
+/// the SDK has no conversion from `EmailSettings`. Send all style values as strings, for example `"16"`.
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct EmailSettingsUpdate {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub brand: Option<BrandUpdate>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub layout: Option<LayoutUpdate>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub typography: Option<TypographyUpdate>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub button: Option<ButtonUpdate>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub footer: Option<FooterUpdate>,
+    /// Keys that this version of the SDK does not know. The SDK sends them as they are.
+    #[serde(flatten)]
+    pub extra: Map<String, Value>,
+}
+
+/// A change to the brand settings.
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct BrandUpdate {
+    /// One of the `BrandMode` values, for example `Some(BrandMode::Custom.into())`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mode: Option<String>,
+    /// The `identifier` of a palette from `BrandStyle::get`. The API applies the palette. The API does not
+    /// return this value.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub style: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub font_family: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub background_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub border_color: Option<String>,
+    /// Keys that this version of the SDK does not know. The SDK sends them as they are.
+    #[serde(flatten)]
+    pub extra: Map<String, Value>,
+}
+
+/// A change to the layout settings.
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct LayoutUpdate {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub width_mode: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub alignment: Option<String>,
+    /// Keys that this version of the SDK does not know. The SDK sends them as they are.
+    #[serde(flatten)]
+    pub extra: Map<String, Value>,
+}
+
+/// A change to the typography settings.
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct TypographyUpdate {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub link: Option<LinkStyleUpdate>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub heading: Option<HeadingStyleUpdate>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub paragraph: Option<ParagraphStyleUpdate>,
+    /// Keys that this version of the SDK does not know. The SDK sends them as they are.
+    #[serde(flatten)]
+    pub extra: Map<String, Value>,
+}
+
+/// A change to the style of links.
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct LinkStyleUpdate {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
+    /// Keys that this version of the SDK does not know. The SDK sends them as they are.
+    #[serde(flatten)]
+    pub extra: Map<String, Value>,
+}
+
+/// A change to the style of headings.
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct HeadingStyleUpdate {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub font_family: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub font_weight: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub line_height: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub letter_spacing: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub h1: Option<TextStyleUpdate>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub h2: Option<TextStyleUpdate>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub h3: Option<TextStyleUpdate>,
+    /// Keys that this version of the SDK does not know. The SDK sends them as they are.
+    #[serde(flatten)]
+    pub extra: Map<String, Value>,
+}
+
+/// A change to the style of paragraphs.
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct ParagraphStyleUpdate {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub font_family: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub font_weight: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub line_height: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub letter_spacing: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub p1: Option<TextStyleUpdate>,
+    /// Keys that this version of the SDK does not know. The SDK sends them as they are.
+    #[serde(flatten)]
+    pub extra: Map<String, Value>,
+}
+
+/// A change to the color and the size of a text level.
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct TextStyleUpdate {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub size: Option<String>,
+    /// Keys that this version of the SDK does not know. The SDK sends them as they are.
+    #[serde(flatten)]
+    pub extra: Map<String, Value>,
+}
+
+/// A change to the button settings.
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct ButtonUpdate {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub font_family: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub font_weight: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub letter_spacing: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub background_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub border_radius: Option<String>,
+    /// Keys that this version of the SDK does not know. The SDK sends them as they are.
+    #[serde(flatten)]
+    pub extra: Map<String, Value>,
+}
+
+/// A change to the footer settings.
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct FooterUpdate {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub show_preferences: Option<bool>,
+    /// An empty `editor_content` removes the text.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub company_name: Option<EditorText>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub address: Option<EditorText>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub info_text: Option<EditorText>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub unsubscribe_text: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub preferences_text: Option<String>,
+    /// The new list replaces the whole list. Keep the `link_id` of each link to keep its click history.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub social_links: Option<Vec<SocialLinkUpdate>>,
+    /// Keys that this version of the SDK does not know. The SDK sends them as they are.
+    #[serde(flatten)]
+    pub extra: Map<String, Value>,
+}
+
+/// A social link of the footer in a settings change.
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct SocialLinkUpdate {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "type")]
+    pub link_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub label: Option<String>,
+    /// The ID of an existing link. Send it to keep the click history of the link.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub link_id: Option<u64>,
+    /// Keys that this version of the SDK does not know. The SDK sends them as they are.
+    #[serde(flatten)]
+    pub extra: Map<String, Value>,
+}
+
+/// The response of `Email::update_settings`: the settings, the new etag and the removed unsafe values.
+#[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
+pub struct SettingsResult {
+    pub data: EmailSettings,
+    /// Send this etag with the next write to the email.
+    pub etag: String,
+    /// The keys of the unsafe values that the API removed or replaced, if there are some.
+    #[serde(default)]
+    pub rejected: Option<Rejected>,
+}
+
 /// The email methods. Get it with `MailerLite::email`.
 #[derive(Debug)]
 pub struct Email {
@@ -608,6 +820,33 @@ impl Email {
             &format!("{END_POINT}/blocks/validate"),
             &[],
             Some(block),
+            None,
+        )
+        .await
+    }
+
+    /// Changes the design settings of an email. The SDK sends only the values that you set.
+    /// Returns the settings, the new etag and the keys of the unsafe values that the API removed.
+    pub async fn update_settings(
+        &self,
+        email_id: impl AsRef<str>,
+        etag: impl AsRef<str>,
+        settings: &EmailSettingsUpdate,
+    ) -> Result<ApiResponse<SettingsResult>, Error> {
+        let (email_id, etag): (&str, &str) = (email_id.as_ref(), etag.as_ref());
+        validate::path_id("email_id", email_id)?;
+        validate::etag(etag)?;
+        validate::no_etag_key(&settings.extra)?;
+
+        http::send(
+            &self.mailerlite,
+            Method::PATCH,
+            &format!("{END_POINT}/{email_id}/settings"),
+            &[],
+            Some(&EtagBody {
+                body: settings,
+                etag,
+            }),
             None,
         )
         .await

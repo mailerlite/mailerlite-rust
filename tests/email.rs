@@ -4,7 +4,9 @@ use common::{assert_no_request, expect_no_request, expect_request, fixture, mail
 use mailerlite_rs::{
     api_response::{ApiResponse, EtagOnly, WithEtag},
     email::{
-        BlockType, EmailBlock, EmailDocument, EmailHtml, NewBlock, Placement, Position, Validation,
+        BlockType, BrandMode, BrandUpdate, EditorText, EmailBlock, EmailDocument, EmailHtml,
+        EmailSettingsUpdate, FooterUpdate, NewBlock, ParagraphStyleUpdate, Placement, Position,
+        SettingsResult, SocialLinkUpdate, TextStyleUpdate, TypographyUpdate, Validation,
         VERSION_CONFLICT,
     },
     error::Error,
@@ -914,6 +916,151 @@ async fn validate_block_checks_the_placement_without_a_request() {
             ..
         })
     ));
+
+    assert_no_request(&mocks).await;
+}
+
+fn settings_update() -> EmailSettingsUpdate {
+    let mut extra: serde_json::Map<String, serde_json::Value> = serde_json::Map::new();
+    extra.insert("new_group".to_string(), json!({"a": "1"}));
+
+    EmailSettingsUpdate {
+        brand: Some(BrandUpdate {
+            mode: Some(BrandMode::Custom.into()),
+            style: Some("preset-retro".to_string()),
+            background_color: Some("#f4f4f4".to_string()),
+            text_color: Some(String::new()),
+            ..Default::default()
+        }),
+        typography: Some(TypographyUpdate {
+            paragraph: Some(ParagraphStyleUpdate {
+                p1: Some(TextStyleUpdate {
+                    size: Some("18".to_string()),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            }),
+            ..Default::default()
+        }),
+        footer: Some(FooterUpdate {
+            show_preferences: Some(true),
+            info_text: Some(EditorText::default()),
+            social_links: Some(vec![SocialLinkUpdate {
+                url: Some("https://example.com".to_string()),
+                link_type: Some("website".to_string()),
+                label: Some("Website".to_string()),
+                link_id: Some(7),
+                ..Default::default()
+            }]),
+            ..Default::default()
+        }),
+        extra,
+        ..Default::default()
+    }
+}
+
+fn settings_update_json() -> serde_json::Value {
+    json!({
+        "brand": {
+            "mode": "custom",
+            "style": "preset-retro",
+            "background_color": "#f4f4f4",
+            "text_color": ""
+        },
+        "typography": {"paragraph": {"p1": {"size": "18"}}},
+        "footer": {
+            "show_preferences": true,
+            "info_text": {"editor_content": {}},
+            "social_links": [
+                {"url": "https://example.com", "type": "website", "label": "Website", "link_id": 7}
+            ]
+        },
+        "new_group": {"a": "1"}
+    })
+}
+
+#[tokio::test]
+async fn update_settings_sends_only_the_keys_that_are_set() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mut body: serde_json::Value = settings_update_json();
+    body["etag"] = json!("46");
+    let mock: Mock = expect_request(
+        &mut server,
+        "PATCH",
+        "/emails/123/settings",
+        Some(body),
+        200,
+        &fixture("email_settings"),
+    )
+    .await;
+
+    let response: ApiResponse<SettingsResult> = mailerlite(&server)
+        .email()
+        .update_settings("123", "46", &settings_update())
+        .await
+        .unwrap();
+
+    mock.assert_async().await;
+    assert_eq!(response.etag, "47");
+    let brand = response.data.brand.as_ref().unwrap();
+    assert_eq!(brand.mode.as_deref(), Some("custom"));
+    assert_eq!(brand.background_color.as_deref(), Some("#f4f4f4"));
+    let rejected = response.rejected.as_ref().unwrap();
+    assert_eq!(rejected.message, "Some attributes were rejected.");
+    assert_eq!(rejected.keys, vec!["footer.social_links[0].url"]);
+}
+
+#[tokio::test]
+async fn update_settings_sends_an_empty_object_for_empty_settings() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mock: Mock = expect_request(
+        &mut server,
+        "PATCH",
+        "/emails/123/settings",
+        Some(json!({"etag": "46"})),
+        200,
+        &fixture("email_settings"),
+    )
+    .await;
+
+    mailerlite(&server)
+        .email()
+        .update_settings("123", "46", &EmailSettingsUpdate::default())
+        .await
+        .unwrap();
+
+    mock.assert_async().await;
+}
+
+#[tokio::test]
+async fn update_settings_checks_the_input_without_a_request() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
+    let email = mailerlite(&server).email();
+
+    let mut with_etag: EmailSettingsUpdate = settings_update();
+    with_etag.extra.insert("etag".to_string(), json!("1"));
+    assert!(matches!(
+        email.update_settings("123", "46", &with_etag).await,
+        Err(Error::EtagInSettings)
+    ));
+    assert!(matches!(
+        email.update_settings("123", "", &settings_update()).await,
+        Err(Error::EmptyEtag)
+    ));
+    assert!(matches!(
+        email.update_settings("", "46", &settings_update()).await,
+        Err(Error::EmptyId { name: "email_id" })
+    ));
+    for id in BAD_IDS {
+        assert!(matches!(
+            email.update_settings(id, "46", &settings_update()).await,
+            Err(Error::InvalidId {
+                name: "email_id",
+                ..
+            })
+        ));
+    }
 
     assert_no_request(&mocks).await;
 }
