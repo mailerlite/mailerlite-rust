@@ -46,6 +46,7 @@ pub mod response;
 pub mod segment;
 pub mod subscriber;
 pub mod timezone;
+mod validate;
 pub mod webhook;
 
 const BASE_PATH: &str = "https://connect.mailerlite.com/api/";
