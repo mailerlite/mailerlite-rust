@@ -40,6 +40,7 @@ pub mod error;
 pub mod field;
 pub mod form;
 pub mod group;
+mod http;
 pub mod parameter;
 pub mod response;
 pub mod segment;
