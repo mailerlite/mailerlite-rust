@@ -336,6 +336,13 @@ struct EtagBody<'a, T: Serialize> {
     etag: &'a str,
 }
 
+/// The request body of `Email::update_block`.
+#[derive(Serialize)]
+struct EditorContentBody<'a> {
+    editor_content: &'a Map<String, Value>,
+    etag: &'a str,
+}
+
 /// The email methods. Get it with `MailerLite::email`.
 #[derive(Debug)]
 pub struct Email {
@@ -428,6 +435,35 @@ impl Email {
             &format!("{END_POINT}/{email_id}/blocks"),
             &[],
             Some(&EtagBody { body: block, etag }),
+            None,
+        )
+        .await
+    }
+
+    /// Replaces the content of a block. The API removes the keys that you do not send. The type and the
+    /// position of the block do not change. Returns the block and the new etag.
+    pub async fn update_block(
+        &self,
+        email_id: impl AsRef<str>,
+        block_id: impl AsRef<str>,
+        etag: impl AsRef<str>,
+        editor_content: &Map<String, Value>,
+    ) -> Result<ApiResponse<WithEtag<EmailBlock>>, Error> {
+        let (email_id, block_id, etag): (&str, &str, &str) =
+            (email_id.as_ref(), block_id.as_ref(), etag.as_ref());
+        validate::path_id("email_id", email_id)?;
+        validate::path_id("block_id", block_id)?;
+        validate::etag(etag)?;
+
+        http::send(
+            &self.mailerlite,
+            Method::PATCH,
+            &format!("{END_POINT}/{email_id}/blocks/{block_id}"),
+            &[],
+            Some(&EditorContentBody {
+                editor_content,
+                etag,
+            }),
             None,
         )
         .await

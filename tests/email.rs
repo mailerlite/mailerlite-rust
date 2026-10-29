@@ -3,7 +3,9 @@ mod common;
 use common::{assert_no_request, expect_no_request, expect_request, fixture, mailerlite, BAD_IDS};
 use mailerlite_rs::{
     api_response::{ApiResponse, WithEtag},
-    email::{BlockType, EmailBlock, EmailDocument, EmailHtml, NewBlock, Placement},
+    email::{
+        BlockType, EmailBlock, EmailDocument, EmailHtml, NewBlock, Placement, VERSION_CONFLICT,
+    },
     error::Error,
 };
 use mockito::{Mock, Server, ServerGuard};
@@ -401,6 +403,146 @@ async fn create_block_checks_the_input_without_a_request() {
                 .await,
             Err(Error::InvalidId {
                 name: "placement.block_id",
+                ..
+            })
+        ));
+    }
+
+    assert_no_request(&mocks).await;
+}
+
+fn hello_again() -> serde_json::Map<String, serde_json::Value> {
+    json!({"content": [{"type": "text", "text": "Hello again"}]})
+        .as_object()
+        .unwrap()
+        .clone()
+}
+
+#[tokio::test]
+async fn update_block_patches_the_content() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mock: Mock = expect_request(
+        &mut server,
+        "PATCH",
+        "/emails/123/blocks/57",
+        Some(json!({
+            "editor_content": {"content": [{"type": "text", "text": "Hello again"}]},
+            "etag": "43"
+        })),
+        200,
+        &fixture("email_block_updated"),
+    )
+    .await;
+
+    let response: ApiResponse<WithEtag<EmailBlock>> = mailerlite(&server)
+        .email()
+        .update_block("123", "57", "43", &hello_again())
+        .await
+        .unwrap();
+
+    mock.assert_async().await;
+    assert_eq!(response.etag, "44");
+    assert_eq!(
+        response.data.editor_content["content"][0]["text"],
+        "Hello again"
+    );
+    let placement = response.data.placement.as_ref().unwrap();
+    assert_eq!(placement.after.as_deref(), Some("56"));
+    assert_eq!(placement.before.as_deref(), Some("58"));
+}
+
+#[tokio::test]
+async fn update_block_gives_the_version_conflict() {
+    let mut server: ServerGuard = Server::new_async().await;
+    server
+        .mock("PATCH", "/emails/123/blocks/57")
+        .with_status(409)
+        .with_header("Content-Type", "application/json")
+        .with_body(r#"{"message": "The email was changed by another request.", "code": "version_conflict", "etag": "50"}"#)
+        .create_async()
+        .await;
+
+    let error: Error = mailerlite(&server)
+        .email()
+        .update_block("123", "57", "43", &hello_again())
+        .await
+        .unwrap_err();
+
+    match error {
+        Error::Api(error) => {
+            assert_eq!(error.status_code, 409);
+            assert_eq!(error.code.as_deref(), Some(VERSION_CONFLICT));
+            assert_eq!(error.etag.as_deref(), Some("50"));
+            assert_eq!(
+                error.message.as_deref(),
+                Some("The email was changed by another request.")
+            );
+            assert!(error.is_version_conflict());
+        }
+        other => panic!("expected Error::Api, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn update_block_gives_the_field_errors() {
+    let mut server: ServerGuard = Server::new_async().await;
+    server
+        .mock("PATCH", "/emails/123/blocks/57")
+        .with_status(422)
+        .with_header("Content-Type", "application/json")
+        .with_body(r#"{"message": "The editor content is invalid.", "errors": {"editor_content.content": ["The editor content is invalid."]}}"#)
+        .create_async()
+        .await;
+
+    let error: Error = mailerlite(&server)
+        .email()
+        .update_block("123", "57", "43", &hello_again())
+        .await
+        .unwrap_err();
+
+    match error {
+        Error::Api(error) => {
+            assert_eq!(error.status_code, 422);
+            assert_eq!(
+                error.errors.unwrap()["editor_content.content"],
+                vec!["The editor content is invalid."]
+            );
+            assert_eq!(error.code, None);
+        }
+        other => panic!("expected Error::Api, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn update_block_checks_the_input_without_a_request() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
+    let email = mailerlite(&server).email();
+
+    assert!(matches!(
+        email.update_block("123", "57", "", &hello_again()).await,
+        Err(Error::EmptyEtag)
+    ));
+    assert!(matches!(
+        email.update_block("", "57", "43", &hello_again()).await,
+        Err(Error::EmptyId { name: "email_id" })
+    ));
+    assert!(matches!(
+        email.update_block("123", "", "43", &hello_again()).await,
+        Err(Error::EmptyId { name: "block_id" })
+    ));
+    for id in BAD_IDS {
+        assert!(matches!(
+            email.update_block(id, "57", "43", &hello_again()).await,
+            Err(Error::InvalidId {
+                name: "email_id",
+                ..
+            })
+        ));
+        assert!(matches!(
+            email.update_block("123", id, "43", &hello_again()).await,
+            Err(Error::InvalidId {
+                name: "block_id",
                 ..
             })
         ));
