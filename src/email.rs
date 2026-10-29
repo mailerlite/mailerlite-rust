@@ -851,6 +851,28 @@ impl Email {
         )
         .await
     }
+
+    /// Checks a settings change with the rules of `update_settings`. The API saves nothing. The method
+    /// needs no etag.
+    pub async fn validate_settings(
+        &self,
+        email_id: impl AsRef<str>,
+        settings: &EmailSettingsUpdate,
+    ) -> Result<ApiResponse<Validation>, Error> {
+        let email_id: &str = email_id.as_ref();
+        validate::path_id("email_id", email_id)?;
+        validate::no_etag_key(&settings.extra)?;
+
+        http::send(
+            &self.mailerlite,
+            Method::POST,
+            &format!("{END_POINT}/{email_id}/settings/validate"),
+            &[],
+            Some(settings),
+            None,
+        )
+        .await
+    }
 }
 
 #[cfg(test)]

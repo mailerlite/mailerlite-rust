@@ -1064,3 +1064,64 @@ async fn update_settings_checks_the_input_without_a_request() {
 
     assert_no_request(&mocks).await;
 }
+
+#[tokio::test]
+async fn validate_settings_sends_the_settings_without_an_etag() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mock: Mock = expect_request(
+        &mut server,
+        "POST",
+        "/emails/123/settings/validate",
+        Some(settings_update_json()),
+        200,
+        &fixture("email_settings_validation"),
+    )
+    .await;
+
+    let response: ApiResponse<Validation> = mailerlite(&server)
+        .email()
+        .validate_settings("123", &settings_update())
+        .await
+        .unwrap();
+
+    mock.assert_async().await;
+    assert!(!response.valid);
+    assert_eq!(
+        response.errors["layout.width"],
+        vec!["The layout.width field cannot be changed."]
+    );
+    assert_eq!(response.schema.version, "2.73.2");
+    assert_eq!(
+        response.rejected.as_ref().unwrap().keys,
+        vec!["footer.social_links[0].url"]
+    );
+}
+
+#[tokio::test]
+async fn validate_settings_checks_the_input_without_a_request() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
+    let email = mailerlite(&server).email();
+
+    let mut with_etag: EmailSettingsUpdate = settings_update();
+    with_etag.extra.insert("etag".to_string(), json!("1"));
+    assert!(matches!(
+        email.validate_settings("123", &with_etag).await,
+        Err(Error::EtagInSettings)
+    ));
+    assert!(matches!(
+        email.validate_settings("", &settings_update()).await,
+        Err(Error::EmptyId { name: "email_id" })
+    ));
+    for id in BAD_IDS {
+        assert!(matches!(
+            email.validate_settings(id, &settings_update()).await,
+            Err(Error::InvalidId {
+                name: "email_id",
+                ..
+            })
+        ));
+    }
+
+    assert_no_request(&mocks).await;
+}

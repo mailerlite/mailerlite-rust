@@ -39,6 +39,7 @@ MailerLite Rust SDK
         - [Move a block](#move-a-block)
         - [Validate a block](#validate-a-block)
         - [Update the design settings](#update-the-design-settings)
+        - [Validate the design settings](#validate-the-design-settings)
     - [Groups](#groups)
         - [Get a list of groups](#get-a-list-of-groups)
         - [Create a group](#create-a-group)
@@ -1105,6 +1106,56 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if let Some(rejected) = &response.rejected {
         println!("Removed values: {:?}", rejected.keys);
+    }
+
+    Ok(())
+}
+```
+
+### Validate the design settings
+
+Checks a settings change with the rules of the update, and saves nothing. It needs no etag. Invalid settings are not an error: `valid` is `false`, and `errors` has the messages for each field.
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example validate_email_settings
+```
+</details>
+
+```rust
+use mailerlite_rs::{
+    api_response::ApiResponse,
+    email::{ButtonUpdate, EmailSettingsUpdate, Validation},
+    MailerLite,
+};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let email_id: String = String::from("Your Email ID");
+
+    let settings: EmailSettingsUpdate = EmailSettingsUpdate {
+        button: Some(ButtonUpdate {
+            border_radius: Some(String::from("8")),
+            ..Default::default()
+        }),
+        ..Default::default()
+    };
+
+    let response: ApiResponse<Validation> = mailerlite
+        .email()
+        .validate_settings(email_id, &settings)
+        .await?;
+
+    if !response.valid {
+        println!("{:#?}", response.errors);
     }
 
     Ok(())
