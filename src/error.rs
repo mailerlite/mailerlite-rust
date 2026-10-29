@@ -116,7 +116,7 @@ impl ApiError {
 
     /// Returns true if the email changed after you read the etag. Then `etag` has the current etag.
     pub fn is_version_conflict(&self) -> bool {
-        self.code.as_deref() == Some("version_conflict")
+        self.code.as_deref() == Some(crate::email::VERSION_CONFLICT)
     }
 }
 

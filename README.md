@@ -29,6 +29,8 @@ MailerLite Rust SDK
         - [Schedule a campaign](#schedule-a-campaign)
         - [Cancel a ready campaign](#cancel-a-ready-campaign)
         - [Get subscribers activity of sent campaign](#get-subscribers-activity-of-sent-campaign)
+    - [Emails](#emails)
+        - [Get an email](#get-an-email)
     - [Groups](#groups)
         - [Get a list of groups](#get-a-list-of-groups)
         - [Create a group](#create-a-group)
@@ -644,6 +646,56 @@ async fn main() {
     let response: Response = mailerlite.campaign().subscribers_activity(id, parameter.clone()).await;
 
     println!("{:#?}", response);
+}
+```
+
+## Emails
+
+These methods edit emails built with the simple editor.
+
+- The methods return `Result<ApiResponse<T>, Error>`. `ApiResponse` acts like the body, so `response.data` and `response.etag` work. `response.status_code` and `response.headers` give the status code and the headers. These methods do not panic.
+- IDs are strings of the digits 0-9. An empty ID gives `Error::EmptyId`, and an ID with other characters gives `Error::InvalidId`. In these cases, the SDK sends no request.
+- A `4xx` or `5xx` status gives `Error::Api`. The `ApiError` has `status_code`, `message`, `code`, `etag`, `errors`, `headers` and the raw `body`. A network error gives `Error::Transport`.
+- Each write needs the etag from the last response for the email, and returns a new etag. The etag covers the whole email, so send the writes to one email one after another. An empty etag gives `Error::EmptyEtag`, and the SDK sends no request.
+- If the email changed after you read it, the write gives a `409` error, and `ApiError::is_version_conflict()` is `true`. Then `ApiError::etag` has the current etag. Get the email again, and then send the write again with the current etag.
+- The keys of `editor_content` are camelCase, for example `textAlign`. The SDK sends them as you give them.
+
+### Get an email
+
+Returns the email with its settings and blocks, and the etag of the email.
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example find_email
+```
+</details>
+
+```rust
+use mailerlite_rs::{
+    api_response::{ApiResponse, WithEtag},
+    email::EmailDocument,
+    error::Error,
+    MailerLite,
+};
+
+#[tokio::main]
+async fn main() -> Result<(), Error> {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let email_id: String = String::from("Your Email ID");
+
+    let response: ApiResponse<WithEtag<EmailDocument>> = mailerlite.email().find(email_id).await?;
+
+    println!("{:#?}", response.data);
+    println!("Etag: {}", response.etag);
+
+    Ok(())
 }
 ```
 

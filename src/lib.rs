@@ -1,3 +1,58 @@
+/// Defines an enum for an open set of string values. A value that the SDK does not know goes into
+/// `Other`, so a new value of the API does not break the decode. The request side accepts `Other` too.
+macro_rules! open_enum {
+    (
+        $(#[$meta:meta])*
+        pub enum $name:ident {
+            $( $(#[$variant_meta:meta])* $variant:ident => $value:literal, )*
+        }
+    ) => {
+        $(#[$meta])*
+        #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+        #[serde(from = "String", into = "String")]
+        #[non_exhaustive]
+        pub enum $name {
+            $( $(#[$variant_meta])* $variant, )*
+            /// A value that this version of the SDK does not know.
+            Other(String),
+        }
+
+        impl $name {
+            /// Returns the value that the API uses.
+            pub fn as_str(&self) -> &str {
+                match self {
+                    $( $name::$variant => $value, )*
+                    $name::Other(value) => value,
+                }
+            }
+        }
+
+        impl From<String> for $name {
+            fn from(value: String) -> Self {
+                match value.as_str() {
+                    $( $value => $name::$variant, )*
+                    _ => $name::Other(value),
+                }
+            }
+        }
+
+        impl From<$name> for String {
+            fn from(value: $name) -> Self {
+                match value {
+                    $name::Other(value) => value,
+                    known => known.as_str().to_string(),
+                }
+            }
+        }
+
+        impl std::fmt::Display for $name {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.write_str(self.as_str())
+            }
+        }
+    };
+}
+
 use automation::Automation;
 use batch::Batch;
 use campaign::Campaign;
@@ -12,6 +67,7 @@ use ecommerce_product::EcommerceProduct;
 use ecommerce_product_variant::EcommerceProductVariant;
 use ecommerce_setting::EcommerceSetting;
 use ecommerce_shop::EcommerceShop;
+use email::Email;
 use field::Field;
 use form::Form;
 use group::Group;
@@ -36,6 +92,7 @@ pub mod ecommerce_product;
 pub mod ecommerce_product_variant;
 pub mod ecommerce_setting;
 pub mod ecommerce_shop;
+pub mod email;
 pub mod error;
 pub mod field;
 pub mod form;
@@ -91,6 +148,10 @@ impl MailerLite {
 
     pub fn campaign(&self) -> Campaign {
         Campaign::new(self.clone())
+    }
+
+    pub fn email(&self) -> Email {
+        Email::new(self.clone())
     }
 
     pub fn group(&self) -> Group {

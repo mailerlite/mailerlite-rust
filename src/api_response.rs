@@ -1,7 +1,8 @@
 //! The response type and the body types of the email, brand style and file methods.
 
 use reqwest::{header::HeaderMap, StatusCode};
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer};
+use serde_json::Value;
 use std::ops::Deref;
 
 /// A successful response: the status code, the headers and the decoded body.
@@ -69,6 +70,19 @@ pub struct DataOnly<T> {
 pub struct EtagOnly {
     /// Send this etag with the next write to the email.
     pub etag: String,
+}
+
+/// Decodes a JSON object, and also accepts `[]` as an empty object. PHP encodes an empty array as `[]`.
+pub(crate) fn object_or_empty_array<'de, D, T>(deserializer: D) -> Result<T, D::Error>
+where
+    D: Deserializer<'de>,
+    T: Default + serde::de::DeserializeOwned,
+{
+    match Value::deserialize(deserializer)? {
+        Value::Array(items) if items.is_empty() => Ok(T::default()),
+        Value::Null => Ok(T::default()),
+        value => serde_json::from_value(value).map_err(serde::de::Error::custom),
+    }
 }
 
 #[cfg(test)]
