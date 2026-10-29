@@ -4,7 +4,7 @@
 //! Each write needs the etag of the last response for the email, and returns a new etag.
 
 use crate::{
-    api_response::{object_or_empty_array, ApiResponse, WithEtag},
+    api_response::{object_or_empty_array, ApiResponse, EtagOnly, WithEtag},
     error::Error,
     http::{self, Method, NO_BODY},
     validate, MailerLite,
@@ -462,6 +462,33 @@ impl Email {
             &[],
             Some(&EditorContentBody {
                 editor_content,
+                etag,
+            }),
+            None,
+        )
+        .await
+    }
+
+    /// Deletes a block and the blocks in it. The response has only the new etag.
+    pub async fn delete_block(
+        &self,
+        email_id: impl AsRef<str>,
+        block_id: impl AsRef<str>,
+        etag: impl AsRef<str>,
+    ) -> Result<ApiResponse<EtagOnly>, Error> {
+        let (email_id, block_id, etag): (&str, &str, &str) =
+            (email_id.as_ref(), block_id.as_ref(), etag.as_ref());
+        validate::path_id("email_id", email_id)?;
+        validate::path_id("block_id", block_id)?;
+        validate::etag(etag)?;
+
+        http::send(
+            &self.mailerlite,
+            Method::DELETE,
+            &format!("{END_POINT}/{email_id}/blocks/{block_id}"),
+            &[],
+            Some(&EtagBody {
+                body: &Map::new(),
                 etag,
             }),
             None,

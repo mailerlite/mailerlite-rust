@@ -2,7 +2,7 @@ mod common;
 
 use common::{assert_no_request, expect_no_request, expect_request, fixture, mailerlite, BAD_IDS};
 use mailerlite_rs::{
-    api_response::{ApiResponse, WithEtag},
+    api_response::{ApiResponse, EtagOnly, WithEtag},
     email::{
         BlockType, EmailBlock, EmailDocument, EmailHtml, NewBlock, Placement, VERSION_CONFLICT,
     },
@@ -541,6 +541,68 @@ async fn update_block_checks_the_input_without_a_request() {
         ));
         assert!(matches!(
             email.update_block("123", id, "43", &hello_again()).await,
+            Err(Error::InvalidId {
+                name: "block_id",
+                ..
+            })
+        ));
+    }
+
+    assert_no_request(&mocks).await;
+}
+
+#[tokio::test]
+async fn delete_block_sends_the_etag_in_the_body() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mock: Mock = expect_request(
+        &mut server,
+        "DELETE",
+        "/emails/123/blocks/57",
+        Some(json!({"etag": "44"})),
+        200,
+        &fixture("email_etag"),
+    )
+    .await;
+
+    let response: ApiResponse<EtagOnly> = mailerlite(&server)
+        .email()
+        .delete_block("123", "57", "44")
+        .await
+        .unwrap();
+
+    mock.assert_async().await;
+    assert_eq!(response.status_code, 200);
+    assert_eq!(response.etag, "45");
+}
+
+#[tokio::test]
+async fn delete_block_checks_the_input_without_a_request() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
+    let email = mailerlite(&server).email();
+
+    assert!(matches!(
+        email.delete_block("123", "57", "").await,
+        Err(Error::EmptyEtag)
+    ));
+    assert!(matches!(
+        email.delete_block("", "57", "44").await,
+        Err(Error::EmptyId { name: "email_id" })
+    ));
+    assert!(matches!(
+        email.delete_block("123", "", "44").await,
+        Err(Error::EmptyId { name: "block_id" })
+    ));
+    for id in BAD_IDS {
+        assert!(matches!(
+            email.delete_block(id, "57", "44").await,
+            Err(Error::InvalidId {
+                name: "email_id",
+                ..
+            })
+        ));
+        assert!(matches!(
+            email.delete_block("123", id, "44").await,
             Err(Error::InvalidId {
                 name: "block_id",
                 ..

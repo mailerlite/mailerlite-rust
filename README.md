@@ -35,6 +35,7 @@ MailerLite Rust SDK
         - [Get a block](#get-a-block)
         - [Insert a block](#insert-a-block)
         - [Update a block](#update-a-block)
+        - [Delete a block](#delete-a-block)
     - [Groups](#groups)
         - [Get a list of groups](#get-a-list-of-groups)
         - [Create a group](#create-a-group)
@@ -882,6 +883,49 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let response: ApiResponse<WithEtag<EmailBlock>> = mailerlite
         .email()
         .update_block(email_id, block_id, etag, &editor_content)
+        .await?;
+
+    println!("New etag: {}", response.etag);
+
+    Ok(())
+}
+```
+
+### Delete a block
+
+Deletes the block and the blocks in it. The response has only the new etag.
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example delete_email_block
+```
+</details>
+
+```rust
+use mailerlite_rs::{
+    api_response::{ApiResponse, EtagOnly},
+    MailerLite,
+};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let email_id: String = String::from("Your Email ID");
+
+    let block_id: String = String::from("Your Block ID");
+
+    let etag: String = String::from("The etag from the last response");
+
+    let response: ApiResponse<EtagOnly> = mailerlite
+        .email()
+        .delete_block(email_id, block_id, etag)
         .await?;
 
     println!("New etag: {}", response.etag);
