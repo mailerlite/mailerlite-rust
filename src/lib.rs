@@ -139,3 +139,15 @@ impl MailerLite {
         EcommerceSetting::new(self.clone())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn debug_output_hides_api_key() {
+        let mailerlite: MailerLite = MailerLite::new("secret_api_key".to_string());
+
+        assert!(!format!("{mailerlite:?}").contains("secret_api_key"));
+    }
+}

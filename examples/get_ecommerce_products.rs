@@ -10,7 +10,10 @@ async fn main() {
 
     let parameter: Parameter = Parameter::new().add("filter[enabled]", "true");
 
-    let response: Response = mailerlite.ecommerce_product().get(shop_id, parameter.clone()).await;
+    let response: Response = mailerlite
+        .ecommerce_product()
+        .get(shop_id, parameter.clone())
+        .await;
 
     println!("{:#?}", response);
 }

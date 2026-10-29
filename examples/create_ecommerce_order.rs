@@ -16,7 +16,10 @@ async fn main() {
         .add("cart[items][0][price]", "19.99")
         .add("status", "complete");
 
-    let response: Response = mailerlite.ecommerce_order().create(shop_id, data.clone()).await;
+    let response: Response = mailerlite
+        .ecommerce_order()
+        .create(shop_id, data.clone())
+        .await;
 
     println!("{:#?}", response);
 }

@@ -12,7 +12,10 @@ async fn main() {
 
     let item_id: String = String::from("Your Item ID");
 
-    let response: Response = mailerlite.ecommerce_cart_item().delete(shop_id, cart_id, item_id).await;
+    let response: Response = mailerlite
+        .ecommerce_cart_item()
+        .delete(shop_id, cart_id, item_id)
+        .await;
 
     println!("{:#?}", response);
 }

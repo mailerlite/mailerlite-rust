@@ -28,8 +28,8 @@ impl Subscriber {
         .await
     }
 
-    pub async fn find(&self, id: String) -> Response {
-        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id);
+    pub async fn find(&self, id: impl AsRef<str>) -> Response {
+        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id.as_ref());
 
         Response::new(
             self.mailerlite
@@ -59,8 +59,8 @@ impl Subscriber {
         .await
     }
 
-    pub async fn update(&self, id: String, form: Data) -> Response {
-        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id);
+    pub async fn update(&self, id: impl AsRef<str>, form: Data) -> Response {
+        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id.as_ref());
 
         Response::new(
             self.mailerlite
@@ -75,8 +75,8 @@ impl Subscriber {
         .await
     }
 
-    pub async fn delete(&self, id: String) -> Response {
-        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id);
+    pub async fn delete(&self, id: impl AsRef<str>) -> Response {
+        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id.as_ref());
 
         Response::new(
             self.mailerlite
@@ -90,8 +90,8 @@ impl Subscriber {
         .await
     }
 
-    pub async fn activity(&self, id: String, query: Parameter) -> Response {
-        let url: String = format!("{}{}/{}/activity-log", BASE_PATH, END_POINT, id);
+    pub async fn activity(&self, id: impl AsRef<str>, query: Parameter) -> Response {
+        let url: String = format!("{}{}/{}/activity-log", BASE_PATH, END_POINT, id.as_ref());
 
         Response::new(
             self.mailerlite
@@ -106,8 +106,8 @@ impl Subscriber {
         .await
     }
 
-    pub async fn forget(&self, id: String) -> Response {
-        let url: String = format!("{}{}/{}/forget", BASE_PATH, END_POINT, id);
+    pub async fn forget(&self, id: impl AsRef<str>) -> Response {
+        let url: String = format!("{}{}/{}/forget", BASE_PATH, END_POINT, id.as_ref());
 
         Response::new(
             self.mailerlite
@@ -121,8 +121,8 @@ impl Subscriber {
         .await
     }
 
-    pub async fn import_status(&self, import_id: String) -> Response {
-        let url: String = format!("{}{}/import/{}", BASE_PATH, END_POINT, import_id);
+    pub async fn import_status(&self, import_id: impl AsRef<str>) -> Response {
+        let url: String = format!("{}{}/import/{}", BASE_PATH, END_POINT, import_id.as_ref());
 
         Response::new(
             self.mailerlite
@@ -136,15 +136,20 @@ impl Subscriber {
         .await
     }
 
-    pub async fn ecommerce_stats(&self, id: String, shop_id: String) -> Response {
-        let url: String = format!("{}{}/{}/reports/ecommerce", BASE_PATH, END_POINT, id);
+    pub async fn ecommerce_stats(&self, id: impl AsRef<str>, shop_id: impl AsRef<str>) -> Response {
+        let url: String = format!(
+            "{}{}/{}/reports/ecommerce",
+            BASE_PATH,
+            END_POINT,
+            id.as_ref()
+        );
 
         Response::new(
             self.mailerlite
                 .client
                 .request
                 .get(url)
-                .query(&[("shop_id", shop_id)])
+                .query(&[("shop_id", shop_id.as_ref())])
                 .send()
                 .await
                 .expect("Failed to send request"),
@@ -152,16 +157,30 @@ impl Subscriber {
         .await
     }
 
-    pub async fn ecommerce_orders(&self, id: String, shop_id: String, query: Parameter) -> Response {
-        let url: String = format!("{}{}/{}/reports/ecommerce/orders", BASE_PATH, END_POINT, id);
-        let query: Vec<(&str, &str)> = query.data.into_iter().filter(|(key, _)| *key != "shop_id").collect();
+    pub async fn ecommerce_orders(
+        &self,
+        id: impl AsRef<str>,
+        shop_id: impl AsRef<str>,
+        query: Parameter,
+    ) -> Response {
+        let url: String = format!(
+            "{}{}/{}/reports/ecommerce/orders",
+            BASE_PATH,
+            END_POINT,
+            id.as_ref()
+        );
+        let query: Vec<(&str, &str)> = query
+            .data
+            .into_iter()
+            .filter(|(key, _)| *key != "shop_id")
+            .collect();
 
         Response::new(
             self.mailerlite
                 .client
                 .request
                 .get(url)
-                .query(&[("shop_id", shop_id)])
+                .query(&[("shop_id", shop_id.as_ref())])
                 .query(&query)
                 .send()
                 .await

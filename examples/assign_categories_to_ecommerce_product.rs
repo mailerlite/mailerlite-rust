@@ -14,7 +14,10 @@ async fn main() {
         .add("categories[]", "Your Category ID")
         .add("replace", "0");
 
-    let response: Response = mailerlite.ecommerce_product().assign_categories(shop_id, product_id, data.clone()).await;
+    let response: Response = mailerlite
+        .ecommerce_product()
+        .assign_categories(shop_id, product_id, data.clone())
+        .await;
 
     println!("{:#?}", response);
 }

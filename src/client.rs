@@ -1,5 +1,5 @@
 use reqwest::{
-    header::{HeaderMap, ACCEPT, AUTHORIZATION, CONTENT_TYPE},
+    header::{HeaderMap, HeaderValue, ACCEPT, AUTHORIZATION, CONTENT_TYPE},
     Client as reqwestClient,
 };
 
@@ -11,12 +11,15 @@ pub struct Client {
 impl Client {
     pub fn new(api_key: String) -> Self {
         let mut headers: HeaderMap = HeaderMap::new();
-        headers.insert(ACCEPT, "application/json".parse().unwrap());
-        headers.insert(CONTENT_TYPE, "application/json".parse().unwrap());
-        headers.insert(
-            AUTHORIZATION,
-            format!("Bearer {}", api_key).parse().unwrap(),
-        );
+        headers.insert(ACCEPT, HeaderValue::from_static("application/json"));
+        headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+
+        // Sensitive values print as "Sensitive" in Debug output, so the key can't leak
+        // through `{:?}` on Client or MailerLite.
+        let mut authorization: HeaderValue = HeaderValue::from_str(&format!("Bearer {api_key}"))
+            .expect("API key must contain only visible ASCII characters");
+        authorization.set_sensitive(true);
+        headers.insert(AUTHORIZATION, authorization);
 
         Self {
             request: reqwestClient::builder()

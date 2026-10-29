@@ -10,7 +10,10 @@ async fn main() {
 
     let category_id: String = String::from("Your Category ID");
 
-    let response: Response = mailerlite.ecommerce_category().find(shop_id, category_id).await;
+    let response: Response = mailerlite
+        .ecommerce_category()
+        .find(shop_id, category_id)
+        .await;
 
     println!("{:#?}", response);
 }

@@ -12,7 +12,10 @@ async fn main() {
         .add("0[email]", "dummy@example.com")
         .add("0[accepts_marketing]", "1");
 
-    let response: Response = mailerlite.ecommerce_import().customers(shop_id, data.clone()).await;
+    let response: Response = mailerlite
+        .ecommerce_import()
+        .customers(shop_id, data.clone())
+        .await;
 
     println!("{:#?}", response);
 }

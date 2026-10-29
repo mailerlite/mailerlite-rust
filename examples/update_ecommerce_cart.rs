@@ -10,10 +10,12 @@ async fn main() {
 
     let cart_id: String = String::from("Your Cart ID");
 
-    let data: Data = Data::new()
-        .add("checkout_url", "https://shop.example.com/cart");
+    let data: Data = Data::new().add("checkout_url", "https://shop.example.com/cart");
 
-    let response: Response = mailerlite.ecommerce_cart().update(shop_id, cart_id, data.clone()).await;
+    let response: Response = mailerlite
+        .ecommerce_cart()
+        .update(shop_id, cart_id, data.clone())
+        .await;
 
     println!("{:#?}", response);
 }

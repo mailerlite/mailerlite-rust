@@ -15,7 +15,10 @@ async fn main() {
         .add("quantity", "1")
         .add("price", "19.99");
 
-    let response: Response = mailerlite.ecommerce_cart_item().create(shop_id, cart_id, data.clone()).await;
+    let response: Response = mailerlite
+        .ecommerce_cart_item()
+        .create(shop_id, cart_id, data.clone())
+        .await;
 
     println!("{:#?}", response);
 }

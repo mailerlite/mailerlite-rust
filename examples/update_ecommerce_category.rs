@@ -10,10 +10,12 @@ async fn main() {
 
     let category_id: String = String::from("Your Category ID");
 
-    let data: Data = Data::new()
-        .add("name", "Dummy Category");
+    let data: Data = Data::new().add("name", "Dummy Category");
 
-    let response: Response = mailerlite.ecommerce_category().update(shop_id, category_id, data.clone()).await;
+    let response: Response = mailerlite
+        .ecommerce_category()
+        .update(shop_id, category_id, data.clone())
+        .await;
 
     println!("{:#?}", response);
 }

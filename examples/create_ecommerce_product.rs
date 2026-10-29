@@ -13,7 +13,10 @@ async fn main() {
         .add("price", "19.99")
         .add("url", "https://shop.example.com/dummy-product");
 
-    let response: Response = mailerlite.ecommerce_product().create(shop_id, data.clone()).await;
+    let response: Response = mailerlite
+        .ecommerce_product()
+        .create(shop_id, data.clone())
+        .await;
 
     println!("{:#?}", response);
 }

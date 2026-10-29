@@ -28,8 +28,8 @@ impl Segment {
         .await
     }
 
-    pub async fn update(&self, id: String, form: Data) -> Response {
-        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id);
+    pub async fn update(&self, id: impl AsRef<str>, form: Data) -> Response {
+        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id.as_ref());
 
         Response::new(
             self.mailerlite
@@ -44,8 +44,8 @@ impl Segment {
         .await
     }
 
-    pub async fn delete(&self, id: String) -> Response {
-        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id);
+    pub async fn delete(&self, id: impl AsRef<str>) -> Response {
+        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id.as_ref());
 
         Response::new(
             self.mailerlite
@@ -59,8 +59,8 @@ impl Segment {
         .await
     }
 
-    pub async fn get_subscribers(&self, id: String, query: Parameter) -> Response {
-        let url: String = format!("{}{}/{}/subscribers", BASE_PATH, END_POINT, id);
+    pub async fn get_subscribers(&self, id: impl AsRef<str>, query: Parameter) -> Response {
+        let url: String = format!("{}{}/{}/subscribers", BASE_PATH, END_POINT, id.as_ref());
 
         Response::new(
             self.mailerlite

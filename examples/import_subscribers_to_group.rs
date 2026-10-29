@@ -12,7 +12,10 @@ async fn main() {
         .add("subscribers[0][email]", "dummy@example.com")
         .add("subscribers[0][fields][name]", "Dummy");
 
-    let response: Response = mailerlite.group().import_subscribers(id, data.clone()).await;
+    let response: Response = mailerlite
+        .group()
+        .import_subscribers(id, data.clone())
+        .await;
 
     println!("{:#?}", response);
 }

@@ -10,7 +10,10 @@ async fn main() {
 
     let parameter: Parameter = Parameter::new().add("filter[status]", "completed");
 
-    let response: Response = mailerlite.automation().subscribers_activity(id, parameter.clone()).await;
+    let response: Response = mailerlite
+        .automation()
+        .subscribers_activity(id, parameter.clone())
+        .await;
 
     println!("{:#?}", response);
 }

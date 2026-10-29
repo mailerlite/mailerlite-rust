@@ -12,7 +12,10 @@ async fn main() {
 
     let parameter: Parameter = Parameter::new().add("shop_id", "Your Shop ID");
 
-    let response: Response = mailerlite.automation().email_ecommerce_stats(id, email_id, parameter.clone()).await;
+    let response: Response = mailerlite
+        .automation()
+        .email_ecommerce_stats(id, email_id, parameter.clone())
+        .await;
 
     println!("{:#?}", response);
 }

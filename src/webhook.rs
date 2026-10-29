@@ -28,8 +28,8 @@ impl Webhook {
         .await
     }
 
-    pub async fn find(&self, id: String) -> Response {
-        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id);
+    pub async fn find(&self, id: impl AsRef<str>) -> Response {
+        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id.as_ref());
 
         Response::new(
             self.mailerlite
@@ -59,8 +59,8 @@ impl Webhook {
         .await
     }
 
-    pub async fn update(&self, id: String, form: Data) -> Response {
-        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id);
+    pub async fn update(&self, id: impl AsRef<str>, form: Data) -> Response {
+        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id.as_ref());
 
         Response::new(
             self.mailerlite
@@ -75,8 +75,8 @@ impl Webhook {
         .await
     }
 
-    pub async fn delete(&self, id: String) -> Response {
-        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id);
+    pub async fn delete(&self, id: impl AsRef<str>) -> Response {
+        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id.as_ref());
 
         Response::new(
             self.mailerlite

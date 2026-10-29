@@ -12,8 +12,13 @@ impl EcommerceImport {
         Self { mailerlite }
     }
 
-    pub async fn products(&self, shop_id: String, form: Data) -> Response {
-        let url: String = format!("{}{}/{}/products/import", BASE_PATH, END_POINT, shop_id);
+    pub async fn products(&self, shop_id: impl AsRef<str>, form: Data) -> Response {
+        let url: String = format!(
+            "{}{}/{}/products/import",
+            BASE_PATH,
+            END_POINT,
+            shop_id.as_ref()
+        );
 
         Response::new(
             self.mailerlite
@@ -28,8 +33,13 @@ impl EcommerceImport {
         .await
     }
 
-    pub async fn categories(&self, shop_id: String, form: Data) -> Response {
-        let url: String = format!("{}{}/{}/categories/import", BASE_PATH, END_POINT, shop_id);
+    pub async fn categories(&self, shop_id: impl AsRef<str>, form: Data) -> Response {
+        let url: String = format!(
+            "{}{}/{}/categories/import",
+            BASE_PATH,
+            END_POINT,
+            shop_id.as_ref()
+        );
 
         Response::new(
             self.mailerlite
@@ -44,8 +54,13 @@ impl EcommerceImport {
         .await
     }
 
-    pub async fn customers(&self, shop_id: String, form: Data) -> Response {
-        let url: String = format!("{}{}/{}/customers/import", BASE_PATH, END_POINT, shop_id);
+    pub async fn customers(&self, shop_id: impl AsRef<str>, form: Data) -> Response {
+        let url: String = format!(
+            "{}{}/{}/customers/import",
+            BASE_PATH,
+            END_POINT,
+            shop_id.as_ref()
+        );
 
         Response::new(
             self.mailerlite
@@ -60,8 +75,13 @@ impl EcommerceImport {
         .await
     }
 
-    pub async fn orders(&self, shop_id: String, form: Data) -> Response {
-        let url: String = format!("{}{}/{}/orders/import", BASE_PATH, END_POINT, shop_id);
+    pub async fn orders(&self, shop_id: impl AsRef<str>, form: Data) -> Response {
+        let url: String = format!(
+            "{}{}/{}/orders/import",
+            BASE_PATH,
+            END_POINT,
+            shop_id.as_ref()
+        );
 
         Response::new(
             self.mailerlite

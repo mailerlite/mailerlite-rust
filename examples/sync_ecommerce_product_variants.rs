@@ -15,7 +15,10 @@ async fn main() {
         .add("0[attributes][size]", "L")
         .add("0[resource_id]", "variant-l");
 
-    let response: Response = mailerlite.ecommerce_product_variant().sync(shop_id, product_id, data.clone()).await;
+    let response: Response = mailerlite
+        .ecommerce_product_variant()
+        .sync(shop_id, product_id, data.clone())
+        .await;
 
     println!("{:#?}", response);
 }

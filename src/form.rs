@@ -12,8 +12,8 @@ impl Form {
         Self { mailerlite }
     }
 
-    pub async fn get(&self, form_type: String, query: Parameter) -> Response {
-        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, form_type);
+    pub async fn get(&self, form_type: impl AsRef<str>, query: Parameter) -> Response {
+        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, form_type.as_ref());
 
         Response::new(
             self.mailerlite
@@ -28,8 +28,8 @@ impl Form {
         .await
     }
 
-    pub async fn find(&self, id: String) -> Response {
-        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id);
+    pub async fn find(&self, id: impl AsRef<str>) -> Response {
+        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id.as_ref());
 
         Response::new(
             self.mailerlite
@@ -43,8 +43,8 @@ impl Form {
         .await
     }
 
-    pub async fn update(&self, id: String, form: Data) -> Response {
-        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id);
+    pub async fn update(&self, id: impl AsRef<str>, form: Data) -> Response {
+        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id.as_ref());
 
         Response::new(
             self.mailerlite
@@ -59,8 +59,8 @@ impl Form {
         .await
     }
 
-    pub async fn delete(&self, id: String) -> Response {
-        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id);
+    pub async fn delete(&self, id: impl AsRef<str>) -> Response {
+        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id.as_ref());
 
         Response::new(
             self.mailerlite
@@ -74,8 +74,8 @@ impl Form {
         .await
     }
 
-    pub async fn get_subscribers(&self, id: String, query: Parameter) -> Response {
-        let url: String = format!("{}{}/{}/subscribers", BASE_PATH, END_POINT, id);
+    pub async fn get_subscribers(&self, id: impl AsRef<str>, query: Parameter) -> Response {
+        let url: String = format!("{}{}/{}/subscribers", BASE_PATH, END_POINT, id.as_ref());
 
         Response::new(
             self.mailerlite

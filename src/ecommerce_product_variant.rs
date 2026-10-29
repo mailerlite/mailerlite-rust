@@ -12,8 +12,14 @@ impl EcommerceProductVariant {
         Self { mailerlite }
     }
 
-    pub async fn get(&self, shop_id: String, product_id: String) -> Response {
-        let url: String = format!("{}{}/{}/products/{}/variants", BASE_PATH, END_POINT, shop_id, product_id);
+    pub async fn get(&self, shop_id: impl AsRef<str>, product_id: impl AsRef<str>) -> Response {
+        let url: String = format!(
+            "{}{}/{}/products/{}/variants",
+            BASE_PATH,
+            END_POINT,
+            shop_id.as_ref(),
+            product_id.as_ref()
+        );
 
         Response::new(
             self.mailerlite
@@ -27,8 +33,19 @@ impl EcommerceProductVariant {
         .await
     }
 
-    pub async fn sync(&self, shop_id: String, product_id: String, form: Data) -> Response {
-        let url: String = format!("{}{}/{}/products/{}/variants", BASE_PATH, END_POINT, shop_id, product_id);
+    pub async fn sync(
+        &self,
+        shop_id: impl AsRef<str>,
+        product_id: impl AsRef<str>,
+        form: Data,
+    ) -> Response {
+        let url: String = format!(
+            "{}{}/{}/products/{}/variants",
+            BASE_PATH,
+            END_POINT,
+            shop_id.as_ref(),
+            product_id.as_ref()
+        );
 
         Response::new(
             self.mailerlite
@@ -43,8 +60,21 @@ impl EcommerceProductVariant {
         .await
     }
 
-    pub async fn update(&self, shop_id: String, product_id: String, variant_id: String, form: Data) -> Response {
-        let url: String = format!("{}{}/{}/products/{}/variants/{}", BASE_PATH, END_POINT, shop_id, product_id, variant_id);
+    pub async fn update(
+        &self,
+        shop_id: impl AsRef<str>,
+        product_id: impl AsRef<str>,
+        variant_id: impl AsRef<str>,
+        form: Data,
+    ) -> Response {
+        let url: String = format!(
+            "{}{}/{}/products/{}/variants/{}",
+            BASE_PATH,
+            END_POINT,
+            shop_id.as_ref(),
+            product_id.as_ref(),
+            variant_id.as_ref()
+        );
 
         Response::new(
             self.mailerlite
@@ -59,8 +89,20 @@ impl EcommerceProductVariant {
         .await
     }
 
-    pub async fn delete(&self, shop_id: String, product_id: String, variant_id: String) -> Response {
-        let url: String = format!("{}{}/{}/products/{}/variants/{}", BASE_PATH, END_POINT, shop_id, product_id, variant_id);
+    pub async fn delete(
+        &self,
+        shop_id: impl AsRef<str>,
+        product_id: impl AsRef<str>,
+        variant_id: impl AsRef<str>,
+    ) -> Response {
+        let url: String = format!(
+            "{}{}/{}/products/{}/variants/{}",
+            BASE_PATH,
+            END_POINT,
+            shop_id.as_ref(),
+            product_id.as_ref(),
+            variant_id.as_ref()
+        );
 
         Response::new(
             self.mailerlite

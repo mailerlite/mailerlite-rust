@@ -12,7 +12,10 @@ async fn main() {
 
     let variant_id: String = String::from("Your Variant ID");
 
-    let response: Response = mailerlite.ecommerce_product_variant().delete(shop_id, product_id, variant_id).await;
+    let response: Response = mailerlite
+        .ecommerce_product_variant()
+        .delete(shop_id, product_id, variant_id)
+        .await;
 
     println!("{:#?}", response);
 }

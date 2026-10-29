@@ -16,7 +16,10 @@ async fn main() {
         .add("name", "Extra large")
         .add("attributes[size]", "XL");
 
-    let response: Response = mailerlite.ecommerce_product_variant().update(shop_id, product_id, variant_id, data.clone()).await;
+    let response: Response = mailerlite
+        .ecommerce_product_variant()
+        .update(shop_id, product_id, variant_id, data.clone())
+        .await;
 
     println!("{:#?}", response);
 }
