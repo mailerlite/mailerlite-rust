@@ -138,7 +138,7 @@ impl MailerLite {
     /// use mailerlite_rs::MailerLite;
     ///
     /// let mailerlite: MailerLite =
-    ///     MailerLite::new("api_key".to_string()).with_base_url("http://localhost:8080/api");
+    ///     MailerLite::new("api_key".to_string()).with_base_url("https://api.example.com/v1");
     /// ```
     pub fn with_base_url(mut self, base_url: impl Into<String>) -> Self {
         let mut base_url: String = base_url.into();
@@ -264,11 +264,11 @@ mod tests {
     #[test]
     fn with_base_url_adds_one_trailing_slash() {
         let mailerlite: MailerLite =
-            MailerLite::new("api_key".to_string()).with_base_url("http://localhost:8080/api");
-        assert_eq!(mailerlite.base_url, "http://localhost:8080/api/");
+            MailerLite::new("api_key".to_string()).with_base_url("https://api.example.com/v1");
+        assert_eq!(mailerlite.base_url, "https://api.example.com/v1/");
 
         let mailerlite: MailerLite =
-            MailerLite::new("api_key".to_string()).with_base_url("http://localhost:8080/api/");
-        assert_eq!(mailerlite.base_url, "http://localhost:8080/api/");
+            MailerLite::new("api_key".to_string()).with_base_url("https://api.example.com/v1/");
+        assert_eq!(mailerlite.base_url, "https://api.example.com/v1/");
     }
 }
