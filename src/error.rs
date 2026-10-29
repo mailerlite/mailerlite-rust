@@ -9,12 +9,36 @@ use std::{collections::BTreeMap, error::Error as StdError, fmt};
 /// An error from a method that returns `Result`.
 ///
 /// The variants up to `EtagInSettings` are client-side errors. For them, the SDK sends no request.
+///
+/// Only the SDK makes these errors. Match a struct variant with `..`, for example
+/// `Error::InvalidId { name, .. }`. Code outside the SDK cannot make a struct variant:
+///
+/// ```compile_fail
+/// let error = mailerlite_rs::error::Error::EmptyId { name: "email_id" };
+/// ```
+///
+/// ```compile_fail
+/// let error = mailerlite_rs::error::Error::InvalidId {
+///     name: "email_id",
+///     value: String::from("1/2"),
+/// };
+/// ```
+///
+/// ```compile_fail
+/// let error = mailerlite_rs::error::Error::Decode {
+///     status_code: reqwest::StatusCode::OK,
+///     body: String::new(),
+///     source: serde_json::from_str::<u8>("x").unwrap_err(),
+/// };
+/// ```
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum Error {
     /// An ID is empty.
+    #[non_exhaustive]
     EmptyId { name: &'static str },
     /// An ID contains a character that is not an ASCII digit.
+    #[non_exhaustive]
     InvalidId { name: &'static str, value: String },
     /// A write has an empty etag.
     EmptyEtag,
@@ -28,6 +52,7 @@ pub enum Error {
     /// The request did not complete, for example because of a network error.
     Transport(TransportError),
     /// The API returned a 2xx status, but the SDK cannot decode the body.
+    #[non_exhaustive]
     Decode {
         status_code: StatusCode,
         body: String,

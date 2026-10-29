@@ -131,7 +131,10 @@ async fn find_rejects_bad_ids_without_a_request() {
 
     assert!(matches!(
         mailerlite.email().find("").await,
-        Err(Error::EmptyId { name: "email_id" })
+        Err(Error::EmptyId {
+            name: "email_id",
+            ..
+        })
     ));
     for id in BAD_IDS {
         assert!(matches!(
@@ -202,7 +205,10 @@ async fn html_rejects_bad_ids_without_a_request() {
 
     assert!(matches!(
         mailerlite.email().html("").await,
-        Err(Error::EmptyId { name: "email_id" })
+        Err(Error::EmptyId {
+            name: "email_id",
+            ..
+        })
     ));
     for id in BAD_IDS {
         assert!(matches!(
@@ -254,11 +260,17 @@ async fn find_block_rejects_bad_ids_without_a_request() {
 
     assert!(matches!(
         mailerlite.email().find_block("", "57").await,
-        Err(Error::EmptyId { name: "email_id" })
+        Err(Error::EmptyId {
+            name: "email_id",
+            ..
+        })
     ));
     assert!(matches!(
         mailerlite.email().find_block("123", "").await,
-        Err(Error::EmptyId { name: "block_id" })
+        Err(Error::EmptyId {
+            name: "block_id",
+            ..
+        })
     ));
     for id in BAD_IDS {
         assert!(matches!(
@@ -383,14 +395,18 @@ async fn create_block_checks_the_input_without_a_request() {
     ));
     assert!(matches!(
         email.create_block("", "42", &new_paragraph(None)).await,
-        Err(Error::EmptyId { name: "email_id" })
+        Err(Error::EmptyId {
+            name: "email_id",
+            ..
+        })
     ));
     assert!(matches!(
         email
             .create_block("123", "42", &new_paragraph(Some(Placement::after(""))))
             .await,
         Err(Error::EmptyId {
-            name: "placement.block_id"
+            name: "placement.block_id",
+            ..
         })
     ));
     for id in BAD_IDS {
@@ -529,11 +545,17 @@ async fn update_block_checks_the_input_without_a_request() {
     ));
     assert!(matches!(
         email.update_block("", "57", "43", &hello_again()).await,
-        Err(Error::EmptyId { name: "email_id" })
+        Err(Error::EmptyId {
+            name: "email_id",
+            ..
+        })
     ));
     assert!(matches!(
         email.update_block("123", "", "43", &hello_again()).await,
-        Err(Error::EmptyId { name: "block_id" })
+        Err(Error::EmptyId {
+            name: "block_id",
+            ..
+        })
     ));
     for id in BAD_IDS {
         assert!(matches!(
@@ -591,11 +613,17 @@ async fn delete_block_checks_the_input_without_a_request() {
     ));
     assert!(matches!(
         email.delete_block("", "57", "44").await,
-        Err(Error::EmptyId { name: "email_id" })
+        Err(Error::EmptyId {
+            name: "email_id",
+            ..
+        })
     ));
     assert!(matches!(
         email.delete_block("123", "", "44").await,
-        Err(Error::EmptyId { name: "block_id" })
+        Err(Error::EmptyId {
+            name: "block_id",
+            ..
+        })
     ));
     for id in BAD_IDS {
         assert!(matches!(
@@ -655,18 +683,25 @@ async fn move_block_checks_the_input_without_a_request() {
     ));
     assert!(matches!(
         email.move_block("", "57", "45", &Placement::start()).await,
-        Err(Error::EmptyId { name: "email_id" })
+        Err(Error::EmptyId {
+            name: "email_id",
+            ..
+        })
     ));
     assert!(matches!(
         email.move_block("123", "", "45", &Placement::start()).await,
-        Err(Error::EmptyId { name: "block_id" })
+        Err(Error::EmptyId {
+            name: "block_id",
+            ..
+        })
     ));
     assert!(matches!(
         email
             .move_block("123", "57", "45", &Placement::after(""))
             .await,
         Err(Error::EmptyId {
-            name: "placement.block_id"
+            name: "placement.block_id",
+            ..
         })
     ));
     for id in BAD_IDS {
@@ -759,7 +794,8 @@ async fn placement_before_or_after_needs_a_valid_block_id() {
         assert!(matches!(
             email.move_block("123", "57", "45", &after).await,
             Err(Error::EmptyId {
-                name: "placement.block_id"
+                name: "placement.block_id",
+                ..
             })
         ));
     }
@@ -1051,7 +1087,10 @@ async fn update_settings_checks_the_input_without_a_request() {
     ));
     assert!(matches!(
         email.update_settings("", "46", &settings_update()).await,
-        Err(Error::EmptyId { name: "email_id" })
+        Err(Error::EmptyId {
+            name: "email_id",
+            ..
+        })
     ));
     for id in BAD_IDS {
         assert!(matches!(
@@ -1112,7 +1151,10 @@ async fn validate_settings_checks_the_input_without_a_request() {
     ));
     assert!(matches!(
         email.validate_settings("", &settings_update()).await,
-        Err(Error::EmptyId { name: "email_id" })
+        Err(Error::EmptyId {
+            name: "email_id",
+            ..
+        })
     ));
     for id in BAD_IDS {
         assert!(matches!(
@@ -1162,7 +1204,10 @@ async fn create_template_rejects_bad_ids_without_a_request() {
 
     assert!(matches!(
         email.create_template("", "Newsletter").await,
-        Err(Error::EmptyId { name: "email_id" })
+        Err(Error::EmptyId {
+            name: "email_id",
+            ..
+        })
     ));
     for id in BAD_IDS {
         assert!(matches!(
@@ -1243,7 +1288,10 @@ async fn versions_rejects_bad_ids_without_a_request() {
 
     assert!(matches!(
         email.versions("", Default::default()).await,
-        Err(Error::EmptyId { name: "email_id" })
+        Err(Error::EmptyId {
+            name: "email_id",
+            ..
+        })
     ));
     for id in BAD_IDS {
         assert!(matches!(
@@ -1293,7 +1341,10 @@ async fn create_version_rejects_bad_ids_without_a_request() {
 
     assert!(matches!(
         email.create_version("").await,
-        Err(Error::EmptyId { name: "email_id" })
+        Err(Error::EmptyId {
+            name: "email_id",
+            ..
+        })
     ));
     for id in BAD_IDS {
         assert!(matches!(
@@ -1345,11 +1396,17 @@ async fn restore_version_checks_the_input_without_a_request() {
     ));
     assert!(matches!(
         email.restore_version("", "901", "41").await,
-        Err(Error::EmptyId { name: "email_id" })
+        Err(Error::EmptyId {
+            name: "email_id",
+            ..
+        })
     ));
     assert!(matches!(
         email.restore_version("123", "", "41").await,
-        Err(Error::EmptyId { name: "version_id" })
+        Err(Error::EmptyId {
+            name: "version_id",
+            ..
+        })
     ));
     for id in BAD_IDS {
         assert!(matches!(
