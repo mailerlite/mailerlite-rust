@@ -841,8 +841,8 @@ async fn validate_block_sends_the_block_without_an_etag() {
     mock.assert_async().await;
     assert!(response.valid);
     assert!(response.errors.is_empty());
-    assert_eq!(response.schema.version, "2.73.2");
-    assert_eq!(response.schema.hash, "0f3a9c");
+    assert_eq!(response.schema.version.as_deref(), Some("2.73.2"));
+    assert_eq!(response.schema.hash.as_deref(), Some("0f3a9c"));
     assert!(response.rejected.is_none());
 }
 
@@ -1091,7 +1091,7 @@ async fn validate_settings_sends_the_settings_without_an_etag() {
         response.errors["layout.width"],
         vec!["The layout.width field cannot be changed."]
     );
-    assert_eq!(response.schema.version, "2.73.2");
+    assert_eq!(response.schema.version.as_deref(), Some("2.73.2"));
     assert_eq!(
         response.rejected.as_ref().unwrap().keys,
         vec!["footer.social_links[0].url"]
@@ -1574,4 +1574,36 @@ async fn a_replayed_write_has_the_replay_flag() {
 
     assert!(response.is_idempotent_replay());
     assert_eq!(response.status_code, 201);
+}
+
+#[tokio::test]
+async fn validate_block_decodes_a_null_schema() {
+    let mut server: ServerGuard = Server::new_async().await;
+    expect_request(
+        &mut server,
+        "POST",
+        "/emails/blocks/validate",
+        Some(json!({"type": "divider", "editor_content": {}})),
+        200,
+        r#"{"valid": false, "errors": {"type": ["The selected type is invalid."]}, "schema": {"version": null, "hash": null}}"#,
+    )
+    .await;
+
+    let block: NewBlock = NewBlock {
+        block_type: BlockType::Divider,
+        ..Default::default()
+    };
+    let response: ApiResponse<Validation> = mailerlite(&server)
+        .email()
+        .validate_block(&block)
+        .await
+        .unwrap();
+
+    assert!(!response.valid);
+    assert_eq!(
+        response.errors["type"],
+        vec!["The selected type is invalid."]
+    );
+    assert_eq!(response.schema.version, None);
+    assert_eq!(response.schema.hash, None);
 }

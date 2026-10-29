@@ -398,12 +398,12 @@ pub struct Validation {
     pub rejected: Option<Rejected>,
 }
 
-/// The version of the rules that the validation used.
+/// The version of the rules that the validation used. The API can send `null` for both values.
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct ValidationSchema {
-    pub version: String,
-    pub hash: String,
+    pub version: Option<String>,
+    pub hash: Option<String>,
 }
 
 /// The unsafe values that the API removed or replaced.
