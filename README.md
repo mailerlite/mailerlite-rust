@@ -46,6 +46,8 @@ MailerLite Rust SDK
         - [Restore a version of an email](#restore-a-version-of-an-email)
     - [Brand styles](#brand-styles)
         - [Get the brand styles](#get-the-brand-styles)
+    - [Files](#files)
+        - [Get a list of files](#get-a-list-of-files)
     - [Groups](#groups)
         - [Get a list of groups](#get-a-list-of-groups)
         - [Create a group](#create-a-group)
@@ -1371,6 +1373,58 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     for preset in &response.data.presets {
         println!("{}: {}", preset.identifier, preset.name);
+    }
+
+    Ok(())
+}
+```
+
+## Files
+
+### Get a list of files
+
+Returns the files of your media library. Use their `url` in image blocks. `width` and `height` are `None` for files that are not images.
+
+- `name` gets the files with a name that contains the text. `file_type` is one of the `FileType` values.
+- `sort` is one of the `FileSort` values. The default is newest first.
+- The SDK does not send `None` values. To get the first page with no filter, use `get(Default::default())`.
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_files
+```
+</details>
+
+```rust
+use mailerlite_rs::{
+    api_response::ApiResponse,
+    file::{FileSort, FileType, ListFilesOptions, MediaFile},
+    pagination::Paginated,
+    MailerLite,
+};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let options: ListFilesOptions = ListFilesOptions {
+        name: Some(String::from("summer sale")),
+        file_type: Some(FileType::Image),
+        sort: Some(FileSort::SizeDesc),
+        page: Some(1),
+        limit: Some(25),
+    };
+
+    let response: ApiResponse<Paginated<MediaFile>> = mailerlite.file().get(options).await?;
+
+    for file in &response.data {
+        println!("{}: {}", file.name, file.url);
     }
 
     Ok(())

@@ -74,6 +74,7 @@ use ecommerce_setting::EcommerceSetting;
 use ecommerce_shop::EcommerceShop;
 use email::Email;
 use field::Field;
+use file::File;
 use form::Form;
 use group::Group;
 use segment::Segment;
@@ -101,6 +102,7 @@ pub mod ecommerce_shop;
 pub mod email;
 pub mod error;
 pub mod field;
+pub mod file;
 pub mod form;
 pub mod group;
 mod http;
@@ -162,6 +164,10 @@ impl MailerLite {
 
     pub fn brand_style(&self) -> BrandStyle {
         BrandStyle::new(self.clone())
+    }
+
+    pub fn file(&self) -> File {
+        File::new(self.clone())
     }
 
     pub fn group(&self) -> Group {
