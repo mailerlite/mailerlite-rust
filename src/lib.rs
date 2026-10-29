@@ -20,6 +20,7 @@ use subscriber::Subscriber;
 use timezone::Timezone;
 use webhook::Webhook;
 
+pub mod api_response;
 pub mod automation;
 pub mod batch;
 pub mod campaign;
@@ -35,6 +36,7 @@ pub mod ecommerce_product;
 pub mod ecommerce_product_variant;
 pub mod ecommerce_setting;
 pub mod ecommerce_shop;
+pub mod error;
 pub mod field;
 pub mod form;
 pub mod group;
