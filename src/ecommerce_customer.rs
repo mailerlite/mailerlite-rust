@@ -1,4 +1,4 @@
-use crate::{data::Data, parameter::Parameter, response::Response, MailerLite, BASE_PATH};
+use crate::{data::Data, parameter::Parameter, response::Response, MailerLite};
 
 const END_POINT: &str = "ecommerce/shops";
 
@@ -13,7 +13,12 @@ impl EcommerceCustomer {
     }
 
     pub async fn get(&self, shop_id: impl AsRef<str>, query: Parameter) -> Response {
-        let url: String = format!("{}{}/{}/customers", BASE_PATH, END_POINT, shop_id.as_ref());
+        let url: String = format!(
+            "{}{}/{}/customers",
+            self.mailerlite.base_url,
+            END_POINT,
+            shop_id.as_ref()
+        );
 
         Response::new(
             self.mailerlite
@@ -31,7 +36,7 @@ impl EcommerceCustomer {
     pub async fn find(&self, shop_id: impl AsRef<str>, customer_id: impl AsRef<str>) -> Response {
         let url: String = format!(
             "{}{}/{}/customers/{}",
-            BASE_PATH,
+            self.mailerlite.base_url,
             END_POINT,
             shop_id.as_ref(),
             customer_id.as_ref()
@@ -50,7 +55,12 @@ impl EcommerceCustomer {
     }
 
     pub async fn create(&self, shop_id: impl AsRef<str>, form: Data) -> Response {
-        let url: String = format!("{}{}/{}/customers", BASE_PATH, END_POINT, shop_id.as_ref());
+        let url: String = format!(
+            "{}{}/{}/customers",
+            self.mailerlite.base_url,
+            END_POINT,
+            shop_id.as_ref()
+        );
 
         Response::new(
             self.mailerlite
@@ -73,7 +83,7 @@ impl EcommerceCustomer {
     ) -> Response {
         let url: String = format!(
             "{}{}/{}/customers/{}",
-            BASE_PATH,
+            self.mailerlite.base_url,
             END_POINT,
             shop_id.as_ref(),
             customer_id.as_ref()
@@ -95,7 +105,7 @@ impl EcommerceCustomer {
     pub async fn delete(&self, shop_id: impl AsRef<str>, customer_id: impl AsRef<str>) -> Response {
         let url: String = format!(
             "{}{}/{}/customers/{}",
-            BASE_PATH,
+            self.mailerlite.base_url,
             END_POINT,
             shop_id.as_ref(),
             customer_id.as_ref()

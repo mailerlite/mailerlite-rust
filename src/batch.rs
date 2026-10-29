@@ -1,4 +1,4 @@
-use crate::{data::Data, response::Response, MailerLite, BASE_PATH};
+use crate::{data::Data, response::Response, MailerLite};
 
 const END_POINT: &str = "batch";
 
@@ -13,7 +13,7 @@ impl Batch {
     }
 
     pub async fn create(&self, form: Data) -> Response {
-        let url: String = format!("{}{}", BASE_PATH, END_POINT);
+        let url: String = format!("{}{}", self.mailerlite.base_url, END_POINT);
 
         Response::new(
             self.mailerlite

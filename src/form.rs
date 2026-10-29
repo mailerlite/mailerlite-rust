@@ -1,4 +1,4 @@
-use crate::{data::Data, parameter::Parameter, response::Response, MailerLite, BASE_PATH};
+use crate::{data::Data, parameter::Parameter, response::Response, MailerLite};
 
 const END_POINT: &str = "forms";
 
@@ -13,7 +13,12 @@ impl Form {
     }
 
     pub async fn get(&self, form_type: impl AsRef<str>, query: Parameter) -> Response {
-        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, form_type.as_ref());
+        let url: String = format!(
+            "{}{}/{}",
+            self.mailerlite.base_url,
+            END_POINT,
+            form_type.as_ref()
+        );
 
         Response::new(
             self.mailerlite
@@ -29,7 +34,7 @@ impl Form {
     }
 
     pub async fn find(&self, id: impl AsRef<str>) -> Response {
-        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id.as_ref());
+        let url: String = format!("{}{}/{}", self.mailerlite.base_url, END_POINT, id.as_ref());
 
         Response::new(
             self.mailerlite
@@ -44,7 +49,7 @@ impl Form {
     }
 
     pub async fn update(&self, id: impl AsRef<str>, form: Data) -> Response {
-        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id.as_ref());
+        let url: String = format!("{}{}/{}", self.mailerlite.base_url, END_POINT, id.as_ref());
 
         Response::new(
             self.mailerlite
@@ -60,7 +65,7 @@ impl Form {
     }
 
     pub async fn delete(&self, id: impl AsRef<str>) -> Response {
-        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id.as_ref());
+        let url: String = format!("{}{}/{}", self.mailerlite.base_url, END_POINT, id.as_ref());
 
         Response::new(
             self.mailerlite
@@ -75,7 +80,12 @@ impl Form {
     }
 
     pub async fn get_subscribers(&self, id: impl AsRef<str>, query: Parameter) -> Response {
-        let url: String = format!("{}{}/{}/subscribers", BASE_PATH, END_POINT, id.as_ref());
+        let url: String = format!(
+            "{}{}/{}/subscribers",
+            self.mailerlite.base_url,
+            END_POINT,
+            id.as_ref()
+        );
 
         Response::new(
             self.mailerlite

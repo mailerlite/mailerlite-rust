@@ -1,4 +1,4 @@
-use crate::{data::Data, parameter::Parameter, response::Response, MailerLite, BASE_PATH};
+use crate::{data::Data, parameter::Parameter, response::Response, MailerLite};
 
 const END_POINT: &str = "automations";
 
@@ -13,7 +13,7 @@ impl Automation {
     }
 
     pub async fn get(&self, query: Parameter) -> Response {
-        let url: String = format!("{}{}", BASE_PATH, END_POINT);
+        let url: String = format!("{}{}", self.mailerlite.base_url, END_POINT);
 
         Response::new(
             self.mailerlite
@@ -29,7 +29,7 @@ impl Automation {
     }
 
     pub async fn find(&self, id: impl AsRef<str>) -> Response {
-        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id.as_ref());
+        let url: String = format!("{}{}/{}", self.mailerlite.base_url, END_POINT, id.as_ref());
 
         Response::new(
             self.mailerlite
@@ -44,7 +44,7 @@ impl Automation {
     }
 
     pub async fn create(&self, form: Data) -> Response {
-        let url: String = format!("{}{}", BASE_PATH, END_POINT);
+        let url: String = format!("{}{}", self.mailerlite.base_url, END_POINT);
 
         Response::new(
             self.mailerlite
@@ -60,7 +60,7 @@ impl Automation {
     }
 
     pub async fn delete(&self, id: impl AsRef<str>) -> Response {
-        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id.as_ref());
+        let url: String = format!("{}{}/{}", self.mailerlite.base_url, END_POINT, id.as_ref());
 
         Response::new(
             self.mailerlite
@@ -75,7 +75,12 @@ impl Automation {
     }
 
     pub async fn subscribers_activity(&self, id: impl AsRef<str>, query: Parameter) -> Response {
-        let url: String = format!("{}{}/{}/activity", BASE_PATH, END_POINT, id.as_ref());
+        let url: String = format!(
+            "{}{}/{}/activity",
+            self.mailerlite.base_url,
+            END_POINT,
+            id.as_ref()
+        );
 
         Response::new(
             self.mailerlite
@@ -93,7 +98,7 @@ impl Automation {
     pub async fn ecommerce_stats(&self, id: impl AsRef<str>, query: Parameter) -> Response {
         let url: String = format!(
             "{}{}/{}/monthly-totals/ecommerce",
-            BASE_PATH,
+            self.mailerlite.base_url,
             END_POINT,
             id.as_ref()
         );
@@ -119,7 +124,7 @@ impl Automation {
     ) -> Response {
         let url: String = format!(
             "{}{}/{}/emails/{}/ecommerce-overview-stats",
-            BASE_PATH,
+            self.mailerlite.base_url,
             END_POINT,
             id.as_ref(),
             email_id.as_ref()
@@ -139,7 +144,12 @@ impl Automation {
     }
 
     pub async fn ecommerce_orders(&self, id: impl AsRef<str>, query: Parameter) -> Response {
-        let url: String = format!("{}{}/{}/order-activity", BASE_PATH, END_POINT, id.as_ref());
+        let url: String = format!(
+            "{}{}/{}/order-activity",
+            self.mailerlite.base_url,
+            END_POINT,
+            id.as_ref()
+        );
 
         Response::new(
             self.mailerlite

@@ -1,4 +1,4 @@
-use crate::{data::Data, parameter::Parameter, response::Response, MailerLite, BASE_PATH};
+use crate::{data::Data, parameter::Parameter, response::Response, MailerLite};
 
 const END_POINT: &str = "subscribers";
 
@@ -13,7 +13,7 @@ impl Subscriber {
     }
 
     pub async fn get(&self, query: Parameter) -> Response {
-        let url: String = format!("{}{}", BASE_PATH, END_POINT);
+        let url: String = format!("{}{}", self.mailerlite.base_url, END_POINT);
 
         Response::new(
             self.mailerlite
@@ -29,7 +29,7 @@ impl Subscriber {
     }
 
     pub async fn find(&self, id: impl AsRef<str>) -> Response {
-        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id.as_ref());
+        let url: String = format!("{}{}/{}", self.mailerlite.base_url, END_POINT, id.as_ref());
 
         Response::new(
             self.mailerlite
@@ -44,7 +44,7 @@ impl Subscriber {
     }
 
     pub async fn create(&self, form: Data) -> Response {
-        let url: String = format!("{}{}", BASE_PATH, END_POINT);
+        let url: String = format!("{}{}", self.mailerlite.base_url, END_POINT);
 
         Response::new(
             self.mailerlite
@@ -60,7 +60,7 @@ impl Subscriber {
     }
 
     pub async fn update(&self, id: impl AsRef<str>, form: Data) -> Response {
-        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id.as_ref());
+        let url: String = format!("{}{}/{}", self.mailerlite.base_url, END_POINT, id.as_ref());
 
         Response::new(
             self.mailerlite
@@ -76,7 +76,7 @@ impl Subscriber {
     }
 
     pub async fn delete(&self, id: impl AsRef<str>) -> Response {
-        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id.as_ref());
+        let url: String = format!("{}{}/{}", self.mailerlite.base_url, END_POINT, id.as_ref());
 
         Response::new(
             self.mailerlite
@@ -91,7 +91,12 @@ impl Subscriber {
     }
 
     pub async fn activity(&self, id: impl AsRef<str>, query: Parameter) -> Response {
-        let url: String = format!("{}{}/{}/activity-log", BASE_PATH, END_POINT, id.as_ref());
+        let url: String = format!(
+            "{}{}/{}/activity-log",
+            self.mailerlite.base_url,
+            END_POINT,
+            id.as_ref()
+        );
 
         Response::new(
             self.mailerlite
@@ -107,7 +112,12 @@ impl Subscriber {
     }
 
     pub async fn forget(&self, id: impl AsRef<str>) -> Response {
-        let url: String = format!("{}{}/{}/forget", BASE_PATH, END_POINT, id.as_ref());
+        let url: String = format!(
+            "{}{}/{}/forget",
+            self.mailerlite.base_url,
+            END_POINT,
+            id.as_ref()
+        );
 
         Response::new(
             self.mailerlite
@@ -122,7 +132,12 @@ impl Subscriber {
     }
 
     pub async fn import_status(&self, import_id: impl AsRef<str>) -> Response {
-        let url: String = format!("{}{}/import/{}", BASE_PATH, END_POINT, import_id.as_ref());
+        let url: String = format!(
+            "{}{}/import/{}",
+            self.mailerlite.base_url,
+            END_POINT,
+            import_id.as_ref()
+        );
 
         Response::new(
             self.mailerlite
@@ -139,7 +154,7 @@ impl Subscriber {
     pub async fn ecommerce_stats(&self, id: impl AsRef<str>, shop_id: impl AsRef<str>) -> Response {
         let url: String = format!(
             "{}{}/{}/reports/ecommerce",
-            BASE_PATH,
+            self.mailerlite.base_url,
             END_POINT,
             id.as_ref()
         );
@@ -165,7 +180,7 @@ impl Subscriber {
     ) -> Response {
         let url: String = format!(
             "{}{}/{}/reports/ecommerce/orders",
-            BASE_PATH,
+            self.mailerlite.base_url,
             END_POINT,
             id.as_ref()
         );

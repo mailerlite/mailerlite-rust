@@ -1,4 +1,4 @@
-use crate::{response::Response, MailerLite, BASE_PATH};
+use crate::{response::Response, MailerLite};
 
 const END_POINT: &str = "timezones";
 
@@ -13,7 +13,7 @@ impl Timezone {
     }
 
     pub async fn get(&self) -> Response {
-        let url: String = format!("{}{}", BASE_PATH, END_POINT);
+        let url: String = format!("{}{}", self.mailerlite.base_url, END_POINT);
 
         Response::new(
             self.mailerlite

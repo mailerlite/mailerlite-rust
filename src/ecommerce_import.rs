@@ -1,4 +1,4 @@
-use crate::{data::Data, response::Response, MailerLite, BASE_PATH};
+use crate::{data::Data, response::Response, MailerLite};
 
 const END_POINT: &str = "ecommerce/shops";
 
@@ -15,7 +15,7 @@ impl EcommerceImport {
     pub async fn products(&self, shop_id: impl AsRef<str>, form: Data) -> Response {
         let url: String = format!(
             "{}{}/{}/products/import",
-            BASE_PATH,
+            self.mailerlite.base_url,
             END_POINT,
             shop_id.as_ref()
         );
@@ -36,7 +36,7 @@ impl EcommerceImport {
     pub async fn categories(&self, shop_id: impl AsRef<str>, form: Data) -> Response {
         let url: String = format!(
             "{}{}/{}/categories/import",
-            BASE_PATH,
+            self.mailerlite.base_url,
             END_POINT,
             shop_id.as_ref()
         );
@@ -57,7 +57,7 @@ impl EcommerceImport {
     pub async fn customers(&self, shop_id: impl AsRef<str>, form: Data) -> Response {
         let url: String = format!(
             "{}{}/{}/customers/import",
-            BASE_PATH,
+            self.mailerlite.base_url,
             END_POINT,
             shop_id.as_ref()
         );
@@ -78,7 +78,7 @@ impl EcommerceImport {
     pub async fn orders(&self, shop_id: impl AsRef<str>, form: Data) -> Response {
         let url: String = format!(
             "{}{}/{}/orders/import",
-            BASE_PATH,
+            self.mailerlite.base_url,
             END_POINT,
             shop_id.as_ref()
         );

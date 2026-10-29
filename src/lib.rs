@@ -50,13 +50,34 @@ const BASE_PATH: &str = "https://connect.mailerlite.com/api/";
 #[derive(Debug, Clone)]
 pub struct MailerLite {
     client: Client,
+    base_url: String,
 }
 
 impl MailerLite {
     pub fn new(api_key: String) -> Self {
         Self {
             client: Client::new(api_key),
+            base_url: BASE_PATH.to_string(),
         }
+    }
+
+    /// Sends all requests to a different base URL, for example a mock server or a development instance of
+    /// the API. The SDK adds a "/" at the end if the URL has none.
+    ///
+    /// ```
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// let mailerlite: MailerLite =
+    ///     MailerLite::new("api_key".to_string()).with_base_url("http://localhost:8080/api");
+    /// ```
+    pub fn with_base_url(mut self, base_url: impl Into<String>) -> Self {
+        let mut base_url: String = base_url.into();
+        if !base_url.ends_with('/') {
+            base_url.push('/');
+        }
+        self.base_url = base_url;
+
+        self
     }
 
     pub fn subscriber(&self) -> Subscriber {
@@ -149,5 +170,23 @@ mod tests {
         let mailerlite: MailerLite = MailerLite::new("secret_api_key".to_string());
 
         assert!(!format!("{mailerlite:?}").contains("secret_api_key"));
+    }
+
+    #[test]
+    fn base_url_defaults_to_the_api() {
+        let mailerlite: MailerLite = MailerLite::new("api_key".to_string());
+
+        assert_eq!(mailerlite.base_url, "https://connect.mailerlite.com/api/");
+    }
+
+    #[test]
+    fn with_base_url_adds_one_trailing_slash() {
+        let mailerlite: MailerLite =
+            MailerLite::new("api_key".to_string()).with_base_url("http://localhost:8080/api");
+        assert_eq!(mailerlite.base_url, "http://localhost:8080/api/");
+
+        let mailerlite: MailerLite =
+            MailerLite::new("api_key".to_string()).with_base_url("http://localhost:8080/api/");
+        assert_eq!(mailerlite.base_url, "http://localhost:8080/api/");
     }
 }

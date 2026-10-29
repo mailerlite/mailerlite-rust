@@ -1,4 +1,4 @@
-use crate::{data::Data, parameter::Parameter, response::Response, MailerLite, BASE_PATH};
+use crate::{data::Data, parameter::Parameter, response::Response, MailerLite};
 
 const END_POINT: &str = "ecommerce/shops";
 
@@ -20,7 +20,7 @@ impl EcommerceCartItem {
     ) -> Response {
         let url: String = format!(
             "{}{}/{}/carts/{}/items",
-            BASE_PATH,
+            self.mailerlite.base_url,
             END_POINT,
             shop_id.as_ref(),
             cart_id.as_ref()
@@ -47,7 +47,7 @@ impl EcommerceCartItem {
     ) -> Response {
         let url: String = format!(
             "{}{}/{}/carts/{}/items/{}",
-            BASE_PATH,
+            self.mailerlite.base_url,
             END_POINT,
             shop_id.as_ref(),
             cart_id.as_ref(),
@@ -74,7 +74,7 @@ impl EcommerceCartItem {
     ) -> Response {
         let url: String = format!(
             "{}{}/{}/carts/{}/items",
-            BASE_PATH,
+            self.mailerlite.base_url,
             END_POINT,
             shop_id.as_ref(),
             cart_id.as_ref()
@@ -102,7 +102,7 @@ impl EcommerceCartItem {
     ) -> Response {
         let url: String = format!(
             "{}{}/{}/carts/{}/items/{}",
-            BASE_PATH,
+            self.mailerlite.base_url,
             END_POINT,
             shop_id.as_ref(),
             cart_id.as_ref(),
@@ -130,7 +130,7 @@ impl EcommerceCartItem {
     ) -> Response {
         let url: String = format!(
             "{}{}/{}/carts/{}/items/{}",
-            BASE_PATH,
+            self.mailerlite.base_url,
             END_POINT,
             shop_id.as_ref(),
             cart_id.as_ref(),

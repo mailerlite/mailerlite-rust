@@ -1,4 +1,4 @@
-use crate::{data::Data, response::Response, MailerLite, BASE_PATH};
+use crate::{data::Data, response::Response, MailerLite};
 
 const END_POINT: &str = "ecommerce/shops";
 
@@ -15,7 +15,7 @@ impl EcommerceProductVariant {
     pub async fn get(&self, shop_id: impl AsRef<str>, product_id: impl AsRef<str>) -> Response {
         let url: String = format!(
             "{}{}/{}/products/{}/variants",
-            BASE_PATH,
+            self.mailerlite.base_url,
             END_POINT,
             shop_id.as_ref(),
             product_id.as_ref()
@@ -41,7 +41,7 @@ impl EcommerceProductVariant {
     ) -> Response {
         let url: String = format!(
             "{}{}/{}/products/{}/variants",
-            BASE_PATH,
+            self.mailerlite.base_url,
             END_POINT,
             shop_id.as_ref(),
             product_id.as_ref()
@@ -69,7 +69,7 @@ impl EcommerceProductVariant {
     ) -> Response {
         let url: String = format!(
             "{}{}/{}/products/{}/variants/{}",
-            BASE_PATH,
+            self.mailerlite.base_url,
             END_POINT,
             shop_id.as_ref(),
             product_id.as_ref(),
@@ -97,7 +97,7 @@ impl EcommerceProductVariant {
     ) -> Response {
         let url: String = format!(
             "{}{}/{}/products/{}/variants/{}",
-            BASE_PATH,
+            self.mailerlite.base_url,
             END_POINT,
             shop_id.as_ref(),
             product_id.as_ref(),

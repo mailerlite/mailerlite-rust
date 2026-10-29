@@ -1,4 +1,4 @@
-use crate::{data::Data, parameter::Parameter, response::Response, MailerLite, BASE_PATH};
+use crate::{data::Data, parameter::Parameter, response::Response, MailerLite};
 
 const END_POINT: &str = "campaigns";
 
@@ -13,7 +13,7 @@ impl Campaign {
     }
 
     pub async fn get(&self, query: Parameter) -> Response {
-        let url: String = format!("{}{}", BASE_PATH, END_POINT);
+        let url: String = format!("{}{}", self.mailerlite.base_url, END_POINT);
 
         Response::new(
             self.mailerlite
@@ -29,7 +29,7 @@ impl Campaign {
     }
 
     pub async fn find(&self, id: impl AsRef<str>) -> Response {
-        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id.as_ref());
+        let url: String = format!("{}{}/{}", self.mailerlite.base_url, END_POINT, id.as_ref());
 
         Response::new(
             self.mailerlite
@@ -44,7 +44,7 @@ impl Campaign {
     }
 
     pub async fn create(&self, form: Data) -> Response {
-        let url: String = format!("{}{}", BASE_PATH, END_POINT);
+        let url: String = format!("{}{}", self.mailerlite.base_url, END_POINT);
 
         Response::new(
             self.mailerlite
@@ -60,7 +60,7 @@ impl Campaign {
     }
 
     pub async fn update(&self, id: impl AsRef<str>, form: Data) -> Response {
-        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id.as_ref());
+        let url: String = format!("{}{}/{}", self.mailerlite.base_url, END_POINT, id.as_ref());
 
         Response::new(
             self.mailerlite
@@ -76,7 +76,7 @@ impl Campaign {
     }
 
     pub async fn delete(&self, id: impl AsRef<str>) -> Response {
-        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id.as_ref());
+        let url: String = format!("{}{}/{}", self.mailerlite.base_url, END_POINT, id.as_ref());
 
         Response::new(
             self.mailerlite
@@ -91,7 +91,12 @@ impl Campaign {
     }
 
     pub async fn schedule(&self, id: impl AsRef<str>, form: Data) -> Response {
-        let url: String = format!("{}{}/{}/schedule", BASE_PATH, END_POINT, id.as_ref());
+        let url: String = format!(
+            "{}{}/{}/schedule",
+            self.mailerlite.base_url,
+            END_POINT,
+            id.as_ref()
+        );
 
         Response::new(
             self.mailerlite
@@ -107,7 +112,12 @@ impl Campaign {
     }
 
     pub async fn cancel(&self, id: impl AsRef<str>) -> Response {
-        let url: String = format!("{}{}/{}/cancel", BASE_PATH, END_POINT, id.as_ref());
+        let url: String = format!(
+            "{}{}/{}/cancel",
+            self.mailerlite.base_url,
+            END_POINT,
+            id.as_ref()
+        );
 
         Response::new(
             self.mailerlite
@@ -124,7 +134,7 @@ impl Campaign {
     pub async fn subscribers_activity(&self, id: impl AsRef<str>, query: Parameter) -> Response {
         let url: String = format!(
             "{}{}/{}/reports/subscriber-activity",
-            BASE_PATH,
+            self.mailerlite.base_url,
             END_POINT,
             id.as_ref()
         );
@@ -143,7 +153,7 @@ impl Campaign {
     }
 
     pub async fn languages(&self) -> Response {
-        let url: String = format!("{}{}/languages", BASE_PATH, END_POINT);
+        let url: String = format!("{}{}/languages", self.mailerlite.base_url, END_POINT);
 
         Response::new(
             self.mailerlite
@@ -160,7 +170,7 @@ impl Campaign {
     pub async fn ecommerce_stats(&self, id: impl AsRef<str>, shop_id: impl AsRef<str>) -> Response {
         let url: String = format!(
             "{}{}/{}/reports/ecommerce",
-            BASE_PATH,
+            self.mailerlite.base_url,
             END_POINT,
             id.as_ref()
         );
@@ -186,7 +196,7 @@ impl Campaign {
     ) -> Response {
         let url: String = format!(
             "{}{}/{}/reports/ecommerce/orders",
-            BASE_PATH,
+            self.mailerlite.base_url,
             END_POINT,
             id.as_ref()
         );

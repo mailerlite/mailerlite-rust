@@ -1,4 +1,4 @@
-use crate::{data::Data, parameter::Parameter, response::Response, MailerLite, BASE_PATH};
+use crate::{data::Data, parameter::Parameter, response::Response, MailerLite};
 
 const END_POINT: &str = "fields";
 
@@ -13,7 +13,7 @@ impl Field {
     }
 
     pub async fn get(&self, query: Parameter) -> Response {
-        let url: String = format!("{}{}", BASE_PATH, END_POINT);
+        let url: String = format!("{}{}", self.mailerlite.base_url, END_POINT);
 
         Response::new(
             self.mailerlite
@@ -29,7 +29,7 @@ impl Field {
     }
 
     pub async fn create(&self, form: Data) -> Response {
-        let url: String = format!("{}{}", BASE_PATH, END_POINT);
+        let url: String = format!("{}{}", self.mailerlite.base_url, END_POINT);
 
         Response::new(
             self.mailerlite
@@ -45,7 +45,7 @@ impl Field {
     }
 
     pub async fn update(&self, id: impl AsRef<str>, form: Data) -> Response {
-        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id.as_ref());
+        let url: String = format!("{}{}/{}", self.mailerlite.base_url, END_POINT, id.as_ref());
 
         Response::new(
             self.mailerlite
@@ -61,7 +61,7 @@ impl Field {
     }
 
     pub async fn delete(&self, id: impl AsRef<str>) -> Response {
-        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, id.as_ref());
+        let url: String = format!("{}{}/{}", self.mailerlite.base_url, END_POINT, id.as_ref());
 
         Response::new(
             self.mailerlite

@@ -1,4 +1,4 @@
-use crate::{data::Data, parameter::Parameter, response::Response, MailerLite, BASE_PATH};
+use crate::{data::Data, parameter::Parameter, response::Response, MailerLite};
 
 const END_POINT: &str = "ecommerce/shops";
 
@@ -13,7 +13,12 @@ impl EcommerceCategory {
     }
 
     pub async fn get(&self, shop_id: impl AsRef<str>, query: Parameter) -> Response {
-        let url: String = format!("{}{}/{}/categories", BASE_PATH, END_POINT, shop_id.as_ref());
+        let url: String = format!(
+            "{}{}/{}/categories",
+            self.mailerlite.base_url,
+            END_POINT,
+            shop_id.as_ref()
+        );
 
         Response::new(
             self.mailerlite
@@ -31,7 +36,7 @@ impl EcommerceCategory {
     pub async fn find(&self, shop_id: impl AsRef<str>, category_id: impl AsRef<str>) -> Response {
         let url: String = format!(
             "{}{}/{}/categories/{}",
-            BASE_PATH,
+            self.mailerlite.base_url,
             END_POINT,
             shop_id.as_ref(),
             category_id.as_ref()
@@ -50,7 +55,12 @@ impl EcommerceCategory {
     }
 
     pub async fn create(&self, shop_id: impl AsRef<str>, form: Data) -> Response {
-        let url: String = format!("{}{}/{}/categories", BASE_PATH, END_POINT, shop_id.as_ref());
+        let url: String = format!(
+            "{}{}/{}/categories",
+            self.mailerlite.base_url,
+            END_POINT,
+            shop_id.as_ref()
+        );
 
         Response::new(
             self.mailerlite
@@ -73,7 +83,7 @@ impl EcommerceCategory {
     ) -> Response {
         let url: String = format!(
             "{}{}/{}/categories/{}",
-            BASE_PATH,
+            self.mailerlite.base_url,
             END_POINT,
             shop_id.as_ref(),
             category_id.as_ref()
@@ -95,7 +105,7 @@ impl EcommerceCategory {
     pub async fn delete(&self, shop_id: impl AsRef<str>, category_id: impl AsRef<str>) -> Response {
         let url: String = format!(
             "{}{}/{}/categories/{}",
-            BASE_PATH,
+            self.mailerlite.base_url,
             END_POINT,
             shop_id.as_ref(),
             category_id.as_ref()
@@ -121,7 +131,7 @@ impl EcommerceCategory {
     ) -> Response {
         let url: String = format!(
             "{}{}/{}/categories/{}/products",
-            BASE_PATH,
+            self.mailerlite.base_url,
             END_POINT,
             shop_id.as_ref(),
             category_id.as_ref()
@@ -148,7 +158,7 @@ impl EcommerceCategory {
     ) -> Response {
         let url: String = format!(
             "{}{}/{}/categories/{}/products/{}",
-            BASE_PATH,
+            self.mailerlite.base_url,
             END_POINT,
             shop_id.as_ref(),
             category_id.as_ref(),
@@ -175,7 +185,7 @@ impl EcommerceCategory {
     ) -> Response {
         let url: String = format!(
             "{}{}/{}/categories/{}/products/{}",
-            BASE_PATH,
+            self.mailerlite.base_url,
             END_POINT,
             shop_id.as_ref(),
             category_id.as_ref(),
