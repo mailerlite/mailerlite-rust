@@ -171,7 +171,7 @@ cargo add mailerlite-rs
 Or add the following line to your Cargo.toml:
 
 ```shell
-mailerlite-rs = "1.0.0"
+mailerlite-rs = "1.2.0"
 ```
 
 # Usage
