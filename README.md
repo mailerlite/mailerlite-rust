@@ -168,12 +168,6 @@ Run the following Cargo command in your project directory:
 cargo add mailerlite-rs
 ```
 
-Or add the following line to your Cargo.toml:
-
-```shell
-mailerlite-rs = "1.2.0"
-```
-
 # Usage
 
 ## Subscribers
