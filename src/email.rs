@@ -7,6 +7,7 @@ use crate::{
     api_response::{object_or_empty_array, ApiResponse, DataOnly, EtagOnly, WithEtag},
     error::Error,
     http::{self, Method, NO_BODY},
+    pagination::Paginated,
     validate, MailerLite,
 };
 use serde::{Deserialize, Serialize};
@@ -644,6 +645,23 @@ struct NameBody<'a> {
     name: &'a str,
 }
 
+/// A saved copy of the content and the settings of an email.
+#[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
+pub struct EmailVersion {
+    pub id: String,
+    pub created_at: String,
+    /// True for the version that the email has now.
+    pub current: bool,
+}
+
+/// The page options of `Email::versions`. The SDK does not send `None` values.
+#[derive(Debug, Clone, Default)]
+pub struct ListVersionsOptions {
+    pub page: Option<u32>,
+    pub limit: Option<u32>,
+}
+
 /// The email methods. Get it with `MailerLite::email`.
 #[derive(Debug)]
 pub struct Email {
@@ -908,6 +926,30 @@ impl Email {
             Some(&NameBody {
                 name: name.as_ref(),
             }),
+            None,
+        )
+        .await
+    }
+
+    /// Lists the saved versions of an email. The newest version is first.
+    pub async fn versions(
+        &self,
+        email_id: impl AsRef<str>,
+        options: ListVersionsOptions,
+    ) -> Result<ApiResponse<Paginated<EmailVersion>>, Error> {
+        let email_id: &str = email_id.as_ref();
+        validate::path_id("email_id", email_id)?;
+        let query: Vec<(&str, String)> = validate::query_pairs([
+            ("page", options.page.map(|page| page.to_string())),
+            ("limit", options.limit.map(|limit| limit.to_string())),
+        ]);
+
+        http::send(
+            &self.mailerlite,
+            Method::GET,
+            &format!("{END_POINT}/{email_id}/versions"),
+            &query,
+            NO_BODY,
             None,
         )
         .await

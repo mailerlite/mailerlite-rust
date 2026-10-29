@@ -5,11 +5,12 @@ use mailerlite_rs::{
     api_response::{ApiResponse, DataOnly, EtagOnly, WithEtag},
     email::{
         BlockType, BrandMode, BrandUpdate, EditorText, EmailBlock, EmailDocument, EmailHtml,
-        EmailSettingsUpdate, EmailTemplate, FooterUpdate, NewBlock, ParagraphStyleUpdate,
-        Placement, Position, SettingsResult, SocialLinkUpdate, TextStyleUpdate, TypographyUpdate,
-        Validation, VERSION_CONFLICT,
+        EmailSettingsUpdate, EmailTemplate, EmailVersion, FooterUpdate, ListVersionsOptions,
+        NewBlock, ParagraphStyleUpdate, Placement, Position, SettingsResult, SocialLinkUpdate,
+        TextStyleUpdate, TypographyUpdate, Validation, VERSION_CONFLICT,
     },
     error::Error,
+    pagination::Paginated,
 };
 use mockito::{Mock, Server, ServerGuard};
 use serde_json::json;
@@ -1166,6 +1167,87 @@ async fn create_template_rejects_bad_ids_without_a_request() {
     for id in BAD_IDS {
         assert!(matches!(
             email.create_template(id, "Newsletter").await,
+            Err(Error::InvalidId {
+                name: "email_id",
+                ..
+            })
+        ));
+    }
+
+    assert_no_request(&mocks).await;
+}
+
+#[tokio::test]
+async fn versions_lists_the_versions_with_the_page_options() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mock: Mock = expect_request(
+        &mut server,
+        "GET",
+        "/emails/123/versions?page=2&limit=10",
+        None,
+        200,
+        &fixture("email_versions"),
+    )
+    .await;
+
+    let options: ListVersionsOptions = ListVersionsOptions {
+        page: Some(2),
+        limit: Some(10),
+    };
+    let response: ApiResponse<Paginated<EmailVersion>> = mailerlite(&server)
+        .email()
+        .versions("123", options)
+        .await
+        .unwrap();
+
+    mock.assert_async().await;
+    assert_eq!(response.data.len(), 2);
+    assert_eq!(response.data[0].id, "902");
+    assert_eq!(response.data[0].created_at, "2026-10-28 12:05:00");
+    assert!(response.data[0].current);
+    assert!(!response.data[1].current);
+    assert_eq!(response.links.prev, None);
+    assert_eq!(response.links.next, None);
+    assert_eq!(response.meta.from, Some(1));
+    assert_eq!(response.meta.to, Some(2));
+    assert_eq!(response.meta.total, 2);
+}
+
+#[tokio::test]
+async fn versions_sends_no_query_without_options() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mock: Mock = expect_request(
+        &mut server,
+        "GET",
+        "/emails/123/versions",
+        None,
+        200,
+        &fixture("email_versions"),
+    )
+    .await;
+
+    mailerlite(&server)
+        .email()
+        .versions("123", Default::default())
+        .await
+        .unwrap();
+
+    mock.assert_async().await;
+}
+
+#[tokio::test]
+async fn versions_rejects_bad_ids_without_a_request() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
+    let email = mailerlite(&server).email();
+
+    assert!(matches!(
+        email.versions("", Default::default()).await,
+        Err(Error::EmptyId { name: "email_id" })
+    ));
+    for id in BAD_IDS {
+        assert!(matches!(
+            email.versions(id, Default::default()).await,
             Err(Error::InvalidId {
                 name: "email_id",
                 ..

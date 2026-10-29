@@ -41,6 +41,7 @@ MailerLite Rust SDK
         - [Update the design settings](#update-the-design-settings)
         - [Validate the design settings](#validate-the-design-settings)
         - [Save an email as a template](#save-an-email-as-a-template)
+        - [Get a list of email versions](#get-a-list-of-email-versions)
     - [Groups](#groups)
         - [Get a list of groups](#get-a-list-of-groups)
         - [Create a group](#create-a-group)
@@ -1198,6 +1199,52 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
 
     println!("Template ID: {}", response.data.id);
+
+    Ok(())
+}
+```
+
+### Get a list of email versions
+
+A version is a saved copy of the content and the settings of an email. The list starts with the newest version. `current` marks the version that the email has now. To get the first page with the default size, use `versions(email_id, Default::default())`.
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_email_versions
+```
+</details>
+
+```rust
+use mailerlite_rs::{
+    api_response::ApiResponse,
+    email::{EmailVersion, ListVersionsOptions},
+    pagination::Paginated,
+    MailerLite,
+};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let email_id: String = String::from("Your Email ID");
+
+    let options: ListVersionsOptions = ListVersionsOptions {
+        page: Some(1),
+        limit: Some(10),
+    };
+
+    let response: ApiResponse<Paginated<EmailVersion>> =
+        mailerlite.email().versions(email_id, options).await?;
+
+    for version in &response.data {
+        println!("{} {} {}", version.id, version.created_at, version.current);
+    }
 
     Ok(())
 }
