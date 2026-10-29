@@ -4,7 +4,7 @@ use common::{assert_no_request, expect_no_request, expect_request, fixture, mail
 use mailerlite_rs::{
     api_response::{ApiResponse, DataOnly, EtagOnly, WithEtag},
     email::{
-        BlockType, BrandMode, BrandUpdate, EditorText, EmailBlock, EmailDocument, EmailHtml,
+        BlockType, BrandMode, BrandUpdate, EditorText, Email, EmailBlock, EmailDocument, EmailHtml,
         EmailSettingsUpdate, EmailTemplate, EmailVersion, FooterUpdate, ListVersionsOptions,
         NewBlock, ParagraphStyleUpdate, Placement, Position, SettingsResult, SocialLinkUpdate,
         TextStyleUpdate, TypographyUpdate, Validation, VERSION_CONFLICT,
@@ -12,7 +12,7 @@ use mailerlite_rs::{
     error::Error,
     pagination::Paginated,
 };
-use mockito::{Mock, Server, ServerGuard};
+use mockito::{Matcher, Mock, Server, ServerGuard};
 use serde_json::json;
 
 #[tokio::test]
@@ -1369,4 +1369,209 @@ async fn restore_version_checks_the_input_without_a_request() {
     }
 
     assert_no_request(&mocks).await;
+}
+
+/// Sends each of the 8 writes that accept an idempotency key, with valid input.
+async fn send_all_writes(email: &Email) -> Vec<Result<(), Error>> {
+    let block: NewBlock = new_paragraph(None);
+    vec![
+        email.create_block("123", "42", &block).await.map(|_| ()),
+        email
+            .update_block("123", "57", "43", &hello_again())
+            .await
+            .map(|_| ()),
+        email.delete_block("123", "57", "44").await.map(|_| ()),
+        email
+            .move_block("123", "57", "45", &Placement::start())
+            .await
+            .map(|_| ()),
+        email
+            .update_settings("123", "46", &settings_update())
+            .await
+            .map(|_| ()),
+        email.create_template("123", "Newsletter").await.map(|_| ()),
+        email.create_version("123").await.map(|_| ()),
+        email.restore_version("123", "901", "41").await.map(|_| ()),
+    ]
+}
+
+/// Starts one mock for each of the 8 writes. Each mock expects one request with the header matcher.
+async fn mock_all_writes(server: &mut ServerGuard, key: Matcher) -> Vec<Mock> {
+    let writes: [(&str, &str, &str); 8] = [
+        ("POST", "/emails/123/blocks", "email_block_created"),
+        ("PATCH", "/emails/123/blocks/57", "email_block_updated"),
+        ("DELETE", "/emails/123/blocks/57", "email_etag"),
+        ("POST", "/emails/123/blocks/57/move", "email_block_moved"),
+        ("PATCH", "/emails/123/settings", "email_settings"),
+        ("POST", "/emails/123/templates", "email_template"),
+        ("POST", "/emails/123/versions", "email_version"),
+        ("POST", "/emails/123/versions/901/restore", "email"),
+    ];
+    let mut mocks: Vec<Mock> = Vec::new();
+    for (method, path, response) in writes {
+        mocks.push(
+            server
+                .mock(method, path)
+                .match_header("Idempotency-Key", key.clone())
+                .with_status(200)
+                .with_body(fixture(response))
+                .expect(1)
+                .create_async()
+                .await,
+        );
+    }
+
+    mocks
+}
+
+#[tokio::test]
+async fn the_8_writes_send_the_idempotency_key() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mocks: Vec<Mock> = mock_all_writes(&mut server, Matcher::Exact("key-1".to_string())).await;
+    let email: Email = mailerlite(&server).email().with_idempotency_key("key-1");
+
+    for result in send_all_writes(&email).await {
+        result.unwrap();
+    }
+
+    for mock in mocks {
+        mock.assert_async().await;
+    }
+}
+
+#[tokio::test]
+async fn the_8_writes_send_no_idempotency_key_without_a_key() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mocks: Vec<Mock> = mock_all_writes(&mut server, Matcher::Missing).await;
+    let email: Email = mailerlite(&server).email();
+
+    for result in send_all_writes(&email).await {
+        result.unwrap();
+    }
+
+    for mock in mocks {
+        mock.assert_async().await;
+    }
+}
+
+#[tokio::test]
+async fn reads_and_validations_ignore_the_idempotency_key() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let reads: [(&str, &str, &str); 6] = [
+        ("GET", "/emails/123", "email"),
+        ("GET", "/emails/123/html", "email_html"),
+        ("GET", "/emails/123/blocks/57", "email_block"),
+        ("GET", "/emails/123/versions", "email_versions"),
+        (
+            "POST",
+            "/emails/blocks/validate",
+            "email_block_validation_valid",
+        ),
+        (
+            "POST",
+            "/emails/123/settings/validate",
+            "email_settings_validation",
+        ),
+    ];
+    let mut mocks: Vec<Mock> = Vec::new();
+    for (method, path, response) in reads {
+        mocks.push(
+            server
+                .mock(method, path)
+                .match_header("Idempotency-Key", Matcher::Missing)
+                .with_status(200)
+                .with_body(fixture(response))
+                .expect(1)
+                .create_async()
+                .await,
+        );
+    }
+    let email: Email = mailerlite(&server).email().with_idempotency_key("key-1");
+
+    email.find("123").await.unwrap();
+    email.html("123").await.unwrap();
+    email.find_block("123", "57").await.unwrap();
+    email.versions("123", Default::default()).await.unwrap();
+    email.validate_block(&new_paragraph(None)).await.unwrap();
+    email
+        .validate_settings("123", &settings_update())
+        .await
+        .unwrap();
+
+    for mock in mocks {
+        mock.assert_async().await;
+    }
+}
+
+#[tokio::test]
+async fn bad_idempotency_keys_stop_the_writes_without_a_request() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
+    let too_long: String = "k".repeat(256);
+
+    for key in [
+        "",
+        too_long.as_str(),
+        "key\n",
+        "key\t",
+        "clé",
+        "key\x7f",
+        " key",
+        "key ",
+    ] {
+        let email: Email = mailerlite(&server).email().with_idempotency_key(key);
+        for result in send_all_writes(&email).await {
+            assert!(
+                matches!(result, Err(Error::InvalidIdempotencyKey)),
+                "expected InvalidIdempotencyKey for {key:?}"
+            );
+        }
+    }
+
+    assert_no_request(&mocks).await;
+}
+
+#[tokio::test]
+async fn a_255_character_key_is_sent() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let key: String = "k".repeat(255);
+    let mock: Mock = server
+        .mock("POST", "/emails/123/versions")
+        .match_header("Idempotency-Key", key.as_str())
+        .with_status(201)
+        .with_body(fixture("email_version"))
+        .create_async()
+        .await;
+
+    mailerlite(&server)
+        .email()
+        .with_idempotency_key(key.clone())
+        .create_version("123")
+        .await
+        .unwrap();
+
+    mock.assert_async().await;
+}
+
+#[tokio::test]
+async fn a_replayed_write_has_the_replay_flag() {
+    let mut server: ServerGuard = Server::new_async().await;
+    server
+        .mock("POST", "/emails/123/versions")
+        .match_header("Idempotency-Key", "key-1")
+        .with_status(201)
+        .with_header("Idempotent-Replayed", "True")
+        .with_body(fixture("email_version"))
+        .create_async()
+        .await;
+
+    let response: ApiResponse<DataOnly<EmailVersion>> = mailerlite(&server)
+        .email()
+        .with_idempotency_key("key-1")
+        .create_version("123")
+        .await
+        .unwrap();
+
+    assert!(response.is_idempotent_replay());
+    assert_eq!(response.status_code, 201);
 }

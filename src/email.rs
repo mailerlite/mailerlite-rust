@@ -666,11 +666,42 @@ pub struct ListVersionsOptions {
 #[derive(Debug)]
 pub struct Email {
     mailerlite: MailerLite,
+    idempotency_key: Option<String>,
 }
 
 impl Email {
     pub fn new(mailerlite: MailerLite) -> Self {
-        Self { mailerlite }
+        Self {
+            mailerlite,
+            idempotency_key: None,
+        }
+    }
+
+    /// Sends the `Idempotency-Key` header with the writes of this value. If a write fails with a network
+    /// error, send the same write again with the same key. If the first request was a success, the API
+    /// returns the stored response, and `ApiResponse::is_idempotent_replay` is `true`.
+    ///
+    /// - Only these methods send the key: `create_block`, `update_block`, `delete_block`, `move_block`,
+    ///   `update_settings`, `create_template`, `create_version` and `restore_version`. The read methods and
+    ///   the validate methods ignore it.
+    /// - The key must be 1 to 255 printable ASCII characters, without a space at the start or the end.
+    ///   The SDK checks the key when a write runs. A bad key gives `Error::InvalidIdempotencyKey`, and the
+    ///   SDK sends no request.
+    ///
+    /// Warning: use a new key for each write. Do not use an `Email` value that has a key for a different
+    /// write. The API keeps a key for 24 hours, and it rejects the same key with a different request.
+    pub fn with_idempotency_key(mut self, key: impl Into<String>) -> Self {
+        self.idempotency_key = Some(key.into());
+
+        self
+    }
+
+    /// Checks the idempotency key and returns it for a write.
+    fn write_key(&self) -> Result<Option<&str>, Error> {
+        match self.idempotency_key.as_deref() {
+            Some(key) => validate::idempotency_key(key).map(|()| Some(key)),
+            None => Ok(None),
+        }
     }
 
     /// Gets an email with its settings and blocks, and the etag of the email.
@@ -748,13 +779,15 @@ impl Email {
             placement.check()?;
         }
 
+        let idempotency_key: Option<&str> = self.write_key()?;
+
         http::send(
             &self.mailerlite,
             Method::POST,
             &format!("{END_POINT}/{email_id}/blocks"),
             &[],
             Some(&EtagBody { body: block, etag }),
-            None,
+            idempotency_key,
         )
         .await
     }
@@ -774,6 +807,8 @@ impl Email {
         validate::path_id("block_id", block_id)?;
         validate::etag(etag)?;
 
+        let idempotency_key: Option<&str> = self.write_key()?;
+
         http::send(
             &self.mailerlite,
             Method::PATCH,
@@ -783,7 +818,7 @@ impl Email {
                 editor_content,
                 etag,
             }),
-            None,
+            idempotency_key,
         )
         .await
     }
@@ -801,6 +836,8 @@ impl Email {
         validate::path_id("block_id", block_id)?;
         validate::etag(etag)?;
 
+        let idempotency_key: Option<&str> = self.write_key()?;
+
         http::send(
             &self.mailerlite,
             Method::DELETE,
@@ -810,7 +847,7 @@ impl Email {
                 body: &Map::new(),
                 etag,
             }),
-            None,
+            idempotency_key,
         )
         .await
     }
@@ -831,13 +868,15 @@ impl Email {
         validate::etag(etag)?;
         placement.check()?;
 
+        let idempotency_key: Option<&str> = self.write_key()?;
+
         http::send(
             &self.mailerlite,
             Method::POST,
             &format!("{END_POINT}/{email_id}/blocks/{block_id}/move"),
             &[],
             Some(&MoveBody { placement, etag }),
-            None,
+            idempotency_key,
         )
         .await
     }
@@ -873,6 +912,8 @@ impl Email {
         validate::etag(etag)?;
         validate::no_etag_key(&settings.extra)?;
 
+        let idempotency_key: Option<&str> = self.write_key()?;
+
         http::send(
             &self.mailerlite,
             Method::PATCH,
@@ -882,7 +923,7 @@ impl Email {
                 body: settings,
                 etag,
             }),
-            None,
+            idempotency_key,
         )
         .await
     }
@@ -918,6 +959,8 @@ impl Email {
         let email_id: &str = email_id.as_ref();
         validate::path_id("email_id", email_id)?;
 
+        let idempotency_key: Option<&str> = self.write_key()?;
+
         http::send(
             &self.mailerlite,
             Method::POST,
@@ -926,7 +969,7 @@ impl Email {
             Some(&NameBody {
                 name: name.as_ref(),
             }),
-            None,
+            idempotency_key,
         )
         .await
     }
@@ -965,13 +1008,15 @@ impl Email {
         let email_id: &str = email_id.as_ref();
         validate::path_id("email_id", email_id)?;
 
+        let idempotency_key: Option<&str> = self.write_key()?;
+
         http::send(
             &self.mailerlite,
             Method::POST,
             &format!("{END_POINT}/{email_id}/versions"),
             &[],
             NO_BODY,
-            None,
+            idempotency_key,
         )
         .await
     }
@@ -990,6 +1035,8 @@ impl Email {
         validate::path_id("version_id", version_id)?;
         validate::etag(etag)?;
 
+        let idempotency_key: Option<&str> = self.write_key()?;
+
         http::send(
             &self.mailerlite,
             Method::POST,
@@ -999,7 +1046,7 @@ impl Email {
                 body: &Map::new(),
                 etag,
             }),
-            None,
+            idempotency_key,
         )
         .await
     }

@@ -45,6 +45,7 @@ MailerLite Rust SDK
         - [Get a list of email versions](#get-a-list-of-email-versions)
         - [Save a version of an email](#save-a-version-of-an-email)
         - [Restore a version of an email](#restore-a-version-of-an-email)
+        - [Retry a write safely](#retry-a-write-safely)
     - [Brand styles](#brand-styles)
         - [Get the brand styles](#get-the-brand-styles)
     - [Files](#files)
@@ -1378,6 +1379,70 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
 
     println!("New etag: {}", response.etag);
+
+    Ok(())
+}
+```
+
+### Retry a write safely
+
+If a write fails with a network error (`Error::Transport`), you do not know if the API did the write. Give the write an idempotency key with `email().with_idempotency_key(key)`, and send the write again with the same key and the same arguments. If the first request was a success, the API returns the stored response and does not do the write two times. Then `response.is_idempotent_replay()` is `true`.
+
+- Use a new key for each write. Do not use an `Email` value that has a key for a different write. The API keeps a key for 24 hours.
+- The key must be 1 to 255 printable ASCII characters, without a space at the start or the end. Otherwise the SDK gives `Error::InvalidIdempotencyKey` and sends no request.
+- The same key with different arguments gives a `422` error. If the first request is still running, the API gives a `409` error without a `code`.
+- These methods send the key: `create_block`, `update_block`, `delete_block`, `move_block`, `update_settings`, `create_template`, `create_version` and `restore_version`. The read methods and the validate methods ignore it.
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example retry_email_write
+```
+</details>
+
+```rust
+use mailerlite_rs::{
+    api_response::{ApiResponse, WithEtag},
+    email::{BlockType, Email, EmailBlock, NewBlock},
+    error::Error,
+    MailerLite,
+};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let email_id: String = String::from("Your Email ID");
+
+    let etag: String = String::from("The etag from the last response");
+
+    // Use a new key for each write, for example a UUID.
+    let idempotency_key: String = String::from("A new key for this write");
+
+    let block: NewBlock = NewBlock {
+        block_type: BlockType::Divider,
+        ..Default::default()
+    };
+
+    let email: Email = mailerlite.email().with_idempotency_key(idempotency_key);
+
+    let response: ApiResponse<WithEtag<EmailBlock>> =
+        match email.create_block(&email_id, &etag, &block).await {
+            // A network error: send the same write again with the same key.
+            Err(Error::Transport(_)) => email.create_block(&email_id, &etag, &block).await?,
+            result => result?,
+        };
+
+    println!(
+        "Block ID: {}, replay: {}",
+        response.data.id,
+        response.is_idempotent_replay()
+    );
 
     Ok(())
 }
