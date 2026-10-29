@@ -12,7 +12,6 @@ use serde::Deserialize;
 const END_POINT: &str = "files";
 
 open_enum! {
-    /// The type of a file.
     pub enum FileType {
         Image => "image",
         Pdf => "pdf",
@@ -21,7 +20,7 @@ open_enum! {
 }
 
 open_enum! {
-    /// The sort order of a file list. The default of the API is `CreatedAtDesc`, newest first.
+    /// The API default is `CreatedAtDesc`, newest first.
     pub enum FileSort {
         CreatedAt => "created_at",
         CreatedAtDesc => "-created_at",
@@ -32,7 +31,6 @@ open_enum! {
     }
 }
 
-/// A file of the media library.
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct MediaFile {
@@ -62,7 +60,6 @@ pub struct ListFilesOptions {
     pub limit: Option<u32>,
 }
 
-/// The file methods. Get it with `MailerLite::file`.
 #[derive(Debug)]
 pub struct File {
     mailerlite: MailerLite,
@@ -73,7 +70,6 @@ impl File {
         Self { mailerlite }
     }
 
-    /// Gets a list of the files of the media library.
     pub async fn get(
         &self,
         options: ListFilesOptions,

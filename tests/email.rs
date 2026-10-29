@@ -1452,7 +1452,6 @@ async fn send_all_writes(email: &Email) -> Vec<Result<(), Error>> {
     ]
 }
 
-/// Starts one mock for each of the 8 writes. Each mock expects one request with the header matcher.
 async fn mock_all_writes(server: &mut ServerGuard, key: Matcher) -> Vec<Mock> {
     let writes: [(&str, &str, &str); 8] = [
         ("POST", "/emails/123/blocks", "email_block_created"),

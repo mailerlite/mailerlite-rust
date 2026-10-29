@@ -10,11 +10,10 @@ use serde::Deserialize;
 
 const END_POINT: &str = "brand-styles";
 
-/// All palettes that the account can use.
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct BrandStyles {
-    /// The brand styles of the account. `None` when the account has none.
+    /// `None` when the account has no brand styles.
     pub brand: Option<BrandPalette>,
     pub default: BrandPalette,
     #[serde(default)]
@@ -37,7 +36,6 @@ pub struct BrandPalette {
     pub background_color: String,
 }
 
-/// The brand style methods. Get it with `MailerLite::brand_style`.
 #[derive(Debug)]
 pub struct BrandStyle {
     mailerlite: MailerLite,
@@ -48,7 +46,6 @@ impl BrandStyle {
         Self { mailerlite }
     }
 
-    /// Gets the brand styles of the account, the default palette and the preset palettes.
     pub async fn get(&self) -> Result<ApiResponse<DataOnly<BrandStyles>>, Error> {
         http::send(&self.mailerlite, Method::GET, END_POINT, &[], NO_BODY, None).await
     }

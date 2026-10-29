@@ -1,15 +1,11 @@
-//! Shared helpers for the integration tests.
-
 #![allow(dead_code)]
 
 use mailerlite_rs::MailerLite;
 use mockito::{Matcher, Mock, ServerGuard};
 use serde_json::Value;
 
-/// The bad IDs that every ID check must reject. The types stop a null or a boolean ID at compile time.
 pub const BAD_IDS: [&str; 4] = ["123/html", "123%2Fhtml", "123\n", "²"];
 
-/// Returns the content of `tests/fixtures/<name>.json`.
 pub fn fixture(name: &str) -> String {
     std::fs::read_to_string(format!(
         "{}/tests/fixtures/{name}.json",
@@ -18,13 +14,10 @@ pub fn fixture(name: &str) -> String {
     .expect("the fixture exists")
 }
 
-/// Returns a client that sends its requests to the mock server.
 pub fn mailerlite(server: &ServerGuard) -> MailerLite {
     MailerLite::new("api_key".to_string()).with_base_url(server.url())
 }
 
-/// Starts a mock that expects one request with the full path and query, the default headers and the
-/// exact JSON body. For `body: None`, the mock expects an empty raw body.
 pub async fn expect_request(
     server: &mut ServerGuard,
     method: &str,
@@ -51,7 +44,7 @@ pub async fn expect_request(
         .await
 }
 
-/// Starts mocks that fail the test if the SDK sends any request. Check them with `assert_no_request`.
+/// Check the mocks with `assert_no_request`.
 pub async fn expect_no_request(server: &mut ServerGuard) -> Vec<Mock> {
     let mut mocks: Vec<Mock> = Vec::new();
     for method in ["GET", "POST", "PUT", "PATCH", "DELETE"] {
@@ -67,7 +60,6 @@ pub async fn expect_no_request(server: &mut ServerGuard) -> Vec<Mock> {
     mocks
 }
 
-/// Checks that the mocks of `expect_no_request` got no request.
 pub async fn assert_no_request(mocks: &[Mock]) {
     for mock in mocks {
         mock.assert_async().await;

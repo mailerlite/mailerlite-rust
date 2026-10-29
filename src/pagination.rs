@@ -2,7 +2,6 @@
 
 use serde::Deserialize;
 
-/// A page of a list: the items, the page links and the page data.
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct Paginated<T> {
@@ -12,8 +11,7 @@ pub struct Paginated<T> {
     pub meta: Meta,
 }
 
-/// The links to the first, last, previous and next pages. `prev` and `next` are `None` when there is no
-/// such page.
+/// `prev` and `next` are `None` when there is no such page.
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct Links {

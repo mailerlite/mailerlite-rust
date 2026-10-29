@@ -21,7 +21,6 @@ const END_POINT: &str = "emails";
 pub const VERSION_CONFLICT: &str = "version_conflict";
 
 open_enum! {
-    /// The type of a block.
     pub enum BlockType {
         Blockquote => "blockquote",
         BulletedList => "bulleted_list",
@@ -40,7 +39,6 @@ open_enum! {
 }
 
 open_enum! {
-    /// The position of a block in a placement.
     pub enum Position {
         Start => "start",
         End => "end",
@@ -75,7 +73,6 @@ pub struct EmailDocument {
     pub blocks: Vec<EmailBlock>,
 }
 
-/// A content block of an email.
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct EmailBlock {
@@ -130,7 +127,6 @@ pub struct Brand {
     pub extra: Map<String, Value>,
 }
 
-/// The layout settings.
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct Layout {
@@ -140,7 +136,6 @@ pub struct Layout {
     pub extra: Map<String, Value>,
 }
 
-/// The typography settings.
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct Typography {
@@ -151,7 +146,6 @@ pub struct Typography {
     pub extra: Map<String, Value>,
 }
 
-/// The style of links.
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct LinkStyle {
@@ -160,7 +154,6 @@ pub struct LinkStyle {
     pub extra: Map<String, Value>,
 }
 
-/// The style of headings.
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct HeadingStyle {
@@ -175,7 +168,6 @@ pub struct HeadingStyle {
     pub extra: Map<String, Value>,
 }
 
-/// The style of paragraphs.
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct ParagraphStyle {
@@ -188,7 +180,6 @@ pub struct ParagraphStyle {
     pub extra: Map<String, Value>,
 }
 
-/// The color and the size of a text level.
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct TextStyle {
@@ -198,7 +189,6 @@ pub struct TextStyle {
     pub extra: Map<String, Value>,
 }
 
-/// The button settings.
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct Button {
@@ -212,7 +202,6 @@ pub struct Button {
     pub extra: Map<String, Value>,
 }
 
-/// The footer settings.
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct Footer {
@@ -248,7 +237,6 @@ pub struct SocialLink {
     pub extra: Map<String, Value>,
 }
 
-/// The HTML of an email.
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct EmailHtml {
@@ -314,7 +302,6 @@ impl Serialize for Placement {
 }
 
 impl Placement {
-    /// At the start of the email.
     pub fn start() -> Self {
         Self {
             position: Position::Start,
@@ -322,7 +309,6 @@ impl Placement {
         }
     }
 
-    /// At the end of the email.
     pub fn end() -> Self {
         Self {
             position: Position::End,
@@ -330,7 +316,6 @@ impl Placement {
         }
     }
 
-    /// Before the block with the ID `block_id`.
     pub fn before(block_id: impl Into<String>) -> Self {
         Self {
             position: Position::Before,
@@ -338,7 +323,6 @@ impl Placement {
         }
     }
 
-    /// After the block with the ID `block_id`.
     pub fn after(block_id: impl Into<String>) -> Self {
         Self {
             position: Position::After,
@@ -346,9 +330,7 @@ impl Placement {
         }
     }
 
-    /// Checks `block_id` for `Before` and `After`, where it is necessary. For an unknown position, the SDK
-    /// checks `block_id` only when it is set. The check uses the value of the position, so an `Other` with a
-    /// known value follows the rule of that value.
+    /// The match uses the value of the position, so an `Other` with a known value follows its rule.
     fn check(&self) -> Result<(), Error> {
         match (self.position.as_str(), self.block_id.as_deref()) {
             ("start" | "end", _) => Ok(()),
@@ -361,7 +343,6 @@ impl Placement {
     }
 }
 
-/// A request body with the etag of the email.
 #[derive(Serialize)]
 struct EtagBody<'a, T: Serialize> {
     #[serde(flatten)]
@@ -369,14 +350,12 @@ struct EtagBody<'a, T: Serialize> {
     etag: &'a str,
 }
 
-/// The request body of `Email::update_block`.
 #[derive(Serialize)]
 struct EditorContentBody<'a> {
     editor_content: &'a Map<String, Value>,
     etag: &'a str,
 }
 
-/// The request body of `Email::move_block`.
 #[derive(Serialize)]
 struct MoveBody<'a> {
     placement: &'a Placement,
@@ -450,7 +429,6 @@ pub struct EmailSettingsUpdate {
     pub extra: Map<String, Value>,
 }
 
-/// A change to the brand settings.
 #[derive(Debug, Clone, Default, Serialize)]
 pub struct BrandUpdate {
     /// One of the `BrandMode` values, for example `Some(BrandMode::Custom.into())`.
@@ -474,7 +452,6 @@ pub struct BrandUpdate {
     pub extra: Map<String, Value>,
 }
 
-/// A change to the layout settings.
 #[derive(Debug, Clone, Default, Serialize)]
 pub struct LayoutUpdate {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -487,7 +464,6 @@ pub struct LayoutUpdate {
     pub extra: Map<String, Value>,
 }
 
-/// A change to the typography settings.
 #[derive(Debug, Clone, Default, Serialize)]
 pub struct TypographyUpdate {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -502,7 +478,6 @@ pub struct TypographyUpdate {
     pub extra: Map<String, Value>,
 }
 
-/// A change to the style of links.
 #[derive(Debug, Clone, Default, Serialize)]
 pub struct LinkStyleUpdate {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -513,7 +488,6 @@ pub struct LinkStyleUpdate {
     pub extra: Map<String, Value>,
 }
 
-/// A change to the style of headings.
 #[derive(Debug, Clone, Default, Serialize)]
 pub struct HeadingStyleUpdate {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -536,7 +510,6 @@ pub struct HeadingStyleUpdate {
     pub extra: Map<String, Value>,
 }
 
-/// A change to the style of paragraphs.
 #[derive(Debug, Clone, Default, Serialize)]
 pub struct ParagraphStyleUpdate {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -555,7 +528,6 @@ pub struct ParagraphStyleUpdate {
     pub extra: Map<String, Value>,
 }
 
-/// A change to the color and the size of a text level.
 #[derive(Debug, Clone, Default, Serialize)]
 pub struct TextStyleUpdate {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -568,7 +540,6 @@ pub struct TextStyleUpdate {
     pub extra: Map<String, Value>,
 }
 
-/// A change to the button settings.
 #[derive(Debug, Clone, Default, Serialize)]
 pub struct ButtonUpdate {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -589,7 +560,6 @@ pub struct ButtonUpdate {
     pub extra: Map<String, Value>,
 }
 
-/// A change to the footer settings.
 #[derive(Debug, Clone, Default, Serialize)]
 pub struct FooterUpdate {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -614,7 +584,6 @@ pub struct FooterUpdate {
     pub extra: Map<String, Value>,
 }
 
-/// A social link of the footer in a settings change.
 #[derive(Debug, Clone, Default, Serialize)]
 pub struct SocialLinkUpdate {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -633,15 +602,12 @@ pub struct SocialLinkUpdate {
     pub extra: Map<String, Value>,
 }
 
-/// The settings check of each `*Update` type: no key of `extra` can be the JSON name of a typed field at the
-/// same level. Each `FIELDS` list has the JSON names of the typed fields. A unit test compares each list with
-/// the serialized fields.
+/// A unit test compares each `FIELDS` list with the serialized fields.
 trait SettingsKeys {
     const FIELDS: &'static [&'static str];
 
     fn extra(&self) -> &Map<String, Value>;
 
-    /// Checks the children of the value. `path` is the path of the value.
     fn check_children(&self, _path: &str) -> Result<(), Error> {
         Ok(())
     }
@@ -652,7 +618,6 @@ trait SettingsKeys {
     }
 }
 
-/// Checks an optional child value with the key `key` below `path`.
 fn check_child<T: SettingsKeys>(child: &Option<T>, path: &str, key: &str) -> Result<(), Error> {
     match child {
         Some(child) => child.check_keys(&validate::settings_path(path, key)),
@@ -777,14 +742,13 @@ settings_keys!(
 settings_keys!(SocialLinkUpdate, ["url", "type", "label", "link_id"]);
 
 impl EmailSettingsUpdate {
-    /// Checks the control key `etag` and the duplicate keys of all `extra` maps.
     fn check(&self) -> Result<(), Error> {
         validate::no_etag_key(&self.extra)?;
         self.check_keys("")
     }
 }
 
-/// The response of `Email::update_settings`: the settings, the new etag and the removed unsafe values.
+/// The response of `Email::update_settings`.
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct SettingsResult {
@@ -807,7 +771,6 @@ pub struct EmailTemplate {
     pub created_at: String,
 }
 
-/// The request body of `Email::create_template`.
 #[derive(Serialize)]
 struct NameBody<'a> {
     name: &'a str,
@@ -830,7 +793,6 @@ pub struct ListVersionsOptions {
     pub limit: Option<u32>,
 }
 
-/// The email methods. Get it with `MailerLite::email`.
 #[derive(Debug)]
 pub struct Email {
     mailerlite: MailerLite,
@@ -864,7 +826,6 @@ impl Email {
         self
     }
 
-    /// Checks the idempotency key and returns it for a write.
     fn write_key(&self) -> Result<Option<&str>, Error> {
         match self.idempotency_key.as_deref() {
             Some(key) => validate::idempotency_key(key).map(|()| Some(key)),
@@ -872,7 +833,6 @@ impl Email {
         }
     }
 
-    /// Gets an email with its settings and blocks, and the etag of the email.
     pub async fn find(
         &self,
         email_id: impl AsRef<str>,
@@ -891,8 +851,6 @@ impl Email {
         .await
     }
 
-    /// Gets the HTML of an email, and the etag of the email.
-    ///
     /// The API can give a temporary `503` error. Its body can be other than JSON.
     pub async fn html(
         &self,
@@ -912,7 +870,6 @@ impl Email {
         .await
     }
 
-    /// Gets a block of an email with its placement, and the etag of the email.
     pub async fn find_block(
         &self,
         email_id: impl AsRef<str>,

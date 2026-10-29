@@ -5,9 +5,7 @@ use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 use std::ops::Deref;
 
-/// A successful response: the status code, the headers and the decoded body.
-///
-/// The response acts like the body, so `response.etag` and `response.data` work.
+/// A successful response. It acts like the body, so `response.etag` and `response.data` work.
 #[derive(Debug, Clone)]
 #[non_exhaustive]
 pub struct ApiResponse<T> {
@@ -34,7 +32,6 @@ impl<T> ApiResponse<T> {
             .is_some_and(|value| value.trim().eq_ignore_ascii_case("true"))
     }
 
-    /// Returns the body and drops the status code and the headers.
     pub fn into_body(self) -> T {
         self.body
     }
@@ -48,7 +45,6 @@ impl<T> Deref for ApiResponse<T> {
     }
 }
 
-/// A body with `data` and the new `etag` of the email.
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct WithEtag<T> {
@@ -57,14 +53,12 @@ pub struct WithEtag<T> {
     pub etag: String,
 }
 
-/// A body with only `data`.
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct DataOnly<T> {
     pub data: T,
 }
 
-/// A body with only the new `etag` of the email.
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct EtagOnly {

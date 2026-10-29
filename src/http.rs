@@ -1,6 +1,4 @@
-//! The shared request helper of the email, brand style and file methods.
-//!
-//! The older methods do not use it, so their behavior does not change.
+//! The request helper of the email, brand style and file methods. The older methods do not use it.
 
 use crate::{
     api_response::ApiResponse,
@@ -11,14 +9,8 @@ pub(crate) use reqwest::Method;
 use reqwest::{header::HeaderValue, RequestBuilder, StatusCode};
 use serde::{de::DeserializeOwned, Serialize};
 
-/// Use this value for a request that has no body.
 pub(crate) const NO_BODY: Option<&()> = None;
 
-/// Sends a request to `path` below the base URL and decodes a 2xx body into `T`.
-///
-/// - The SDK sends `body` as JSON only when it is `Some`. For `None`, the raw body is empty, not `null`.
-/// - The SDK sends the query pairs as they are. An empty value is sent as `key=`.
-/// - A 4xx or 5xx status gives `Error::Api`. A 2xx body that is not valid gives `Error::Decode`.
 pub(crate) async fn send<T: DeserializeOwned, B: Serialize + ?Sized>(
     mailerlite: &MailerLite,
     method: Method,

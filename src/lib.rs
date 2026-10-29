@@ -1,8 +1,5 @@
-/// Defines an enum for an open set of string values. A value that the SDK does not know goes into
-/// `Other`, so a new value of the API does not break the decode. The request side accepts `Other` too.
-///
-/// Equality and the hash use the value, so `Other("paragraph")` is equal to `Paragraph`. `From<String>`
-/// gives the known variant for a known value.
+/// An unknown value goes into `Other`, so a new value of the API does not break the decode.
+/// Equality and the hash use the value, so `Other("paragraph")` is equal to `Paragraph`.
 macro_rules! open_enum {
     (
         $(#[$meta:meta])*
