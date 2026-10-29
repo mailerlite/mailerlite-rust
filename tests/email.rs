@@ -5,9 +5,9 @@ use mailerlite_rs::{
     api_response::{ApiResponse, DataOnly, EtagOnly, WithEtag},
     email::{
         BlockType, BrandMode, BrandUpdate, EditorText, Email, EmailBlock, EmailDocument, EmailHtml,
-        EmailSettingsUpdate, EmailTemplate, EmailVersion, FooterUpdate, ListVersionsOptions,
-        NewBlock, ParagraphStyleUpdate, Placement, Position, SettingsResult, SocialLinkUpdate,
-        TextStyleUpdate, TypographyUpdate, Validation, VERSION_CONFLICT,
+        EmailSettingsUpdate, EmailTemplate, EmailVersion, FooterUpdate, LinkStyleUpdate,
+        ListVersionsOptions, NewBlock, ParagraphStyleUpdate, Placement, Position, SettingsResult,
+        SocialLinkUpdate, TextStyleUpdate, TypographyUpdate, Validation, VERSION_CONFLICT,
     },
     error::Error,
     pagination::Paginated,
@@ -1723,4 +1723,64 @@ fn an_other_value_equals_the_known_variant_with_the_same_value() {
         BlockType::from("paragraph".to_string()),
         BlockType::Paragraph
     ));
+}
+
+#[tokio::test]
+async fn settings_with_an_extra_key_that_is_also_a_field_send_no_request() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
+    let email = mailerlite(&server).email();
+
+    let mut top: EmailSettingsUpdate = settings_update();
+    top.extra
+        .insert("brand".to_string(), json!({"mode": "account"}));
+
+    let mut nested: EmailSettingsUpdate = settings_update();
+    let typography: &mut TypographyUpdate = nested.typography.as_mut().unwrap();
+    typography.link = Some(LinkStyleUpdate {
+        color: Some("#000000".to_string()),
+        ..Default::default()
+    });
+    typography
+        .extra
+        .insert("link".to_string(), json!({"color": "#ffffff"}));
+
+    let mut social: EmailSettingsUpdate = settings_update();
+    social
+        .footer
+        .as_mut()
+        .unwrap()
+        .social_links
+        .as_mut()
+        .unwrap()[0]
+        .extra
+        .insert("type".to_string(), json!("x"));
+
+    for (settings, expected) in [
+        (&top, "brand"),
+        (&nested, "typography.link"),
+        (&social, "footer.social_links[0].type"),
+    ] {
+        for result in [
+            email
+                .update_settings("123", "46", settings)
+                .await
+                .map(|_| ()),
+            email.validate_settings("123", settings).await.map(|_| ()),
+        ] {
+            match result {
+                Err(Error::DuplicateSettingsKey { key, .. }) => assert_eq!(key, expected),
+                other => panic!("expected DuplicateSettingsKey for {expected}, got {other:?}"),
+            }
+        }
+    }
+
+    let mut with_etag: EmailSettingsUpdate = settings_update();
+    with_etag.extra.insert("etag".to_string(), json!("1"));
+    assert!(matches!(
+        email.update_settings("123", "46", &with_etag).await,
+        Err(Error::EtagInSettings)
+    ));
+
+    assert_no_request(&mocks).await;
 }

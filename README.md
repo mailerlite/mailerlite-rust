@@ -1097,7 +1097,8 @@ Changes the design settings of the email. `EmailSettingsUpdate` has the groups `
 - The API stores each value that you send, also a value that the email gets from your account. Then the email no longer follows your account for that value. For this reason, set only the values to change, and do not copy the full settings of the email.
 - `footer.social_links` replaces the whole list. Keep the `link_id` of each link to keep its click history.
 - `brand.mode` is one of the `BrandMode` values. To apply a palette, send its `identifier` from the brand styles in `brand.style`.
-- Each group has an `extra` map for keys that the SDK does not know yet. Do not put `etag` in the `extra` map of `EmailSettingsUpdate`: this gives `Error::EtagInSettings`. Use the `etag` argument.
+- Each group has an `extra` map for keys that the SDK does not know yet. A key of an `extra` map must not be the name of a typed field at the same level. If it is, the SDK gives `Error::DuplicateSettingsKey` and sends no request. Set the typed field instead.
+- Do not put `etag` in the `extra` map of `EmailSettingsUpdate`: this gives `Error::EtagInSettings`. Use the `etag` argument.
 - If the API removed unsafe values, `rejected` has the keys of these values.
 
 <details>

@@ -437,7 +437,8 @@ pub struct EmailSettingsUpdate {
     pub button: Option<ButtonUpdate>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub footer: Option<FooterUpdate>,
-    /// Keys that this version of the SDK does not know. The SDK sends them as they are.
+    /// Keys that this version of the SDK does not know. The SDK sends them as they are. A key must not be
+    /// the JSON name of a typed field of this struct (`Error::DuplicateSettingsKey`).
     #[serde(flatten)]
     pub extra: Map<String, Value>,
 }
@@ -460,7 +461,8 @@ pub struct BrandUpdate {
     pub text_color: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub border_color: Option<String>,
-    /// Keys that this version of the SDK does not know. The SDK sends them as they are.
+    /// Keys that this version of the SDK does not know. The SDK sends them as they are. A key must not be
+    /// the JSON name of a typed field of this struct (`Error::DuplicateSettingsKey`).
     #[serde(flatten)]
     pub extra: Map<String, Value>,
 }
@@ -472,7 +474,8 @@ pub struct LayoutUpdate {
     pub width_mode: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub alignment: Option<String>,
-    /// Keys that this version of the SDK does not know. The SDK sends them as they are.
+    /// Keys that this version of the SDK does not know. The SDK sends them as they are. A key must not be
+    /// the JSON name of a typed field of this struct (`Error::DuplicateSettingsKey`).
     #[serde(flatten)]
     pub extra: Map<String, Value>,
 }
@@ -486,7 +489,8 @@ pub struct TypographyUpdate {
     pub heading: Option<HeadingStyleUpdate>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub paragraph: Option<ParagraphStyleUpdate>,
-    /// Keys that this version of the SDK does not know. The SDK sends them as they are.
+    /// Keys that this version of the SDK does not know. The SDK sends them as they are. A key must not be
+    /// the JSON name of a typed field of this struct (`Error::DuplicateSettingsKey`).
     #[serde(flatten)]
     pub extra: Map<String, Value>,
 }
@@ -496,7 +500,8 @@ pub struct TypographyUpdate {
 pub struct LinkStyleUpdate {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub color: Option<String>,
-    /// Keys that this version of the SDK does not know. The SDK sends them as they are.
+    /// Keys that this version of the SDK does not know. The SDK sends them as they are. A key must not be
+    /// the JSON name of a typed field of this struct (`Error::DuplicateSettingsKey`).
     #[serde(flatten)]
     pub extra: Map<String, Value>,
 }
@@ -518,7 +523,8 @@ pub struct HeadingStyleUpdate {
     pub h2: Option<TextStyleUpdate>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub h3: Option<TextStyleUpdate>,
-    /// Keys that this version of the SDK does not know. The SDK sends them as they are.
+    /// Keys that this version of the SDK does not know. The SDK sends them as they are. A key must not be
+    /// the JSON name of a typed field of this struct (`Error::DuplicateSettingsKey`).
     #[serde(flatten)]
     pub extra: Map<String, Value>,
 }
@@ -536,7 +542,8 @@ pub struct ParagraphStyleUpdate {
     pub letter_spacing: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub p1: Option<TextStyleUpdate>,
-    /// Keys that this version of the SDK does not know. The SDK sends them as they are.
+    /// Keys that this version of the SDK does not know. The SDK sends them as they are. A key must not be
+    /// the JSON name of a typed field of this struct (`Error::DuplicateSettingsKey`).
     #[serde(flatten)]
     pub extra: Map<String, Value>,
 }
@@ -548,7 +555,8 @@ pub struct TextStyleUpdate {
     pub color: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub size: Option<String>,
-    /// Keys that this version of the SDK does not know. The SDK sends them as they are.
+    /// Keys that this version of the SDK does not know. The SDK sends them as they are. A key must not be
+    /// the JSON name of a typed field of this struct (`Error::DuplicateSettingsKey`).
     #[serde(flatten)]
     pub extra: Map<String, Value>,
 }
@@ -568,7 +576,8 @@ pub struct ButtonUpdate {
     pub text_color: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub border_radius: Option<String>,
-    /// Keys that this version of the SDK does not know. The SDK sends them as they are.
+    /// Keys that this version of the SDK does not know. The SDK sends them as they are. A key must not be
+    /// the JSON name of a typed field of this struct (`Error::DuplicateSettingsKey`).
     #[serde(flatten)]
     pub extra: Map<String, Value>,
 }
@@ -592,7 +601,8 @@ pub struct FooterUpdate {
     /// The new list replaces the whole list. Keep the `link_id` of each link to keep its click history.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub social_links: Option<Vec<SocialLinkUpdate>>,
-    /// Keys that this version of the SDK does not know. The SDK sends them as they are.
+    /// Keys that this version of the SDK does not know. The SDK sends them as they are. A key must not be
+    /// the JSON name of a typed field of this struct (`Error::DuplicateSettingsKey`).
     #[serde(flatten)]
     pub extra: Map<String, Value>,
 }
@@ -610,9 +620,161 @@ pub struct SocialLinkUpdate {
     /// The ID of an existing link. Send it to keep the click history of the link.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub link_id: Option<u64>,
-    /// Keys that this version of the SDK does not know. The SDK sends them as they are.
+    /// Keys that this version of the SDK does not know. The SDK sends them as they are. A key must not be
+    /// the JSON name of a typed field of this struct (`Error::DuplicateSettingsKey`).
     #[serde(flatten)]
     pub extra: Map<String, Value>,
+}
+
+/// The settings check of each `*Update` type: no key of `extra` can be the JSON name of a typed field at the
+/// same level. Each `FIELDS` list has the JSON names of the typed fields. A unit test compares each list with
+/// the serialized fields.
+trait SettingsKeys {
+    const FIELDS: &'static [&'static str];
+
+    fn extra(&self) -> &Map<String, Value>;
+
+    /// Checks the children of the value. `path` is the path of the value.
+    fn check_children(&self, _path: &str) -> Result<(), Error> {
+        Ok(())
+    }
+
+    fn check_keys(&self, path: &str) -> Result<(), Error> {
+        validate::no_field_keys(self.extra(), Self::FIELDS, path)?;
+        self.check_children(path)
+    }
+}
+
+/// Checks an optional child value with the key `key` below `path`.
+fn check_child<T: SettingsKeys>(child: &Option<T>, path: &str, key: &str) -> Result<(), Error> {
+    match child {
+        Some(child) => child.check_keys(&validate::settings_path(path, key)),
+        None => Ok(()),
+    }
+}
+
+macro_rules! settings_keys {
+    ($name:ty, [$($field:literal),* $(,)?]) => {
+        settings_keys!($name, [$($field),*], |_value, _path| Ok(()));
+    };
+    ($name:ty, [$($field:literal),* $(,)?], |$value:ident, $path:ident| $children:expr) => {
+        impl SettingsKeys for $name {
+            const FIELDS: &'static [&'static str] = &[$($field),*];
+
+            fn extra(&self) -> &Map<String, Value> {
+                &self.extra
+            }
+
+            fn check_children(&self, path: &str) -> Result<(), Error> {
+                let ($value, $path): (&Self, &str) = (self, path);
+                $children
+            }
+        }
+    };
+}
+
+settings_keys!(
+    EmailSettingsUpdate,
+    ["brand", "layout", "typography", "button", "footer"],
+    |value, path| {
+        check_child(&value.brand, path, "brand")?;
+        check_child(&value.layout, path, "layout")?;
+        check_child(&value.typography, path, "typography")?;
+        check_child(&value.button, path, "button")?;
+        check_child(&value.footer, path, "footer")
+    }
+);
+settings_keys!(
+    BrandUpdate,
+    [
+        "mode",
+        "style",
+        "font_family",
+        "background_color",
+        "text_color",
+        "border_color"
+    ]
+);
+settings_keys!(LayoutUpdate, ["width_mode", "alignment"]);
+settings_keys!(
+    TypographyUpdate,
+    ["link", "heading", "paragraph"],
+    |value, path| {
+        check_child(&value.link, path, "link")?;
+        check_child(&value.heading, path, "heading")?;
+        check_child(&value.paragraph, path, "paragraph")
+    }
+);
+settings_keys!(LinkStyleUpdate, ["color"]);
+settings_keys!(
+    HeadingStyleUpdate,
+    [
+        "font_family",
+        "font_weight",
+        "line_height",
+        "letter_spacing",
+        "h1",
+        "h2",
+        "h3"
+    ],
+    |value, path| {
+        check_child(&value.h1, path, "h1")?;
+        check_child(&value.h2, path, "h2")?;
+        check_child(&value.h3, path, "h3")
+    }
+);
+settings_keys!(
+    ParagraphStyleUpdate,
+    [
+        "font_family",
+        "font_weight",
+        "line_height",
+        "letter_spacing",
+        "p1"
+    ],
+    |value, path| check_child(&value.p1, path, "p1")
+);
+settings_keys!(TextStyleUpdate, ["color", "size"]);
+settings_keys!(
+    ButtonUpdate,
+    [
+        "font_family",
+        "font_weight",
+        "letter_spacing",
+        "background_color",
+        "text_color",
+        "border_radius"
+    ]
+);
+settings_keys!(
+    FooterUpdate,
+    [
+        "show_preferences",
+        "company_name",
+        "address",
+        "info_text",
+        "unsubscribe_text",
+        "preferences_text",
+        "social_links",
+    ],
+    |value, path| {
+        for (index, link) in value.social_links.iter().flatten().enumerate() {
+            link.check_keys(&validate::settings_path(
+                path,
+                &format!("social_links[{index}]"),
+            ))?;
+        }
+        Ok(())
+    }
+);
+settings_keys!(SocialLinkUpdate, ["url", "type", "label", "link_id"]);
+
+impl EmailSettingsUpdate {
+    /// Checks the control key `etag` and the duplicate keys of all `extra` maps.
+    fn check(&self) -> Result<(), Error> {
+        validate::no_etag_key(&self.extra)?;
+        self.check_keys("")
+    }
 }
 
 /// The response of `Email::update_settings`: the settings, the new etag and the removed unsafe values.
@@ -909,7 +1071,7 @@ impl Email {
         let (email_id, etag): (&str, &str) = (email_id.as_ref(), etag.as_ref());
         validate::path_id("email_id", email_id)?;
         validate::etag(etag)?;
-        validate::no_etag_key(&settings.extra)?;
+        settings.check()?;
 
         let idempotency_key: Option<&str> = self.write_key()?;
 
@@ -936,7 +1098,7 @@ impl Email {
     ) -> Result<ApiResponse<Validation>, Error> {
         let email_id: &str = email_id.as_ref();
         validate::path_id("email_id", email_id)?;
-        validate::no_etag_key(&settings.extra)?;
+        settings.check()?;
 
         http::send(
             &self.mailerlite,
@@ -1055,6 +1217,112 @@ impl Email {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    fn set<T: Default>() -> Option<T> {
+        Some(T::default())
+    }
+
+    fn keys<T: Serialize + SettingsKeys>(value: T) {
+        let json: Value = serde_json::to_value(&value).unwrap();
+        let mut serialized: Vec<&str> = json
+            .as_object()
+            .unwrap()
+            .keys()
+            .map(String::as_str)
+            .collect();
+        let mut fields: Vec<&str> = T::FIELDS.to_vec();
+        serialized.sort();
+        fields.sort();
+        assert_eq!(serialized, fields);
+    }
+
+    #[test]
+    fn settings_field_lists_match_the_serialized_fields() {
+        // The struct literals have no `..Default::default()`, so a new field breaks this test until its
+        // JSON name is in the list.
+        let extra = Map::new;
+        keys(EmailSettingsUpdate {
+            brand: set(),
+            layout: set(),
+            typography: set(),
+            button: set(),
+            footer: set(),
+            extra: extra(),
+        });
+        keys(BrandUpdate {
+            mode: set(),
+            style: set(),
+            font_family: set(),
+            background_color: set(),
+            text_color: set(),
+            border_color: set(),
+            extra: extra(),
+        });
+        keys(LayoutUpdate {
+            width_mode: set(),
+            alignment: set(),
+            extra: extra(),
+        });
+        keys(TypographyUpdate {
+            link: set(),
+            heading: set(),
+            paragraph: set(),
+            extra: extra(),
+        });
+        keys(LinkStyleUpdate {
+            color: set(),
+            extra: extra(),
+        });
+        keys(HeadingStyleUpdate {
+            font_family: set(),
+            font_weight: set(),
+            line_height: set(),
+            letter_spacing: set(),
+            h1: set(),
+            h2: set(),
+            h3: set(),
+            extra: extra(),
+        });
+        keys(ParagraphStyleUpdate {
+            font_family: set(),
+            font_weight: set(),
+            line_height: set(),
+            letter_spacing: set(),
+            p1: set(),
+            extra: extra(),
+        });
+        keys(TextStyleUpdate {
+            color: set(),
+            size: set(),
+            extra: extra(),
+        });
+        keys(ButtonUpdate {
+            font_family: set(),
+            font_weight: set(),
+            letter_spacing: set(),
+            background_color: set(),
+            text_color: set(),
+            border_radius: set(),
+            extra: extra(),
+        });
+        keys(FooterUpdate {
+            show_preferences: set(),
+            company_name: set(),
+            address: set(),
+            info_text: set(),
+            unsubscribe_text: set(),
+            preferences_text: set(),
+            social_links: set(),
+            extra: extra(),
+        });
+        keys(SocialLinkUpdate {
+            url: set(),
+            link_type: set(),
+            label: set(),
+            link_id: set(),
+            extra: extra(),
+        });
+    }
 
     #[test]
     fn open_enums_keep_unknown_values() {

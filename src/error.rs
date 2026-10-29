@@ -8,7 +8,7 @@ use std::{collections::BTreeMap, error::Error as StdError, fmt};
 
 /// An error from a method that returns `Result`.
 ///
-/// The variants up to `EtagInSettings` are client-side errors. For them, the SDK sends no request.
+/// The variants up to `DuplicateSettingsKey` are client-side errors. For them, the SDK sends no request.
 ///
 /// Only the SDK makes these errors. Match a struct variant with `..`, for example
 /// `Error::InvalidId { name, .. }`. Code outside the SDK cannot make a struct variant:
@@ -46,6 +46,10 @@ pub enum Error {
     InvalidIdempotencyKey,
     /// The `extra` map of the settings has an `etag` key. Give the etag as an argument.
     EtagInSettings,
+    /// A key of an `extra` map in the settings is also the name of a typed field at the same level.
+    /// `key` is the path of the key, for example `"typography.link"`. Set the typed field instead.
+    #[non_exhaustive]
+    DuplicateSettingsKey { key: String },
     /// The API returned a 4xx or 5xx status. The error is boxed to keep `Error` small. You can read its
     /// fields directly, for example `error.code`.
     Api(Box<ApiError>),
@@ -75,6 +79,10 @@ impl fmt::Display for Error {
             Error::EtagInSettings => write!(
                 f,
                 "the settings must not contain an \"etag\" key; give the etag as an argument"
+            ),
+            Error::DuplicateSettingsKey { key } => write!(
+                f,
+                "the settings key {key:?} is both a typed field and a key of an extra map; set only the typed field"
             ),
             Error::Api(error) => error.fmt(f),
             Error::Transport(error) => write!(f, "the request failed: {error}"),

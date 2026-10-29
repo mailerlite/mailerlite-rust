@@ -55,6 +55,30 @@ pub(crate) fn no_etag_key(extra: &Map<String, Value>) -> Result<(), Error> {
     Ok(())
 }
 
+/// Checks that no key of a settings `extra` map is also the JSON name of a typed field at the same level.
+/// Both would go into the body, and the API would get the key two times. `path` is the path of the map.
+pub(crate) fn no_field_keys(
+    extra: &Map<String, Value>,
+    fields: &[&str],
+    path: &str,
+) -> Result<(), Error> {
+    match extra.keys().find(|key| fields.contains(&key.as_str())) {
+        Some(key) => Err(Error::DuplicateSettingsKey {
+            key: settings_path(path, key),
+        }),
+        None => Ok(()),
+    }
+}
+
+/// Joins a settings path and a key with ".".
+pub(crate) fn settings_path(path: &str, key: &str) -> String {
+    if path.is_empty() {
+        key.to_string()
+    } else {
+        format!("{path}.{key}")
+    }
+}
+
 /// Keeps the pairs that have a value. An empty string stays, and the SDK sends it as `key=`.
 pub(crate) fn query_pairs<'a>(
     pairs: impl IntoIterator<Item = (&'a str, Option<String>)>,
@@ -129,6 +153,25 @@ mod tests {
 
         extra.insert("etag".to_string(), json!("42"));
         assert!(matches!(no_etag_key(&extra), Err(Error::EtagInSettings)));
+    }
+
+    #[test]
+    fn no_field_keys_gives_the_path_of_the_duplicate_key() {
+        let mut extra: Map<String, Value> = Map::new();
+        extra.insert("new_key".to_string(), json!(1));
+        assert!(no_field_keys(&extra, &["color", "size"], "typography.link").is_ok());
+
+        extra.insert("color".to_string(), json!("#000000"));
+        match no_field_keys(&extra, &["color", "size"], "typography.link") {
+            Err(Error::DuplicateSettingsKey { key, .. }) => {
+                assert_eq!(key, "typography.link.color")
+            }
+            other => panic!("expected DuplicateSettingsKey, got {other:?}"),
+        }
+        match no_field_keys(&extra, &["color"], "") {
+            Err(Error::DuplicateSettingsKey { key, .. }) => assert_eq!(key, "color"),
+            other => panic!("expected DuplicateSettingsKey, got {other:?}"),
+        }
     }
 
     #[test]
