@@ -280,11 +280,34 @@ pub struct NewBlock {
 }
 
 /// Where to put a block. `block_id` is necessary for the positions `Before` and `After`.
-#[derive(Debug, Clone, Default, Serialize)]
+///
+/// For `Start` and `End`, the API ignores `block_id`, so the SDK does not check it and does not send it.
+#[derive(Debug, Clone, Default)]
 pub struct Placement {
     pub position: Position,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub block_id: Option<String>,
+}
+
+impl Serialize for Placement {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        #[derive(Serialize)]
+        struct Body<'a> {
+            position: &'a Position,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            block_id: Option<&'a str>,
+        }
+
+        let block_id: Option<&str> = match self.position {
+            Position::Start | Position::End => None,
+            _ => self.block_id.as_deref(),
+        };
+
+        Body {
+            position: &self.position,
+            block_id,
+        }
+        .serialize(serializer)
+    }
 }
 
 impl Placement {
@@ -320,10 +343,18 @@ impl Placement {
         }
     }
 
+    /// Checks `block_id` for `Before` and `After`, where it is necessary. For an unknown position, the SDK
+    /// checks `block_id` only when it is set.
     fn check(&self) -> Result<(), Error> {
-        match &self.block_id {
-            Some(block_id) => validate::path_id("placement.block_id", block_id),
-            None => Ok(()),
+        match (&self.position, self.block_id.as_deref()) {
+            (Position::Start | Position::End, _) => Ok(()),
+            (Position::Before | Position::After, block_id) => {
+                validate::path_id("placement.block_id", block_id.unwrap_or_default())
+            }
+            (Position::Other(_), Some(block_id)) => {
+                validate::path_id("placement.block_id", block_id)
+            }
+            (Position::Other(_), None) => Ok(()),
         }
     }
 }

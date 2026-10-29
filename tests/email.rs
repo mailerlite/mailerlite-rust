@@ -4,7 +4,8 @@ use common::{assert_no_request, expect_no_request, expect_request, fixture, mail
 use mailerlite_rs::{
     api_response::{ApiResponse, EtagOnly, WithEtag},
     email::{
-        BlockType, EmailBlock, EmailDocument, EmailHtml, NewBlock, Placement, VERSION_CONFLICT,
+        BlockType, EmailBlock, EmailDocument, EmailHtml, NewBlock, Placement, Position,
+        VERSION_CONFLICT,
     },
     error::Error,
 };
@@ -692,4 +693,121 @@ async fn move_block_checks_the_input_without_a_request() {
     }
 
     assert_no_request(&mocks).await;
+}
+
+#[tokio::test]
+async fn placement_at_start_or_end_sends_no_block_id_and_has_no_check() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let at_end: Mock = expect_request(
+        &mut server,
+        "POST",
+        "/emails/123/blocks/57/move",
+        Some(json!({"placement": {"position": "end"}, "etag": "45"})),
+        200,
+        &fixture("email_block_moved"),
+    )
+    .await;
+    let at_start: Mock = expect_request(
+        &mut server,
+        "POST",
+        "/emails/123/blocks",
+        Some(json!({
+            "type": "paragraph",
+            "editor_content": {"attrs": {"textAlign": "center"}, "content": [{"type": "text", "text": "Hi"}]},
+            "placement": {"position": "start"},
+            "etag": "42"
+        })),
+        201,
+        &fixture("email_block_created"),
+    )
+    .await;
+    let email = mailerlite(&server).email();
+
+    let end: Placement = Placement {
+        position: Position::End,
+        block_id: Some(String::new()),
+    };
+    email.move_block("123", "57", "45", &end).await.unwrap();
+
+    let start: Placement = Placement {
+        position: Position::Start,
+        block_id: Some("1/2".to_string()),
+    };
+    email
+        .create_block("123", "42", &new_paragraph(Some(start)))
+        .await
+        .unwrap();
+
+    at_end.assert_async().await;
+    at_start.assert_async().await;
+}
+
+#[tokio::test]
+async fn placement_before_or_after_needs_a_valid_block_id() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
+    let email = mailerlite(&server).email();
+
+    for block_id in [None, Some(String::new())] {
+        let after: Placement = Placement {
+            position: Position::After,
+            block_id,
+        };
+        assert!(matches!(
+            email.move_block("123", "57", "45", &after).await,
+            Err(Error::EmptyId {
+                name: "placement.block_id"
+            })
+        ));
+    }
+    let before: Placement = Placement {
+        position: Position::Before,
+        block_id: Some("1/2".to_string()),
+    };
+    assert!(matches!(
+        email.move_block("123", "57", "45", &before).await,
+        Err(Error::InvalidId {
+            name: "placement.block_id",
+            ..
+        })
+    ));
+    let other: Placement = Placement {
+        position: Position::Other("next_to".to_string()),
+        block_id: Some("1/2".to_string()),
+    };
+    assert!(matches!(
+        email.move_block("123", "57", "45", &other).await,
+        Err(Error::InvalidId {
+            name: "placement.block_id",
+            ..
+        })
+    ));
+
+    assert_no_request(&mocks).await;
+}
+
+#[tokio::test]
+async fn placement_with_an_unknown_position_sends_its_block_id() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mock: Mock = expect_request(
+        &mut server,
+        "POST",
+        "/emails/123/blocks/57/move",
+        Some(json!({"placement": {"position": "next_to", "block_id": "1"}, "etag": "45"})),
+        200,
+        &fixture("email_block_moved"),
+    )
+    .await;
+
+    let other: Placement = Placement {
+        position: Position::Other("next_to".to_string()),
+        block_id: Some("1".to_string()),
+    };
+    mailerlite(&server)
+        .email()
+        .move_block("123", "57", "45", &other)
+        .await
+        .unwrap();
+
+    mock.assert_async().await;
 }

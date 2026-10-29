@@ -783,7 +783,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ### Insert a block
 
-Inserts a block, and returns the new block and the new etag. Use the block types of `BlockType`. `editor_content` can be an empty map. Without `placement`, the API puts the block at the end of the email. `Placement::before` and `Placement::after` need the ID of a block. The block ID of a placement must contain only digits too.
+Inserts a block, and returns the new block and the new etag. Use the block types of `BlockType`. `editor_content` can be an empty map. Without `placement`, the API puts the block at the end of the email. `Placement::before` and `Placement::after` need the ID of a block, and the ID must contain only digits. For the start and the end, the API ignores a block ID, so the SDK does not send it.
 
 <details>
 <summary>
