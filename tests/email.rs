@@ -612,3 +612,84 @@ async fn delete_block_checks_the_input_without_a_request() {
 
     assert_no_request(&mocks).await;
 }
+
+#[tokio::test]
+async fn move_block_sends_the_placement_and_the_etag() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mock: Mock = expect_request(
+        &mut server,
+        "POST",
+        "/emails/123/blocks/57/move",
+        Some(json!({"placement": {"position": "before", "block_id": "1"}, "etag": "45"})),
+        200,
+        &fixture("email_block_moved"),
+    )
+    .await;
+
+    let response: ApiResponse<WithEtag<EmailBlock>> = mailerlite(&server)
+        .email()
+        .move_block("123", "57", "45", &Placement::before("1"))
+        .await
+        .unwrap();
+
+    mock.assert_async().await;
+    assert_eq!(response.etag, "46");
+    let placement = response.data.placement.as_ref().unwrap();
+    assert_eq!(placement.after, None);
+    assert_eq!(placement.before.as_deref(), Some("1"));
+}
+
+#[tokio::test]
+async fn move_block_checks_the_input_without_a_request() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
+    let email = mailerlite(&server).email();
+
+    assert!(matches!(
+        email.move_block("123", "57", "", &Placement::start()).await,
+        Err(Error::EmptyEtag)
+    ));
+    assert!(matches!(
+        email.move_block("", "57", "45", &Placement::start()).await,
+        Err(Error::EmptyId { name: "email_id" })
+    ));
+    assert!(matches!(
+        email.move_block("123", "", "45", &Placement::start()).await,
+        Err(Error::EmptyId { name: "block_id" })
+    ));
+    assert!(matches!(
+        email
+            .move_block("123", "57", "45", &Placement::after(""))
+            .await,
+        Err(Error::EmptyId {
+            name: "placement.block_id"
+        })
+    ));
+    for id in BAD_IDS {
+        assert!(matches!(
+            email.move_block(id, "57", "45", &Placement::start()).await,
+            Err(Error::InvalidId {
+                name: "email_id",
+                ..
+            })
+        ));
+        assert!(matches!(
+            email.move_block("123", id, "45", &Placement::start()).await,
+            Err(Error::InvalidId {
+                name: "block_id",
+                ..
+            })
+        ));
+        assert!(matches!(
+            email
+                .move_block("123", "57", "45", &Placement::after(id))
+                .await,
+            Err(Error::InvalidId {
+                name: "placement.block_id",
+                ..
+            })
+        ));
+    }
+
+    assert_no_request(&mocks).await;
+}

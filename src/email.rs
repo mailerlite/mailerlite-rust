@@ -343,6 +343,13 @@ struct EditorContentBody<'a> {
     etag: &'a str,
 }
 
+/// The request body of `Email::move_block`.
+#[derive(Serialize)]
+struct MoveBody<'a> {
+    placement: &'a Placement,
+    etag: &'a str,
+}
+
 /// The email methods. Get it with `MailerLite::email`.
 #[derive(Debug)]
 pub struct Email {
@@ -491,6 +498,33 @@ impl Email {
                 body: &Map::new(),
                 etag,
             }),
+            None,
+        )
+        .await
+    }
+
+    /// Moves a block among the blocks at the same level. The nesting of the block does not change.
+    /// Returns the block and the new etag.
+    pub async fn move_block(
+        &self,
+        email_id: impl AsRef<str>,
+        block_id: impl AsRef<str>,
+        etag: impl AsRef<str>,
+        placement: &Placement,
+    ) -> Result<ApiResponse<WithEtag<EmailBlock>>, Error> {
+        let (email_id, block_id, etag): (&str, &str, &str) =
+            (email_id.as_ref(), block_id.as_ref(), etag.as_ref());
+        validate::path_id("email_id", email_id)?;
+        validate::path_id("block_id", block_id)?;
+        validate::etag(etag)?;
+        placement.check()?;
+
+        http::send(
+            &self.mailerlite,
+            Method::POST,
+            &format!("{END_POINT}/{email_id}/blocks/{block_id}/move"),
+            &[],
+            Some(&MoveBody { placement, etag }),
             None,
         )
         .await

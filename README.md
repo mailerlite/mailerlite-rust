@@ -36,6 +36,7 @@ MailerLite Rust SDK
         - [Insert a block](#insert-a-block)
         - [Update a block](#update-a-block)
         - [Delete a block](#delete-a-block)
+        - [Move a block](#move-a-block)
     - [Groups](#groups)
         - [Get a list of groups](#get-a-list-of-groups)
         - [Create a group](#create-a-group)
@@ -926,6 +927,52 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let response: ApiResponse<EtagOnly> = mailerlite
         .email()
         .delete_block(email_id, block_id, etag)
+        .await?;
+
+    println!("New etag: {}", response.etag);
+
+    Ok(())
+}
+```
+
+### Move a block
+
+Moves the block among the blocks at the same level. `Placement::before` and `Placement::after` need the ID of a block. The response has the block and the new etag.
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example move_email_block
+```
+</details>
+
+```rust
+use mailerlite_rs::{
+    api_response::{ApiResponse, WithEtag},
+    email::{EmailBlock, Placement},
+    MailerLite,
+};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let email_id: String = String::from("Your Email ID");
+
+    let block_id: String = String::from("Your Block ID");
+
+    let etag: String = String::from("The etag from the last response");
+
+    let placement: Placement = Placement::after("The ID of the block before the new place");
+
+    let response: ApiResponse<WithEtag<EmailBlock>> = mailerlite
+        .email()
+        .move_block(email_id, block_id, etag, &placement)
         .await?;
 
     println!("New etag: {}", response.etag);
