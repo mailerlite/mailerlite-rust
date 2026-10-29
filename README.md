@@ -43,6 +43,7 @@ MailerLite Rust SDK
         - [Save an email as a template](#save-an-email-as-a-template)
         - [Get a list of email versions](#get-a-list-of-email-versions)
         - [Save a version of an email](#save-a-version-of-an-email)
+        - [Restore a version of an email](#restore-a-version-of-an-email)
     - [Groups](#groups)
         - [Get a list of groups](#get-a-list-of-groups)
         - [Create a group](#create-a-group)
@@ -1286,6 +1287,50 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let is_new: bool = response.status_code == 201;
 
     println!("Version ID: {}, new: {}", response.data.id, is_new);
+
+    Ok(())
+}
+```
+
+### Restore a version of an email
+
+Puts the email back to the version, and returns the full email with the new etag. Before the restore, the API saves the current state as a version, so you can undo the restore.
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example restore_email_version
+```
+</details>
+
+```rust
+use mailerlite_rs::{
+    api_response::{ApiResponse, WithEtag},
+    email::EmailDocument,
+    MailerLite,
+};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let email_id: String = String::from("Your Email ID");
+
+    let version_id: String = String::from("Your Version ID");
+
+    let etag: String = String::from("The etag from the last response");
+
+    let response: ApiResponse<WithEtag<EmailDocument>> = mailerlite
+        .email()
+        .restore_version(email_id, version_id, etag)
+        .await?;
+
+    println!("New etag: {}", response.etag);
 
     Ok(())
 }

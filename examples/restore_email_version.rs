@@ -1,0 +1,27 @@
+use mailerlite_rs::{
+    api_response::{ApiResponse, WithEtag},
+    email::EmailDocument,
+    MailerLite,
+};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let email_id: String = String::from("Your Email ID");
+
+    let version_id: String = String::from("Your Version ID");
+
+    let etag: String = String::from("The etag from the last response");
+
+    let response: ApiResponse<WithEtag<EmailDocument>> = mailerlite
+        .email()
+        .restore_version(email_id, version_id, etag)
+        .await?;
+
+    println!("New etag: {}", response.etag);
+
+    Ok(())
+}

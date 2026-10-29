@@ -1307,3 +1307,66 @@ async fn create_version_rejects_bad_ids_without_a_request() {
 
     assert_no_request(&mocks).await;
 }
+
+#[tokio::test]
+async fn restore_version_sends_the_etag_and_gives_the_email() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mock: Mock = expect_request(
+        &mut server,
+        "POST",
+        "/emails/123/versions/901/restore",
+        Some(json!({"etag": "41"})),
+        200,
+        &fixture("email"),
+    )
+    .await;
+
+    let response: ApiResponse<WithEtag<EmailDocument>> = mailerlite(&server)
+        .email()
+        .restore_version("123", "901", "41")
+        .await
+        .unwrap();
+
+    mock.assert_async().await;
+    assert_eq!(response.etag, "42");
+    assert_eq!(response.data.id, "123");
+    assert_eq!(response.data.blocks.len(), 2);
+}
+
+#[tokio::test]
+async fn restore_version_checks_the_input_without_a_request() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
+    let email = mailerlite(&server).email();
+
+    assert!(matches!(
+        email.restore_version("123", "901", "").await,
+        Err(Error::EmptyEtag)
+    ));
+    assert!(matches!(
+        email.restore_version("", "901", "41").await,
+        Err(Error::EmptyId { name: "email_id" })
+    ));
+    assert!(matches!(
+        email.restore_version("123", "", "41").await,
+        Err(Error::EmptyId { name: "version_id" })
+    ));
+    for id in BAD_IDS {
+        assert!(matches!(
+            email.restore_version(id, "901", "41").await,
+            Err(Error::InvalidId {
+                name: "email_id",
+                ..
+            })
+        ));
+        assert!(matches!(
+            email.restore_version("123", id, "41").await,
+            Err(Error::InvalidId {
+                name: "version_id",
+                ..
+            })
+        ));
+    }
+
+    assert_no_request(&mocks).await;
+}

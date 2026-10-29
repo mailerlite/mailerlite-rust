@@ -975,6 +975,34 @@ impl Email {
         )
         .await
     }
+
+    /// Puts an email back to a saved version. Before the restore, the API saves the current state as a
+    /// version, so you can undo the restore. Returns the full email and the new etag.
+    pub async fn restore_version(
+        &self,
+        email_id: impl AsRef<str>,
+        version_id: impl AsRef<str>,
+        etag: impl AsRef<str>,
+    ) -> Result<ApiResponse<WithEtag<EmailDocument>>, Error> {
+        let (email_id, version_id, etag): (&str, &str, &str) =
+            (email_id.as_ref(), version_id.as_ref(), etag.as_ref());
+        validate::path_id("email_id", email_id)?;
+        validate::path_id("version_id", version_id)?;
+        validate::etag(etag)?;
+
+        http::send(
+            &self.mailerlite,
+            Method::POST,
+            &format!("{END_POINT}/{email_id}/versions/{version_id}/restore"),
+            &[],
+            Some(&EtagBody {
+                body: &Map::new(),
+                etag,
+            }),
+            None,
+        )
+        .await
+    }
 }
 
 #[cfg(test)]
