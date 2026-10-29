@@ -2,12 +2,12 @@ mod common;
 
 use common::{assert_no_request, expect_no_request, expect_request, fixture, mailerlite, BAD_IDS};
 use mailerlite_rs::{
-    api_response::{ApiResponse, EtagOnly, WithEtag},
+    api_response::{ApiResponse, DataOnly, EtagOnly, WithEtag},
     email::{
         BlockType, BrandMode, BrandUpdate, EditorText, EmailBlock, EmailDocument, EmailHtml,
-        EmailSettingsUpdate, FooterUpdate, NewBlock, ParagraphStyleUpdate, Placement, Position,
-        SettingsResult, SocialLinkUpdate, TextStyleUpdate, TypographyUpdate, Validation,
-        VERSION_CONFLICT,
+        EmailSettingsUpdate, EmailTemplate, FooterUpdate, NewBlock, ParagraphStyleUpdate,
+        Placement, Position, SettingsResult, SocialLinkUpdate, TextStyleUpdate, TypographyUpdate,
+        Validation, VERSION_CONFLICT,
     },
     error::Error,
 };
@@ -1116,6 +1116,56 @@ async fn validate_settings_checks_the_input_without_a_request() {
     for id in BAD_IDS {
         assert!(matches!(
             email.validate_settings(id, &settings_update()).await,
+            Err(Error::InvalidId {
+                name: "email_id",
+                ..
+            })
+        ));
+    }
+
+    assert_no_request(&mocks).await;
+}
+
+#[tokio::test]
+async fn create_template_sends_the_name() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mock: Mock = expect_request(
+        &mut server,
+        "POST",
+        "/emails/123/templates",
+        Some(json!({"name": "Newsletter"})),
+        201,
+        &fixture("email_template"),
+    )
+    .await;
+
+    let response: ApiResponse<DataOnly<EmailTemplate>> = mailerlite(&server)
+        .email()
+        .create_template("123", "Newsletter")
+        .await
+        .unwrap();
+
+    mock.assert_async().await;
+    assert_eq!(response.status_code, 201);
+    assert_eq!(response.data.id, "789");
+    assert_eq!(response.data.name, "Newsletter");
+    assert_eq!(response.data.template_type, "email");
+    assert_eq!(response.data.created_at, "2026-10-28 12:00:00");
+}
+
+#[tokio::test]
+async fn create_template_rejects_bad_ids_without_a_request() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
+    let email = mailerlite(&server).email();
+
+    assert!(matches!(
+        email.create_template("", "Newsletter").await,
+        Err(Error::EmptyId { name: "email_id" })
+    ));
+    for id in BAD_IDS {
+        assert!(matches!(
+            email.create_template(id, "Newsletter").await,
             Err(Error::InvalidId {
                 name: "email_id",
                 ..

@@ -40,6 +40,7 @@ MailerLite Rust SDK
         - [Validate a block](#validate-a-block)
         - [Update the design settings](#update-the-design-settings)
         - [Validate the design settings](#validate-the-design-settings)
+        - [Save an email as a template](#save-an-email-as-a-template)
     - [Groups](#groups)
         - [Get a list of groups](#get-a-list-of-groups)
         - [Create a group](#create-a-group)
@@ -1157,6 +1158,46 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if !response.valid {
         println!("{:#?}", response.errors);
     }
+
+    Ok(())
+}
+```
+
+### Save an email as a template
+
+Copies the email to a new template. The API cannot delete templates.
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example create_email_template
+```
+</details>
+
+```rust
+use mailerlite_rs::{
+    api_response::{ApiResponse, DataOnly},
+    email::EmailTemplate,
+    MailerLite,
+};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let email_id: String = String::from("Your Email ID");
+
+    let response: ApiResponse<DataOnly<EmailTemplate>> = mailerlite
+        .email()
+        .create_template(email_id, "Monthly newsletter")
+        .await?;
+
+    println!("Template ID: {}", response.data.id);
 
     Ok(())
 }

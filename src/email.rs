@@ -4,7 +4,7 @@
 //! Each write needs the etag of the last response for the email, and returns a new etag.
 
 use crate::{
-    api_response::{object_or_empty_array, ApiResponse, EtagOnly, WithEtag},
+    api_response::{object_or_empty_array, ApiResponse, DataOnly, EtagOnly, WithEtag},
     error::Error,
     http::{self, Method, NO_BODY},
     validate, MailerLite,
@@ -627,6 +627,23 @@ pub struct SettingsResult {
     pub rejected: Option<Rejected>,
 }
 
+/// A template that the API made from an email.
+#[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
+pub struct EmailTemplate {
+    pub id: String,
+    pub name: String,
+    #[serde(rename = "type")]
+    pub template_type: String,
+    pub created_at: String,
+}
+
+/// The request body of `Email::create_template`.
+#[derive(Serialize)]
+struct NameBody<'a> {
+    name: &'a str,
+}
+
 /// The email methods. Get it with `MailerLite::email`.
 #[derive(Debug)]
 pub struct Email {
@@ -869,6 +886,28 @@ impl Email {
             &format!("{END_POINT}/{email_id}/settings/validate"),
             &[],
             Some(settings),
+            None,
+        )
+        .await
+    }
+
+    /// Saves a copy of an email as a new template (status `201`). The API cannot delete templates.
+    pub async fn create_template(
+        &self,
+        email_id: impl AsRef<str>,
+        name: impl AsRef<str>,
+    ) -> Result<ApiResponse<DataOnly<EmailTemplate>>, Error> {
+        let email_id: &str = email_id.as_ref();
+        validate::path_id("email_id", email_id)?;
+
+        http::send(
+            &self.mailerlite,
+            Method::POST,
+            &format!("{END_POINT}/{email_id}/templates"),
+            &[],
+            Some(&NameBody {
+                name: name.as_ref(),
+            }),
             None,
         )
         .await
