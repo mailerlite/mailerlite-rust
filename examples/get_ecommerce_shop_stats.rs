@@ -12,7 +12,10 @@ async fn main() {
 
     let end_date: String = String::from("2026-10-31");
 
-    let response: Response = mailerlite.ecommerce_shop().stats(shop_id, start_date, end_date).await;
+    let response: Response = mailerlite
+        .ecommerce_shop()
+        .stats(shop_id, start_date, end_date)
+        .await;
 
     println!("{:#?}", response);
 }

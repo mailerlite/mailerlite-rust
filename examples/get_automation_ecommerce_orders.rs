@@ -10,7 +10,10 @@ async fn main() {
 
     let parameter: Parameter = Parameter::new().add("time_frame", "all_time");
 
-    let response: Response = mailerlite.automation().ecommerce_orders(id, parameter.clone()).await;
+    let response: Response = mailerlite
+        .automation()
+        .ecommerce_orders(id, parameter.clone())
+        .await;
 
     println!("{:#?}", response);
 }

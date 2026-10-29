@@ -12,8 +12,8 @@ impl EcommerceCart {
         Self { mailerlite }
     }
 
-    pub async fn get(&self, shop_id: String, query: Parameter) -> Response {
-        let url: String = format!("{}{}/{}/carts", BASE_PATH, END_POINT, shop_id);
+    pub async fn get(&self, shop_id: impl AsRef<str>, query: Parameter) -> Response {
+        let url: String = format!("{}{}/{}/carts", BASE_PATH, END_POINT, shop_id.as_ref());
 
         Response::new(
             self.mailerlite
@@ -28,8 +28,14 @@ impl EcommerceCart {
         .await
     }
 
-    pub async fn find(&self, shop_id: String, cart_id: String) -> Response {
-        let url: String = format!("{}{}/{}/carts/{}", BASE_PATH, END_POINT, shop_id, cart_id);
+    pub async fn find(&self, shop_id: impl AsRef<str>, cart_id: impl AsRef<str>) -> Response {
+        let url: String = format!(
+            "{}{}/{}/carts/{}",
+            BASE_PATH,
+            END_POINT,
+            shop_id.as_ref(),
+            cart_id.as_ref()
+        );
 
         Response::new(
             self.mailerlite
@@ -43,8 +49,19 @@ impl EcommerceCart {
         .await
     }
 
-    pub async fn update(&self, shop_id: String, cart_id: String, form: Data) -> Response {
-        let url: String = format!("{}{}/{}/carts/{}", BASE_PATH, END_POINT, shop_id, cart_id);
+    pub async fn update(
+        &self,
+        shop_id: impl AsRef<str>,
+        cart_id: impl AsRef<str>,
+        form: Data,
+    ) -> Response {
+        let url: String = format!(
+            "{}{}/{}/carts/{}",
+            BASE_PATH,
+            END_POINT,
+            shop_id.as_ref(),
+            cart_id.as_ref()
+        );
 
         Response::new(
             self.mailerlite

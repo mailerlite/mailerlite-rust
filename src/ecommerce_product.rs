@@ -12,8 +12,8 @@ impl EcommerceProduct {
         Self { mailerlite }
     }
 
-    pub async fn get(&self, shop_id: String, query: Parameter) -> Response {
-        let url: String = format!("{}{}/{}/products", BASE_PATH, END_POINT, shop_id);
+    pub async fn get(&self, shop_id: impl AsRef<str>, query: Parameter) -> Response {
+        let url: String = format!("{}{}/{}/products", BASE_PATH, END_POINT, shop_id.as_ref());
 
         Response::new(
             self.mailerlite
@@ -28,8 +28,14 @@ impl EcommerceProduct {
         .await
     }
 
-    pub async fn find(&self, shop_id: String, product_id: String) -> Response {
-        let url: String = format!("{}{}/{}/products/{}", BASE_PATH, END_POINT, shop_id, product_id);
+    pub async fn find(&self, shop_id: impl AsRef<str>, product_id: impl AsRef<str>) -> Response {
+        let url: String = format!(
+            "{}{}/{}/products/{}",
+            BASE_PATH,
+            END_POINT,
+            shop_id.as_ref(),
+            product_id.as_ref()
+        );
 
         Response::new(
             self.mailerlite
@@ -43,8 +49,8 @@ impl EcommerceProduct {
         .await
     }
 
-    pub async fn create(&self, shop_id: String, form: Data) -> Response {
-        let url: String = format!("{}{}/{}/products", BASE_PATH, END_POINT, shop_id);
+    pub async fn create(&self, shop_id: impl AsRef<str>, form: Data) -> Response {
+        let url: String = format!("{}{}/{}/products", BASE_PATH, END_POINT, shop_id.as_ref());
 
         Response::new(
             self.mailerlite
@@ -59,8 +65,19 @@ impl EcommerceProduct {
         .await
     }
 
-    pub async fn update(&self, shop_id: String, product_id: String, form: Data) -> Response {
-        let url: String = format!("{}{}/{}/products/{}", BASE_PATH, END_POINT, shop_id, product_id);
+    pub async fn update(
+        &self,
+        shop_id: impl AsRef<str>,
+        product_id: impl AsRef<str>,
+        form: Data,
+    ) -> Response {
+        let url: String = format!(
+            "{}{}/{}/products/{}",
+            BASE_PATH,
+            END_POINT,
+            shop_id.as_ref(),
+            product_id.as_ref()
+        );
 
         Response::new(
             self.mailerlite
@@ -75,8 +92,14 @@ impl EcommerceProduct {
         .await
     }
 
-    pub async fn delete(&self, shop_id: String, product_id: String) -> Response {
-        let url: String = format!("{}{}/{}/products/{}", BASE_PATH, END_POINT, shop_id, product_id);
+    pub async fn delete(&self, shop_id: impl AsRef<str>, product_id: impl AsRef<str>) -> Response {
+        let url: String = format!(
+            "{}{}/{}/products/{}",
+            BASE_PATH,
+            END_POINT,
+            shop_id.as_ref(),
+            product_id.as_ref()
+        );
 
         Response::new(
             self.mailerlite
@@ -90,8 +113,19 @@ impl EcommerceProduct {
         .await
     }
 
-    pub async fn change_status(&self, shop_id: String, product_id: String, form: Data) -> Response {
-        let url: String = format!("{}{}/{}/products/{}/change-status", BASE_PATH, END_POINT, shop_id, product_id);
+    pub async fn change_status(
+        &self,
+        shop_id: impl AsRef<str>,
+        product_id: impl AsRef<str>,
+        form: Data,
+    ) -> Response {
+        let url: String = format!(
+            "{}{}/{}/products/{}/change-status",
+            BASE_PATH,
+            END_POINT,
+            shop_id.as_ref(),
+            product_id.as_ref()
+        );
 
         Response::new(
             self.mailerlite
@@ -106,8 +140,19 @@ impl EcommerceProduct {
         .await
     }
 
-    pub async fn assign_categories(&self, shop_id: String, product_id: String, form: Data) -> Response {
-        let url: String = format!("{}{}/{}/products/{}/categories/multiple", BASE_PATH, END_POINT, shop_id, product_id);
+    pub async fn assign_categories(
+        &self,
+        shop_id: impl AsRef<str>,
+        product_id: impl AsRef<str>,
+        form: Data,
+    ) -> Response {
+        let url: String = format!(
+            "{}{}/{}/products/{}/categories/multiple",
+            BASE_PATH,
+            END_POINT,
+            shop_id.as_ref(),
+            product_id.as_ref()
+        );
 
         Response::new(
             self.mailerlite

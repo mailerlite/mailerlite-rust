@@ -8,10 +8,12 @@ async fn main() {
 
     let shop_id: String = String::from("Your Shop ID");
 
-    let data: Data = Data::new()
-        .add("name", "Dummy Shop");
+    let data: Data = Data::new().add("name", "Dummy Shop");
 
-    let response: Response = mailerlite.ecommerce_shop().update(shop_id, data.clone()).await;
+    let response: Response = mailerlite
+        .ecommerce_shop()
+        .update(shop_id, data.clone())
+        .await;
 
     println!("{:#?}", response);
 }

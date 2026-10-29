@@ -10,12 +10,18 @@ async fn main() {
 
     let data: Data = Data::new()
         .add("orders[0][customer][email]", "dummy@example.com")
-        .add("orders[0][cart][items][0][ecommerce_product_id]", "Your Product ID")
+        .add(
+            "orders[0][cart][items][0][ecommerce_product_id]",
+            "Your Product ID",
+        )
         .add("orders[0][cart][items][0][quantity]", "1")
         .add("orders[0][cart][items][0][price]", "19.99")
         .add("orders[0][status]", "complete");
 
-    let response: Response = mailerlite.ecommerce_import().orders(shop_id, data.clone()).await;
+    let response: Response = mailerlite
+        .ecommerce_import()
+        .orders(shop_id, data.clone())
+        .await;
 
     println!("{:#?}", response);
 }

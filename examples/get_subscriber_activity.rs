@@ -10,7 +10,10 @@ async fn main() {
 
     let parameter: Parameter = Parameter::new().add("filter[log_name]", "email_open");
 
-    let response: Response = mailerlite.subscriber().activity(id, parameter.clone()).await;
+    let response: Response = mailerlite
+        .subscriber()
+        .activity(id, parameter.clone())
+        .await;
 
     println!("{:#?}", response);
 }

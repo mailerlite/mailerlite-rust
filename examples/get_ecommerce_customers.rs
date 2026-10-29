@@ -10,7 +10,10 @@ async fn main() {
 
     let parameter: Parameter = Parameter::new().add("filter[email]", "dummy@example.com");
 
-    let response: Response = mailerlite.ecommerce_customer().get(shop_id, parameter.clone()).await;
+    let response: Response = mailerlite
+        .ecommerce_customer()
+        .get(shop_id, parameter.clone())
+        .await;
 
     println!("{:#?}", response);
 }

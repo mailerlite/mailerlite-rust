@@ -28,8 +28,8 @@ impl EcommerceShop {
         .await
     }
 
-    pub async fn find(&self, shop_id: String) -> Response {
-        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, shop_id);
+    pub async fn find(&self, shop_id: impl AsRef<str>) -> Response {
+        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, shop_id.as_ref());
 
         Response::new(
             self.mailerlite
@@ -59,8 +59,8 @@ impl EcommerceShop {
         .await
     }
 
-    pub async fn update(&self, shop_id: String, form: Data) -> Response {
-        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, shop_id);
+    pub async fn update(&self, shop_id: impl AsRef<str>, form: Data) -> Response {
+        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, shop_id.as_ref());
 
         Response::new(
             self.mailerlite
@@ -75,8 +75,8 @@ impl EcommerceShop {
         .await
     }
 
-    pub async fn delete(&self, shop_id: String) -> Response {
-        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, shop_id);
+    pub async fn delete(&self, shop_id: impl AsRef<str>) -> Response {
+        let url: String = format!("{}{}/{}", BASE_PATH, END_POINT, shop_id.as_ref());
 
         Response::new(
             self.mailerlite
@@ -90,15 +90,28 @@ impl EcommerceShop {
         .await
     }
 
-    pub async fn stats(&self, shop_id: String, start_date: String, end_date: String) -> Response {
-        let url: String = format!("{}{}/{}/reports/stats", BASE_PATH, END_POINT, shop_id);
+    pub async fn stats(
+        &self,
+        shop_id: impl AsRef<str>,
+        start_date: impl AsRef<str>,
+        end_date: impl AsRef<str>,
+    ) -> Response {
+        let url: String = format!(
+            "{}{}/{}/reports/stats",
+            BASE_PATH,
+            END_POINT,
+            shop_id.as_ref()
+        );
 
         Response::new(
             self.mailerlite
                 .client
                 .request
                 .get(url)
-                .query(&[("start_date", start_date), ("end_date", end_date)])
+                .query(&[
+                    ("start_date", start_date.as_ref()),
+                    ("end_date", end_date.as_ref()),
+                ])
                 .send()
                 .await
                 .expect("Failed to send request"),

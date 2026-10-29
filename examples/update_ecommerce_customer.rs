@@ -10,10 +10,12 @@ async fn main() {
 
     let customer_id: String = String::from("Your Customer ID");
 
-    let data: Data = Data::new()
-        .add("accepts_marketing", "1");
+    let data: Data = Data::new().add("accepts_marketing", "1");
 
-    let response: Response = mailerlite.ecommerce_customer().update(shop_id, customer_id, data.clone()).await;
+    let response: Response = mailerlite
+        .ecommerce_customer()
+        .update(shop_id, customer_id, data.clone())
+        .await;
 
     println!("{:#?}", response);
 }

@@ -12,7 +12,10 @@ async fn main() {
 
     let product_id: String = String::from("Your Product ID");
 
-    let response: Response = mailerlite.ecommerce_category().unassign_product(shop_id, category_id, product_id).await;
+    let response: Response = mailerlite
+        .ecommerce_category()
+        .unassign_product(shop_id, category_id, product_id)
+        .await;
 
     println!("{:#?}", response);
 }

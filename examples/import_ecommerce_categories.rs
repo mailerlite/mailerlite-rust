@@ -12,7 +12,10 @@ async fn main() {
         .add("0[name]", "Dummy Category")
         .add("0[exclude_from_automations]", "0");
 
-    let response: Response = mailerlite.ecommerce_import().categories(shop_id, data.clone()).await;
+    let response: Response = mailerlite
+        .ecommerce_import()
+        .categories(shop_id, data.clone())
+        .await;
 
     println!("{:#?}", response);
 }

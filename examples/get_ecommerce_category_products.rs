@@ -12,7 +12,10 @@ async fn main() {
 
     let parameter: Parameter = Parameter::new().add("limit", "25");
 
-    let response: Response = mailerlite.ecommerce_category().products(shop_id, category_id, parameter.clone()).await;
+    let response: Response = mailerlite
+        .ecommerce_category()
+        .products(shop_id, category_id, parameter.clone())
+        .await;
 
     println!("{:#?}", response);
 }

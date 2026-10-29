@@ -10,7 +10,10 @@ async fn main() {
 
     let customer_id: String = String::from("Your Customer ID");
 
-    let response: Response = mailerlite.ecommerce_customer().find(shop_id, customer_id).await;
+    let response: Response = mailerlite
+        .ecommerce_customer()
+        .find(shop_id, customer_id)
+        .await;
 
     println!("{:#?}", response);
 }

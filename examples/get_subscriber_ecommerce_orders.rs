@@ -12,7 +12,10 @@ async fn main() {
 
     let parameter: Parameter = Parameter::new().add("page", "1");
 
-    let response: Response = mailerlite.subscriber().ecommerce_orders(id, shop_id, parameter.clone()).await;
+    let response: Response = mailerlite
+        .subscriber()
+        .ecommerce_orders(id, shop_id, parameter.clone())
+        .await;
 
     println!("{:#?}", response);
 }

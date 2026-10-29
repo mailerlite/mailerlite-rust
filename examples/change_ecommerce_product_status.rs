@@ -10,10 +10,12 @@ async fn main() {
 
     let product_id: String = String::from("Your Product ID");
 
-    let data: Data = Data::new()
-        .add("status", "0");
+    let data: Data = Data::new().add("status", "0");
 
-    let response: Response = mailerlite.ecommerce_product().change_status(shop_id, product_id, data.clone()).await;
+    let response: Response = mailerlite
+        .ecommerce_product()
+        .change_status(shop_id, product_id, data.clone())
+        .await;
 
     println!("{:#?}", response);
 }

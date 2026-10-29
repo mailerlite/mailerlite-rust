@@ -10,7 +10,10 @@ async fn main() {
 
     let parameter: Parameter = Parameter::new();
 
-    let response: Response = mailerlite.automation().ecommerce_stats(id, parameter.clone()).await;
+    let response: Response = mailerlite
+        .automation()
+        .ecommerce_stats(id, parameter.clone())
+        .await;
 
     println!("{:#?}", response);
 }

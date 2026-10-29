@@ -12,7 +12,10 @@ async fn main() {
         .add("email", "dummy@example.com")
         .add("create_subscriber", "1");
 
-    let response: Response = mailerlite.ecommerce_customer().create(shop_id, data.clone()).await;
+    let response: Response = mailerlite
+        .ecommerce_customer()
+        .create(shop_id, data.clone())
+        .await;
 
     println!("{:#?}", response);
 }
