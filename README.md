@@ -1092,7 +1092,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 Changes the design settings of the email. `EmailSettingsUpdate` has the groups `brand`, `layout`, `typography`, `button` and `footer`.
 
-- Each value has three states. `None` does not send the key, so the value does not change. `Some(value)` sets the value. `Some(String::new())` removes the value, so the email uses the value of your account again.
+- Each value has three states. `None` does not send the key, so the value does not change. `Some(value)` sets the value. `Some(String::new())` sends an empty value.
+- Only the brand colors accept an empty value: `brand.background_color`, `brand.text_color` and `brand.border_color`. For them, the API removes the value, and the email uses the color of your account again. Other colors, the sizes and `brand.style` do not accept an empty value. For them, the API gives a `422` error.
+- To remove a footer text, send an empty editor document: `EditorText::default()` (`{}`) or `{"content": []}`. Then the email uses the text of your account again.
 - Send all style values as strings, for example `"16"` and not `16`.
 - The API stores each value that you send, also a value that the email gets from your account. Then the email no longer follows your account for that value. For this reason, set only the values to change, and do not copy the full settings of the email.
 - `footer.social_links` replaces the whole list. Keep the `link_id` of each link to keep its click history.

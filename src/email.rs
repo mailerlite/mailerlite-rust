@@ -227,7 +227,8 @@ pub struct Footer {
     pub extra: Map<String, Value>,
 }
 
-/// A footer text as an editor document. In an update, an empty `editor_content` unsets the text.
+/// A footer text as an editor document. In an update, an empty document (`{}` or `{"content": []}`) removes
+/// the text, and the email uses the text of the account again.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct EditorText {
     #[serde(default, deserialize_with = "object_or_empty_array")]
@@ -420,7 +421,13 @@ pub struct Rejected {
 /// Each value has three states:
 /// - `None`: the SDK does not send the key, and the value does not change;
 /// - `Some(value)`: the API stores the value;
-/// - `Some(String::new())`: the API removes the value, and the email uses the value of the account again.
+/// - `Some(String::new())`: an empty value. Only the brand colors accept it: `brand.background_color`,
+///   `brand.text_color` and `brand.border_color`. For them, the API removes the value, and the email uses
+///   the color of the account again. Other colors, the sizes and `brand.style` do not accept an empty value.
+///   For them, the API gives a `422` error.
+///
+/// To remove a footer text, send an empty editor document: `EditorText::default()` (`{}`) or
+/// `{"content": []}`. Then the email uses the text of the account again.
 ///
 /// Set only the values to change. The API stores each value that you send, also a value that is the same as
 /// the value of the account. Then the email no longer follows the account for that value. For this reason,
@@ -587,7 +594,7 @@ pub struct ButtonUpdate {
 pub struct FooterUpdate {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub show_preferences: Option<bool>,
-    /// An empty `editor_content` removes the text.
+    /// An empty editor document (`{}` or `{"content": []}`) removes the text.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub company_name: Option<EditorText>,
     #[serde(skip_serializing_if = "Option::is_none")]
