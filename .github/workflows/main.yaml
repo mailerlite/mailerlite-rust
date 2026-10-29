@@ -3,6 +3,9 @@ name: Release
 on:
   push:
 
+permissions:
+  contents: read
+
 env:
   CARGO_TERM_COLOR: always
 
@@ -20,8 +23,8 @@ jobs:
           - nightly
 
     steps:
-      - uses: actions/checkout@v3
-      - uses: swatinem/rust-cache@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       - run: rustup update ${{ matrix.toolchain }} && rustup default ${{ matrix.toolchain }}
 
       - name: Build
@@ -39,16 +42,17 @@ jobs:
 
     runs-on: ubuntu-24.04
     needs: build-test
+    if: github.ref == 'refs/heads/main'
 
     outputs:
       created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
 
     steps:
-      - uses: google-github-actions/release-please-action@v3
+      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         id: release
         with:
-          token: ${{ secrets.GITHUBTOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           release-type: rust
 
   publish:
@@ -61,8 +65,8 @@ jobs:
     environment: crates.io
 
     steps:
-      - uses: actions/checkout@v3
-      - uses: swatinem/rust-cache@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
 
       - name: Publish
         # https://doc.rust-lang.org/cargo/reference/config.html?highlight=CARGO_REGISTRY_TOKEN#credentials
