@@ -954,6 +954,27 @@ impl Email {
         )
         .await
     }
+
+    /// Saves the email as a new version. The request has no body. If nothing changed after the last
+    /// version, the API saves no new version and returns the last version: then `status_code` is `200`,
+    /// not `201`.
+    pub async fn create_version(
+        &self,
+        email_id: impl AsRef<str>,
+    ) -> Result<ApiResponse<DataOnly<EmailVersion>>, Error> {
+        let email_id: &str = email_id.as_ref();
+        validate::path_id("email_id", email_id)?;
+
+        http::send(
+            &self.mailerlite,
+            Method::POST,
+            &format!("{END_POINT}/{email_id}/versions"),
+            &[],
+            NO_BODY,
+            None,
+        )
+        .await
+    }
 }
 
 #[cfg(test)]

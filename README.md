@@ -42,6 +42,7 @@ MailerLite Rust SDK
         - [Validate the design settings](#validate-the-design-settings)
         - [Save an email as a template](#save-an-email-as-a-template)
         - [Get a list of email versions](#get-a-list-of-email-versions)
+        - [Save a version of an email](#save-a-version-of-an-email)
     - [Groups](#groups)
         - [Get a list of groups](#get-a-list-of-groups)
         - [Create a group](#create-a-group)
@@ -1245,6 +1246,46 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     for version in &response.data {
         println!("{} {} {}", version.id, version.created_at, version.current);
     }
+
+    Ok(())
+}
+```
+
+### Save a version of an email
+
+Writes through the API do not save versions. If nothing changed after the last version, the API saves no new version and returns the last version. `status_code` is `201` for a new version and `200` for the last version.
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example create_email_version
+```
+</details>
+
+```rust
+use mailerlite_rs::{
+    api_response::{ApiResponse, DataOnly},
+    email::EmailVersion,
+    MailerLite,
+};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let email_id: String = String::from("Your Email ID");
+
+    let response: ApiResponse<DataOnly<EmailVersion>> =
+        mailerlite.email().create_version(email_id).await?;
+
+    let is_new: bool = response.status_code == 201;
+
+    println!("Version ID: {}, new: {}", response.data.id, is_new);
 
     Ok(())
 }

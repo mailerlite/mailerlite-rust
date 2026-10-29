@@ -1257,3 +1257,53 @@ async fn versions_rejects_bad_ids_without_a_request() {
 
     assert_no_request(&mocks).await;
 }
+
+#[tokio::test]
+async fn create_version_sends_no_body_and_gives_the_status_code() {
+    for status in [201, 200] {
+        let mut server: ServerGuard = Server::new_async().await;
+        let mock: Mock = expect_request(
+            &mut server,
+            "POST",
+            "/emails/123/versions",
+            None,
+            status,
+            &fixture("email_version"),
+        )
+        .await;
+
+        let response: ApiResponse<DataOnly<EmailVersion>> = mailerlite(&server)
+            .email()
+            .create_version("123")
+            .await
+            .unwrap();
+
+        mock.assert_async().await;
+        assert_eq!(response.status_code.as_u16() as usize, status);
+        assert_eq!(response.data.id, "903");
+        assert!(response.data.current);
+    }
+}
+
+#[tokio::test]
+async fn create_version_rejects_bad_ids_without_a_request() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
+    let email = mailerlite(&server).email();
+
+    assert!(matches!(
+        email.create_version("").await,
+        Err(Error::EmptyId { name: "email_id" })
+    ));
+    for id in BAD_IDS {
+        assert!(matches!(
+            email.create_version(id).await,
+            Err(Error::InvalidId {
+                name: "email_id",
+                ..
+            })
+        ));
+    }
+
+    assert_no_request(&mocks).await;
+}
