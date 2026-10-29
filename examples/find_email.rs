@@ -1,12 +1,11 @@
 use mailerlite_rs::{
     api_response::{ApiResponse, WithEtag},
     email::EmailDocument,
-    error::Error,
     MailerLite,
 };
 
 #[tokio::main]
-async fn main() -> Result<(), Error> {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let api_key: String = String::from("Your MailerLite API Key");
 
     let mailerlite: MailerLite = MailerLite::new(api_key);

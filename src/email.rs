@@ -252,6 +252,90 @@ pub struct EmailHtml {
     pub html: String,
 }
 
+/// The default block type is `Paragraph`.
+impl Default for BlockType {
+    fn default() -> Self {
+        BlockType::Paragraph
+    }
+}
+
+/// The default position is `End`, as in the API.
+impl Default for Position {
+    fn default() -> Self {
+        Position::End
+    }
+}
+
+/// A new block for `Email::create_block` and `Email::validate_block`.
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct NewBlock {
+    #[serde(rename = "type")]
+    pub block_type: BlockType,
+    /// The editor document of the block. Its keys are camelCase. Use an empty map for a block with no
+    /// content, for example a divider.
+    pub editor_content: Map<String, Value>,
+    /// Where to put the block. Without a placement, the API puts the block at the end of the email.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub placement: Option<Placement>,
+}
+
+/// Where to put a block. `block_id` is necessary for the positions `Before` and `After`.
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct Placement {
+    pub position: Position,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub block_id: Option<String>,
+}
+
+impl Placement {
+    /// At the start of the email.
+    pub fn start() -> Self {
+        Self {
+            position: Position::Start,
+            block_id: None,
+        }
+    }
+
+    /// At the end of the email.
+    pub fn end() -> Self {
+        Self {
+            position: Position::End,
+            block_id: None,
+        }
+    }
+
+    /// Before the block with the ID `block_id`.
+    pub fn before(block_id: impl Into<String>) -> Self {
+        Self {
+            position: Position::Before,
+            block_id: Some(block_id.into()),
+        }
+    }
+
+    /// After the block with the ID `block_id`.
+    pub fn after(block_id: impl Into<String>) -> Self {
+        Self {
+            position: Position::After,
+            block_id: Some(block_id.into()),
+        }
+    }
+
+    fn check(&self) -> Result<(), Error> {
+        match &self.block_id {
+            Some(block_id) => validate::path_id("placement.block_id", block_id),
+            None => Ok(()),
+        }
+    }
+}
+
+/// A request body with the etag of the email.
+#[derive(Serialize)]
+struct EtagBody<'a, T: Serialize> {
+    #[serde(flatten)]
+    body: &'a T,
+    etag: &'a str,
+}
+
 /// The email methods. Get it with `MailerLite::email`.
 #[derive(Debug)]
 pub struct Email {
@@ -319,6 +403,31 @@ impl Email {
             &format!("{END_POINT}/{email_id}/blocks/{block_id}"),
             &[],
             NO_BODY,
+            None,
+        )
+        .await
+    }
+
+    /// Inserts a block into an email. Returns the new block (status `201`) and the new etag.
+    pub async fn create_block(
+        &self,
+        email_id: impl AsRef<str>,
+        etag: impl AsRef<str>,
+        block: &NewBlock,
+    ) -> Result<ApiResponse<WithEtag<EmailBlock>>, Error> {
+        let (email_id, etag): (&str, &str) = (email_id.as_ref(), etag.as_ref());
+        validate::path_id("email_id", email_id)?;
+        validate::etag(etag)?;
+        if let Some(placement) = &block.placement {
+            placement.check()?;
+        }
+
+        http::send(
+            &self.mailerlite,
+            Method::POST,
+            &format!("{END_POINT}/{email_id}/blocks"),
+            &[],
+            Some(&EtagBody { body: block, etag }),
             None,
         )
         .await

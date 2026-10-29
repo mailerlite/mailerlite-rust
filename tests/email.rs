@@ -3,7 +3,7 @@ mod common;
 use common::{assert_no_request, expect_no_request, expect_request, fixture, mailerlite, BAD_IDS};
 use mailerlite_rs::{
     api_response::{ApiResponse, WithEtag},
-    email::{BlockType, EmailBlock, EmailDocument, EmailHtml},
+    email::{BlockType, EmailBlock, EmailDocument, EmailHtml, NewBlock, Placement},
     error::Error,
 };
 use mockito::{Mock, Server, ServerGuard};
@@ -266,6 +266,141 @@ async fn find_block_rejects_bad_ids_without_a_request() {
             mailerlite.email().find_block("123", id).await,
             Err(Error::InvalidId {
                 name: "block_id",
+                ..
+            })
+        ));
+    }
+
+    assert_no_request(&mocks).await;
+}
+
+fn new_paragraph(placement: Option<Placement>) -> NewBlock {
+    NewBlock {
+        block_type: BlockType::Paragraph,
+        editor_content:
+            json!({"attrs": {"textAlign": "center"}, "content": [{"type": "text", "text": "Hi"}]})
+                .as_object()
+                .unwrap()
+                .clone(),
+        placement,
+    }
+}
+
+#[tokio::test]
+async fn create_block_sends_the_block_and_the_etag() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mock: Mock = expect_request(
+        &mut server,
+        "POST",
+        "/emails/123/blocks",
+        Some(json!({
+            "type": "paragraph",
+            "editor_content": {"attrs": {"textAlign": "center"}, "content": [{"type": "text", "text": "Hi"}]},
+            "placement": {"position": "after", "block_id": "57"},
+            "etag": "42"
+        })),
+        201,
+        &fixture("email_block_created"),
+    )
+    .await;
+
+    let response: ApiResponse<WithEtag<EmailBlock>> = mailerlite(&server)
+        .email()
+        .create_block("123", "42", &new_paragraph(Some(Placement::after("57"))))
+        .await
+        .unwrap();
+
+    mock.assert_async().await;
+    assert_eq!(response.status_code, 201);
+    assert_eq!(response.etag, "43");
+    assert_eq!(response.data.id, "58");
+    let placement = response.data.placement.as_ref().unwrap();
+    assert_eq!(placement.after.as_deref(), Some("57"));
+    assert_eq!(placement.before, None);
+}
+
+#[tokio::test]
+async fn create_block_sends_no_placement_when_there_is_none() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mock: Mock = expect_request(
+        &mut server,
+        "POST",
+        "/emails/123/blocks",
+        Some(json!({"type": "divider", "editor_content": {}, "etag": "42"})),
+        201,
+        &fixture("email_block_created"),
+    )
+    .await;
+
+    let block: NewBlock = NewBlock {
+        block_type: BlockType::Divider,
+        ..Default::default()
+    };
+    mailerlite(&server)
+        .email()
+        .create_block("123", "42", &block)
+        .await
+        .unwrap();
+
+    mock.assert_async().await;
+}
+
+#[test]
+fn placement_constructors_give_the_position_and_the_block_id() {
+    assert_eq!(
+        serde_json::to_value(Placement::start()).unwrap(),
+        json!({"position": "start"})
+    );
+    assert_eq!(
+        serde_json::to_value(Placement::end()).unwrap(),
+        json!({"position": "end"})
+    );
+    assert_eq!(
+        serde_json::to_value(Placement::before("1")).unwrap(),
+        json!({"position": "before", "block_id": "1"})
+    );
+    assert_eq!(
+        serde_json::to_value(Placement::after("2")).unwrap(),
+        json!({"position": "after", "block_id": "2"})
+    );
+}
+
+#[tokio::test]
+async fn create_block_checks_the_input_without_a_request() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
+    let email = mailerlite(&server).email();
+
+    assert!(matches!(
+        email.create_block("123", "", &new_paragraph(None)).await,
+        Err(Error::EmptyEtag)
+    ));
+    assert!(matches!(
+        email.create_block("", "42", &new_paragraph(None)).await,
+        Err(Error::EmptyId { name: "email_id" })
+    ));
+    assert!(matches!(
+        email
+            .create_block("123", "42", &new_paragraph(Some(Placement::after(""))))
+            .await,
+        Err(Error::EmptyId {
+            name: "placement.block_id"
+        })
+    ));
+    for id in BAD_IDS {
+        assert!(matches!(
+            email.create_block(id, "42", &new_paragraph(None)).await,
+            Err(Error::InvalidId {
+                name: "email_id",
+                ..
+            })
+        ));
+        assert!(matches!(
+            email
+                .create_block("123", "42", &new_paragraph(Some(Placement::before(id))))
+                .await,
+            Err(Error::InvalidId {
+                name: "placement.block_id",
                 ..
             })
         ));

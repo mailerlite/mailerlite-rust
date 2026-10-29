@@ -33,6 +33,7 @@ MailerLite Rust SDK
         - [Get an email](#get-an-email)
         - [Get the HTML of an email](#get-the-html-of-an-email)
         - [Get a block](#get-a-block)
+        - [Insert a block](#insert-a-block)
     - [Groups](#groups)
         - [Get a list of groups](#get-a-list-of-groups)
         - [Create a group](#create-a-group)
@@ -680,12 +681,11 @@ cargo run --package mailerlite-rs --example find_email
 use mailerlite_rs::{
     api_response::{ApiResponse, WithEtag},
     email::EmailDocument,
-    error::Error,
     MailerLite,
 };
 
 #[tokio::main]
-async fn main() -> Result<(), Error> {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let api_key: String = String::from("Your MailerLite API Key");
 
     let mailerlite: MailerLite = MailerLite::new(api_key);
@@ -719,12 +719,11 @@ cargo run --package mailerlite-rs --example get_email_html
 use mailerlite_rs::{
     api_response::{ApiResponse, WithEtag},
     email::EmailHtml,
-    error::Error,
     MailerLite,
 };
 
 #[tokio::main]
-async fn main() -> Result<(), Error> {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let api_key: String = String::from("Your MailerLite API Key");
 
     let mailerlite: MailerLite = MailerLite::new(api_key);
@@ -757,12 +756,11 @@ cargo run --package mailerlite-rs --example find_email_block
 use mailerlite_rs::{
     api_response::{ApiResponse, WithEtag},
     email::EmailBlock,
-    error::Error,
     MailerLite,
 };
 
 #[tokio::main]
-async fn main() -> Result<(), Error> {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let api_key: String = String::from("Your MailerLite API Key");
 
     let mailerlite: MailerLite = MailerLite::new(api_key);
@@ -775,6 +773,64 @@ async fn main() -> Result<(), Error> {
         mailerlite.email().find_block(email_id, block_id).await?;
 
     println!("{:#?}", response.data);
+
+    Ok(())
+}
+```
+
+### Insert a block
+
+Inserts a block, and returns the new block and the new etag. Use the block types of `BlockType`. `editor_content` can be an empty map. Without `placement`, the API puts the block at the end of the email. `Placement::before` and `Placement::after` need the ID of a block. The block ID of a placement must contain only digits too.
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example create_email_block
+```
+</details>
+
+```rust
+use mailerlite_rs::{
+    api_response::{ApiResponse, WithEtag},
+    email::{BlockType, EmailBlock, EmailDocument, NewBlock, Placement},
+    MailerLite,
+};
+use serde_json::{json, Map, Value};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let email_id: String = String::from("Your Email ID");
+
+    let email: ApiResponse<WithEtag<EmailDocument>> = mailerlite.email().find(&email_id).await?;
+
+    let editor_content: Map<String, Value> = json!({
+        "attrs": {"textAlign": "left"},
+        "content": [{"type": "text", "text": "Hello"}]
+    })
+    .as_object()
+    .cloned()
+    .unwrap_or_default();
+
+    let block: NewBlock = NewBlock {
+        block_type: BlockType::Paragraph,
+        editor_content,
+        placement: Some(Placement::start()),
+    };
+
+    let response: ApiResponse<WithEtag<EmailBlock>> = mailerlite
+        .email()
+        .create_block(&email_id, &email.etag, &block)
+        .await?;
+
+    println!("Block ID: {}", response.data.id);
+    println!("New etag: {}", response.etag);
 
     Ok(())
 }
