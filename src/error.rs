@@ -22,8 +22,9 @@ pub enum Error {
     InvalidIdempotencyKey,
     /// The `extra` map of the settings has an `etag` key. Give the etag as an argument.
     EtagInSettings,
-    /// The API returned a 4xx or 5xx status.
-    Api(ApiError),
+    /// The API returned a 4xx or 5xx status. The error is boxed to keep `Error` small. You can read its
+    /// fields directly, for example `error.code`.
+    Api(Box<ApiError>),
     /// The request did not complete, for example because of a network error.
     Transport(TransportError),
     /// The API returned a 2xx status, but the SDK cannot decode the body.
@@ -73,7 +74,7 @@ impl StdError for Error {
 
 impl From<ApiError> for Error {
     fn from(error: ApiError) -> Self {
-        Error::Api(error)
+        Error::Api(Box::new(error))
     }
 }
 
@@ -158,6 +159,16 @@ mod tests {
     }
 
     #[test]
+    fn error_is_small_enough_for_a_result() {
+        // Clippy `result_large_err` warns at 128 bytes. The API error is boxed to stay below it.
+        assert!(
+            std::mem::size_of::<Error>() < 128,
+            "size_of::<Error>() is {}",
+            std::mem::size_of::<Error>()
+        );
+    }
+
+    #[test]
     fn api_error_reads_the_error_fields() {
         let error: ApiError = api_error(
             409,
@@ -203,7 +214,7 @@ mod tests {
 
     #[test]
     fn display_shows_the_status_and_the_code() {
-        let error: Error = Error::Api(api_error(
+        let error: Error = Error::from(api_error(
             409,
             r#"{"message": "The email changed.", "code": "version_conflict", "etag": "43"}"#,
         ));
@@ -216,7 +227,7 @@ mod tests {
 
     #[test]
     fn display_shows_the_message_without_a_code() {
-        let error: Error = Error::Api(api_error(404, r#"{"message": "Not found."}"#));
+        let error: Error = Error::from(api_error(404, r#"{"message": "Not found."}"#));
 
         assert_eq!(error.to_string(), "API error 404 Not Found: Not found.");
     }

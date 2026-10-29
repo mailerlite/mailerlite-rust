@@ -716,7 +716,7 @@ These methods edit emails built with the simple editor. To create such an email,
 
 - The methods return `Result<ApiResponse<T>, Error>`. `ApiResponse` acts like the body, so `response.data` and `response.etag` work. `response.status_code` and `response.headers` give the status code and the headers. These methods do not panic.
 - IDs are strings of the digits 0-9. An empty ID gives `Error::EmptyId`, and an ID with other characters gives `Error::InvalidId`. In these cases, the SDK sends no request.
-- A `4xx` or `5xx` status gives `Error::Api`. The `ApiError` has `status_code`, `message`, `code`, `etag`, `errors`, `headers` and the raw `body`. A network error gives `Error::Transport`.
+- A `4xx` or `5xx` status gives `Error::Api` with a boxed `ApiError`. You can read its fields directly, for example `error.code`. The `ApiError` has `status_code`, `message`, `code`, `etag`, `errors`, `headers` and the raw `body`. A network error gives `Error::Transport`.
 - Each write needs the etag from the last response for the email, and returns a new etag. The etag covers the whole email, so send the writes to one email one after another. An empty etag gives `Error::EmptyEtag`, and the SDK sends no request.
 - If the email changed after you read it, the write gives a `409` error, and `ApiError::is_version_conflict()` is `true`. Then `ApiError::etag` has the current etag. Get the email again, and then send the write again with the current etag.
 - The keys of `editor_content` are camelCase, for example `textAlign`. The SDK sends them as you give them.

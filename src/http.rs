@@ -56,11 +56,7 @@ pub(crate) async fn send<T: DeserializeOwned, B: Serialize + ?Sized>(
     if !status_code.is_success() {
         let body: String = String::from_utf8_lossy(&bytes).into_owned();
 
-        return Err(Error::Api(ApiError::from_response(
-            status_code,
-            headers,
-            body,
-        )));
+        return Err(ApiError::from_response(status_code, headers, body).into());
     }
 
     match serde_json::from_slice::<T>(&bytes) {

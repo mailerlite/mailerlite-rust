@@ -1,7 +1,3 @@
-// `Error::Api` keeps the full API error with the headers and the raw body. This makes `Error` large, but the
-// caller gets all of the error data in one value.
-#![allow(clippy::result_large_err)]
-
 /// Defines an enum for an open set of string values. A value that the SDK does not know goes into
 /// `Other`, so a new value of the API does not break the decode. The request side accepts `Other` too.
 macro_rules! open_enum {
