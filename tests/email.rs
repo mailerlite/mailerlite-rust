@@ -3,7 +3,7 @@ mod common;
 use common::{assert_no_request, expect_no_request, expect_request, fixture, mailerlite, BAD_IDS};
 use mailerlite_rs::{
     api_response::{ApiResponse, WithEtag},
-    email::{BlockType, EmailDocument, EmailHtml},
+    email::{BlockType, EmailBlock, EmailDocument, EmailHtml},
     error::Error,
 };
 use mockito::{Mock, Server, ServerGuard};
@@ -203,6 +203,69 @@ async fn html_rejects_bad_ids_without_a_request() {
             mailerlite.email().html(id).await,
             Err(Error::InvalidId {
                 name: "email_id",
+                ..
+            })
+        ));
+    }
+
+    assert_no_request(&mocks).await;
+}
+
+#[tokio::test]
+async fn find_block_gets_the_block_and_its_placement() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mock: Mock = expect_request(
+        &mut server,
+        "GET",
+        "/emails/123/blocks/57",
+        None,
+        200,
+        &fixture("email_block"),
+    )
+    .await;
+
+    let response: ApiResponse<WithEtag<EmailBlock>> = mailerlite(&server)
+        .email()
+        .find_block("123", "57")
+        .await
+        .unwrap();
+
+    mock.assert_async().await;
+    assert_eq!(response.etag, "43");
+    assert_eq!(response.data.id, "57");
+    assert_eq!(response.data.block_type, BlockType::Paragraph);
+    assert_eq!(response.data.editor_content["content"][0]["text"], "Hello");
+    let placement = response.data.placement.as_ref().unwrap();
+    assert_eq!(placement.after.as_deref(), Some("56"));
+    assert_eq!(placement.before, None);
+}
+
+#[tokio::test]
+async fn find_block_rejects_bad_ids_without_a_request() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
+    let mailerlite = mailerlite(&server);
+
+    assert!(matches!(
+        mailerlite.email().find_block("", "57").await,
+        Err(Error::EmptyId { name: "email_id" })
+    ));
+    assert!(matches!(
+        mailerlite.email().find_block("123", "").await,
+        Err(Error::EmptyId { name: "block_id" })
+    ));
+    for id in BAD_IDS {
+        assert!(matches!(
+            mailerlite.email().find_block(id, "57").await,
+            Err(Error::InvalidId {
+                name: "email_id",
+                ..
+            })
+        ));
+        assert!(matches!(
+            mailerlite.email().find_block("123", id).await,
+            Err(Error::InvalidId {
+                name: "block_id",
                 ..
             })
         ));

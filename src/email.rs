@@ -302,6 +302,27 @@ impl Email {
         )
         .await
     }
+
+    /// Gets a block of an email with its placement, and the etag of the email.
+    pub async fn find_block(
+        &self,
+        email_id: impl AsRef<str>,
+        block_id: impl AsRef<str>,
+    ) -> Result<ApiResponse<WithEtag<EmailBlock>>, Error> {
+        let (email_id, block_id): (&str, &str) = (email_id.as_ref(), block_id.as_ref());
+        validate::path_id("email_id", email_id)?;
+        validate::path_id("block_id", block_id)?;
+
+        http::send(
+            &self.mailerlite,
+            Method::GET,
+            &format!("{END_POINT}/{email_id}/blocks/{block_id}"),
+            &[],
+            NO_BODY,
+            None,
+        )
+        .await
+    }
 }
 
 #[cfg(test)]

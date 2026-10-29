@@ -32,6 +32,7 @@ MailerLite Rust SDK
     - [Emails](#emails)
         - [Get an email](#get-an-email)
         - [Get the HTML of an email](#get-the-html-of-an-email)
+        - [Get a block](#get-a-block)
     - [Groups](#groups)
         - [Get a list of groups](#get-a-list-of-groups)
         - [Create a group](#create-a-group)
@@ -733,6 +734,47 @@ async fn main() -> Result<(), Error> {
     let response: ApiResponse<WithEtag<EmailHtml>> = mailerlite.email().html(email_id).await?;
 
     println!("{}", response.data.html);
+
+    Ok(())
+}
+```
+
+### Get a block
+
+Returns the block and its place in the email. `placement` has the IDs of the blocks `after` and `before` it, or `None`.
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example find_email_block
+```
+</details>
+
+```rust
+use mailerlite_rs::{
+    api_response::{ApiResponse, WithEtag},
+    email::EmailBlock,
+    error::Error,
+    MailerLite,
+};
+
+#[tokio::main]
+async fn main() -> Result<(), Error> {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let email_id: String = String::from("Your Email ID");
+
+    let block_id: String = String::from("Your Block ID");
+
+    let response: ApiResponse<WithEtag<EmailBlock>> =
+        mailerlite.email().find_block(email_id, block_id).await?;
+
+    println!("{:#?}", response.data);
 
     Ok(())
 }
