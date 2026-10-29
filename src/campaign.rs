@@ -2,6 +2,10 @@ use crate::{data::Data, parameter::Parameter, response::Response, MailerLite};
 
 const END_POINT: &str = "campaigns";
 
+/// The `editor` value that builds the emails of a new campaign with the simple editor.
+/// Edit these emails with `MailerLite::email`.
+pub const EDITOR_SIMPLE: &str = "simple";
+
 #[derive(Debug)]
 pub struct Campaign {
     mailerlite: MailerLite,
@@ -43,6 +47,22 @@ impl Campaign {
         .await
     }
 
+    /// Creates a campaign.
+    ///
+    /// To build an email with the simple editor, add these keys for each email, for example
+    /// `emails[0][editor]`:
+    ///
+    /// - `editor`: the only accepted value is `simple`, which selects the simple editor instead of the
+    ///   drag-and-drop builder. It has to be the same across every email in the payload; a mixed array is
+    ///   rejected. Setting it prohibits `emails.*.content`.
+    /// - `template_id`: the template the new email starts from. Allowed only when `editor` is `simple`,
+    ///   accepts only a template from the shared gallery, and also has to be the same across every email.
+    ///
+    /// Only `create` accepts `editor` and `template_id`. Use [`EDITOR_SIMPLE`] for the `editor` value.
+    /// The ID of the new email is in `data.emails[0].id` of the response.
+    ///
+    /// `Data` accepts only `&'static str` values. If you get the template ID at run time, use
+    /// `Box::leak(template_id.into_boxed_str())`. The string then stays in memory until the program stops.
     pub async fn create(&self, form: Data) -> Response {
         let url: String = format!("{}{}", self.mailerlite.base_url, END_POINT);
 
@@ -59,6 +79,7 @@ impl Campaign {
         .await
     }
 
+    /// Updates a campaign. Only `create` accepts `editor` and `template_id`, so do not send them here.
     pub async fn update(&self, id: impl AsRef<str>, form: Data) -> Response {
         let url: String = format!("{}{}/{}", self.mailerlite.base_url, END_POINT, id.as_ref());
 

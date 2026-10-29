@@ -24,6 +24,7 @@ MailerLite Rust SDK
         - [Get a list of campaigns](#get-a-list-of-campaigns)
         - [Get a campaign](#get-a-campaign)
         - [Create a campaign](#create-a-campaign)
+        - [Create a campaign with the simple editor](#create-a-campaign-with-the-simple-editor)
         - [Update a campaign](#update-a-campaign)
         - [Delete a campaign](#delete-a-campaign)
         - [Schedule a campaign](#schedule-a-campaign)
@@ -511,6 +512,48 @@ async fn main() {
 ```
 
 
+### Create a campaign with the simple editor
+
+To build the email with the simple editor, add `emails[0][editor]` with the value `campaign::EDITOR_SIMPLE`, and do not add `content`. The ID of the new email is in `data.emails[0].id` of the response. Then edit the email with [the email methods](#emails).
+
+- `editor`: the only accepted value is `simple`, which selects the simple editor instead of the drag-and-drop builder. It has to be the same across every email in the payload; a mixed array is rejected. Setting it prohibits `emails.*.content`.
+- `template_id`: the template the new email starts from. Allowed only when `editor` is `simple`, accepts only a template from the shared gallery, and also has to be the same across every email.
+- Only `create` accepts `editor` and `template_id`. `update` does not accept them.
+- `Data` accepts only `&'static str` values. If you get the template ID at run time, use `Box::leak(template_id.into_boxed_str())`. The string then stays in memory until the program stops.
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example create_campaign_with_simple_editor
+```
+</details>
+
+```rust
+use mailerlite_rs::{campaign::EDITOR_SIMPLE, data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let data: Data = Data::new()
+        .add("name", "Simple Editor Campaign")
+        .add("type", "regular")
+        .add("emails[0][subject]", "Test Subject")
+        .add("emails[0][from_name]", "John Doe")
+        .add("emails[0][from]", "john@gmail.com")
+        .add("emails[0][editor]", EDITOR_SIMPLE);
+
+    let response: Response = mailerlite.campaign().create(data.clone()).await;
+
+    println!("Email ID: {}", response.content["data"]["emails"][0]["id"]);
+}
+```
+
 ### Update a campaign
 
 <details>
@@ -668,7 +711,7 @@ async fn main() {
 
 ## Emails
 
-These methods edit emails built with the simple editor.
+These methods edit emails built with the simple editor. To create such an email, [create a campaign with the simple editor](#create-a-campaign-with-the-simple-editor). The ID of the email is in `data.emails[0].id` of the response.
 
 - The methods return `Result<ApiResponse<T>, Error>`. `ApiResponse` acts like the body, so `response.data` and `response.etag` work. `response.status_code` and `response.headers` give the status code and the headers. These methods do not panic.
 - IDs are strings of the digits 0-9. An empty ID gives `Error::EmptyId`, and an ID with other characters gives `Error::InvalidId`. In these cases, the SDK sends no request.
