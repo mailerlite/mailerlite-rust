@@ -30,7 +30,7 @@ pub struct Settings<'a> {
 
 impl Settings<'_> {
     /// `GET /ecommerce/settings`: the account's e-commerce tracking defaults (read-only).
-    pub async fn get(&self) -> Result<EcommerceSettings> {
+    pub async fn get(self) -> Result<EcommerceSettings> {
         self.client
             .call(Method::GET, &["ecommerce", "settings"])
             .data()

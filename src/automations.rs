@@ -682,7 +682,7 @@ impl MailerLite {
 impl<'a> Automations<'a> {
     /// `GET /automations`: one page of automations.
     pub async fn list(
-        &self,
+        self,
         query: &ListAutomations,
     ) -> Result<Page<Automation, AutomationAggregations>> {
         self.client
@@ -695,17 +695,17 @@ impl<'a> Automations<'a> {
     /// Every automation matching `query`, fetching pages lazily.
     #[cfg(feature = "stream")]
     pub fn list_all(
-        &self,
+        self,
         query: ListAutomations,
     ) -> impl futures_util::Stream<Item = Result<Automation>> + 'a {
-        let automations = *self;
+        let automations = self;
         crate::pagination::stream::paged(query, move |query| async move {
             automations.list(&query).await
         })
     }
 
     /// `GET /automations/{id}`: one automation.
-    pub async fn get(&self, id: impl AsRef<str>) -> Result<Automation> {
+    pub async fn get(self, id: impl AsRef<str>) -> Result<Automation> {
         self.client
             .call(Method::GET, &["automations", id.as_ref()])
             .data()
@@ -713,7 +713,7 @@ impl<'a> Automations<'a> {
     }
 
     /// `POST /automations`: creates an empty, disabled draft automation.
-    pub async fn create(&self, name: &str) -> Result<Automation> {
+    pub async fn create(self, name: &str) -> Result<Automation> {
         self.client
             .call(Method::POST, &["automations"])
             .json(&NameBody { name })
@@ -722,7 +722,7 @@ impl<'a> Automations<'a> {
     }
 
     /// `DELETE /automations/{id}`: deletes an automation.
-    pub async fn delete(&self, id: impl AsRef<str>) -> Result<()> {
+    pub async fn delete(self, id: impl AsRef<str>) -> Result<()> {
         self.client
             .call(Method::DELETE, &["automations", id.as_ref()])
             .send_empty()
@@ -731,7 +731,7 @@ impl<'a> Automations<'a> {
 
     /// `GET /automations/{id}/activity`: one page of subscriber runs through the automation.
     pub async fn activity(
-        &self,
+        self,
         id: impl AsRef<str>,
         query: &ListAutomationActivity,
     ) -> Result<Page<AutomationActivity>> {
@@ -747,7 +747,7 @@ impl<'a> Automations<'a> {
     /// **Not in the public API docs**; kept from SDK v1, so the response is untyped and the
     /// endpoint may change without notice. The query follows the API's own validation rules.
     pub async fn ecommerce_stats(
-        &self,
+        self,
         id: impl AsRef<str>,
         query: &AutomationEcommerceStatsQuery,
     ) -> Result<Value> {
@@ -768,7 +768,7 @@ impl<'a> Automations<'a> {
     /// endpoint may change without notice. Takes the same query as
     /// [`ecommerce_stats`](Self::ecommerce_stats).
     pub async fn email_ecommerce_stats(
-        &self,
+        self,
         id: impl AsRef<str>,
         email_id: impl AsRef<str>,
         query: &AutomationEcommerceStatsQuery,
@@ -809,7 +809,7 @@ impl<'a> Automations<'a> {
     /// # Ok(()) }
     /// ```
     pub async fn ecommerce_orders(
-        &self,
+        self,
         id: impl AsRef<str>,
         query: &ListAutomationOrders,
     ) -> Result<Value> {

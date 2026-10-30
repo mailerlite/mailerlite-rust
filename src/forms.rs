@@ -200,7 +200,7 @@ impl<'a> Forms<'a> {
     /// `GET /forms/{type}`: one page of forms of `form_type`, with counts per type in
     /// [`Page::aggregations`].
     pub async fn list(
-        &self,
+        self,
         form_type: &FormType,
         query: &ListForms,
     ) -> Result<Page<Form, FormAggregations>> {
@@ -214,11 +214,11 @@ impl<'a> Forms<'a> {
     /// Every form of `form_type` matching `query`, fetching pages lazily.
     #[cfg(feature = "stream")]
     pub fn list_all(
-        &self,
+        self,
         form_type: FormType,
         query: ListForms,
     ) -> impl futures_util::Stream<Item = Result<Form>> + 'a {
-        let forms = *self;
+        let forms = self;
         crate::pagination::stream::paged(query, move |query| {
             let form_type = form_type.clone();
             async move { forms.list(&form_type, &query).await }
@@ -226,7 +226,7 @@ impl<'a> Forms<'a> {
     }
 
     /// `GET /forms/{id}`: one form.
-    pub async fn get(&self, id: impl AsRef<str>) -> Result<Form> {
+    pub async fn get(self, id: impl AsRef<str>) -> Result<Form> {
         self.client
             .call(Method::GET, &["forms", id.as_ref()])
             .data()
@@ -234,7 +234,7 @@ impl<'a> Forms<'a> {
     }
 
     /// `PUT /forms/{id}`: renames a form (name at most 255 characters).
-    pub async fn update(&self, id: impl AsRef<str>, name: &str) -> Result<Form> {
+    pub async fn update(self, id: impl AsRef<str>, name: &str) -> Result<Form> {
         self.client
             .call(Method::PUT, &["forms", id.as_ref()])
             .json(&NameBody { name })
@@ -243,7 +243,7 @@ impl<'a> Forms<'a> {
     }
 
     /// `DELETE /forms/{id}`: deletes a form.
-    pub async fn delete(&self, id: impl AsRef<str>) -> Result<()> {
+    pub async fn delete(self, id: impl AsRef<str>) -> Result<()> {
         self.client
             .call(Method::DELETE, &["forms", id.as_ref()])
             .send_empty()
@@ -253,7 +253,7 @@ impl<'a> Forms<'a> {
     /// `GET /forms/{id}/subscribers`: one page of subscribers who signed up through the form
     /// (active by default).
     pub async fn subscribers(
-        &self,
+        self,
         id: impl AsRef<str>,
         query: &ListSubscribers,
     ) -> Result<CursorPage<Subscriber>> {
@@ -267,11 +267,11 @@ impl<'a> Forms<'a> {
     /// Every subscriber of the form matching `query`, fetching pages lazily.
     #[cfg(feature = "stream")]
     pub fn subscribers_all(
-        &self,
+        self,
         id: impl Into<Id>,
         query: ListSubscribers,
     ) -> impl futures_util::Stream<Item = Result<Subscriber>> + 'a {
-        let forms = *self;
+        let forms = self;
         let id = id.into();
         crate::pagination::stream::cursored(query, move |query| {
             let id = id.clone();

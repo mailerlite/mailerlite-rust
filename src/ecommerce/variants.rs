@@ -137,7 +137,7 @@ pub struct Variants<'a> {
 impl Variants<'_> {
     /// `GET /ecommerce/shops/{shop_id}/products/{product_id}/variants`: every variant of the
     /// product (not paginated).
-    pub async fn list(&self) -> Result<Vec<Variant>> {
+    pub async fn list(self) -> Result<Vec<Variant>> {
         self.scope
             .call(Method::GET, &["products", self.product_id, "variants"])
             .data()
@@ -152,7 +152,7 @@ impl Variants<'_> {
     /// If **any** variant in `variants` has a [`resource_id`](CreateVariant::resource_id),
     /// every existing variant of the product whose `resource_id` is not in the request is
     /// **deleted**. Always send the complete list of variants when you use resource ids.
-    pub async fn create(&self, variants: &[CreateVariant]) -> Result<Product> {
+    pub async fn create(self, variants: &[CreateVariant]) -> Result<Product> {
         self.scope
             .call(Method::POST, &["products", self.product_id, "variants"])
             .json(variants)
@@ -162,7 +162,7 @@ impl Variants<'_> {
 
     /// `PUT /ecommerce/shops/{shop_id}/products/{product_id}/variants/{id}`: updates one
     /// variant and returns the product with its variants.
-    pub async fn update(&self, id: impl AsRef<str>, variant: &CreateVariant) -> Result<Product> {
+    pub async fn update(self, id: impl AsRef<str>, variant: &CreateVariant) -> Result<Product> {
         self.scope
             .call(
                 Method::PUT,
@@ -175,7 +175,7 @@ impl Variants<'_> {
 
     /// `DELETE /ecommerce/shops/{shop_id}/products/{product_id}/variants/{id}`: deletes one
     /// variant and returns the product with its remaining variants.
-    pub async fn delete(&self, id: impl AsRef<str>) -> Result<Product> {
+    pub async fn delete(self, id: impl AsRef<str>) -> Result<Product> {
         self.scope
             .call(
                 Method::DELETE,

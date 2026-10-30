@@ -316,7 +316,7 @@ pub struct Orders<'a> {
 
 impl<'a> Orders<'a> {
     /// `GET /ecommerce/shops/{shop_id}/orders`: one page of orders.
-    pub async fn list(&self, query: &ListOrders) -> Result<Page<Order>> {
+    pub async fn list(self, query: &ListOrders) -> Result<Page<Order>> {
         self.scope
             .call(Method::GET, &["orders"])
             .query(query)
@@ -327,10 +327,10 @@ impl<'a> Orders<'a> {
     /// Every order matching `query`, fetching pages lazily.
     #[cfg(feature = "stream")]
     pub fn list_all(
-        &self,
+        self,
         query: ListOrders,
     ) -> impl futures_util::Stream<Item = Result<Order>> + 'a {
-        let orders = *self;
+        let orders = self;
         crate::pagination::stream::paged(
             query,
             move |query| async move { orders.list(&query).await },
@@ -338,12 +338,12 @@ impl<'a> Orders<'a> {
     }
 
     /// `GET /ecommerce/shops/{shop_id}/orders?limit=0`: number of orders.
-    pub async fn count(&self) -> Result<u64> {
+    pub async fn count(self) -> Result<u64> {
         self.scope.count(&["orders"]).await
     }
 
     /// `GET /ecommerce/shops/{shop_id}/orders/{id}`: one order.
-    pub async fn get(&self, id: impl AsRef<str>) -> Result<Order> {
+    pub async fn get(self, id: impl AsRef<str>) -> Result<Order> {
         self.scope
             .call(Method::GET, &["orders", id.as_ref()])
             .data()
@@ -353,7 +353,7 @@ impl<'a> Orders<'a> {
     /// `POST /ecommerce/shops/{shop_id}/orders`: creates an order with its customer and
     /// cart. `pending` orders trigger abandoned-cart automations, `complete` ones purchase
     /// automations.
-    pub async fn create(&self, order: &CreateOrder) -> Result<Order> {
+    pub async fn create(self, order: &CreateOrder) -> Result<Order> {
         self.scope
             .call(Method::POST, &["orders"])
             .json(order)
@@ -362,7 +362,7 @@ impl<'a> Orders<'a> {
     }
 
     /// `PUT /ecommerce/shops/{shop_id}/orders/{id}`: updates an order's status or total.
-    pub async fn update(&self, id: impl AsRef<str>, order: &UpdateOrder) -> Result<Order> {
+    pub async fn update(self, id: impl AsRef<str>, order: &UpdateOrder) -> Result<Order> {
         self.scope
             .call(Method::PUT, &["orders", id.as_ref()])
             .json(order)
@@ -372,7 +372,7 @@ impl<'a> Orders<'a> {
 
     /// `DELETE /ecommerce/shops/{shop_id}/orders/{id}`: deletes an order together with its
     /// cart and cart items, and returns it.
-    pub async fn delete(&self, id: impl AsRef<str>) -> Result<Order> {
+    pub async fn delete(self, id: impl AsRef<str>) -> Result<Order> {
         self.scope
             .call(Method::DELETE, &["orders", id.as_ref()])
             .data()

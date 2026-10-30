@@ -45,7 +45,7 @@ impl MailerLite {
 
 impl Timezones<'_> {
     /// `GET /timezones`: every available timezone (not paginated).
-    pub async fn list(&self) -> Result<Vec<Timezone>> {
+    pub async fn list(self) -> Result<Vec<Timezone>> {
         self.client.call(Method::GET, &["timezones"]).data().await
     }
 }

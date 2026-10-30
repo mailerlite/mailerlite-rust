@@ -101,7 +101,7 @@ impl MailerLite {
 impl<'a> Ecommerce<'a> {
     /// Shop endpoints (`/ecommerce/shops`).
     #[must_use]
-    pub fn shops(&self) -> Shops<'a> {
+    pub fn shops(self) -> Shops<'a> {
         Shops {
             client: self.client,
         }
@@ -109,7 +109,7 @@ impl<'a> Ecommerce<'a> {
 
     /// Account-wide e-commerce tracking settings (`/ecommerce/settings`).
     #[must_use]
-    pub fn settings(&self) -> Settings<'a> {
+    pub fn settings(self) -> Settings<'a> {
         Settings {
             client: self.client,
         }
@@ -117,7 +117,7 @@ impl<'a> Ecommerce<'a> {
 
     /// Endpoints scoped to one shop (`/ecommerce/shops/{shop_id}/...`).
     #[must_use]
-    pub fn shop(&self, shop_id: impl Into<Id>) -> ShopScope<'a> {
+    pub fn shop(self, shop_id: impl Into<Id>) -> ShopScope<'a> {
         ShopScope {
             client: self.client,
             shop_id: shop_id.into(),

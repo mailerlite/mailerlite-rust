@@ -171,7 +171,7 @@ pub struct Categories<'a> {
 
 impl<'a> Categories<'a> {
     /// `GET /ecommerce/shops/{shop_id}/categories`: one page of categories.
-    pub async fn list(&self, query: &ListCategories) -> Result<Page<Category>> {
+    pub async fn list(self, query: &ListCategories) -> Result<Page<Category>> {
         self.scope
             .call(Method::GET, &["categories"])
             .query(query)
@@ -182,22 +182,22 @@ impl<'a> Categories<'a> {
     /// Every category matching `query`, fetching pages lazily.
     #[cfg(feature = "stream")]
     pub fn list_all(
-        &self,
+        self,
         query: ListCategories,
     ) -> impl futures_util::Stream<Item = Result<Category>> + 'a {
-        let categories = *self;
+        let categories = self;
         crate::pagination::stream::paged(query, move |query| async move {
             categories.list(&query).await
         })
     }
 
     /// `GET /ecommerce/shops/{shop_id}/categories?limit=0`: number of categories.
-    pub async fn count(&self) -> Result<u64> {
+    pub async fn count(self) -> Result<u64> {
         self.scope.count(&["categories"]).await
     }
 
     /// `GET /ecommerce/shops/{shop_id}/categories/{id}`: one category.
-    pub async fn get(&self, id: impl AsRef<str>) -> Result<Category> {
+    pub async fn get(self, id: impl AsRef<str>) -> Result<Category> {
         self.scope
             .call(Method::GET, &["categories", id.as_ref()])
             .data()
@@ -205,7 +205,7 @@ impl<'a> Categories<'a> {
     }
 
     /// `POST /ecommerce/shops/{shop_id}/categories`: creates a category.
-    pub async fn create(&self, category: &CreateCategory) -> Result<Category> {
+    pub async fn create(self, category: &CreateCategory) -> Result<Category> {
         self.scope
             .call(Method::POST, &["categories"])
             .json(category)
@@ -214,7 +214,7 @@ impl<'a> Categories<'a> {
     }
 
     /// `PUT /ecommerce/shops/{shop_id}/categories/{id}`: updates a category.
-    pub async fn update(&self, id: impl AsRef<str>, category: &CreateCategory) -> Result<Category> {
+    pub async fn update(self, id: impl AsRef<str>, category: &CreateCategory) -> Result<Category> {
         self.scope
             .call(Method::PUT, &["categories", id.as_ref()])
             .json(category)
@@ -224,7 +224,7 @@ impl<'a> Categories<'a> {
 
     /// `DELETE /ecommerce/shops/{shop_id}/categories/{id}`: deletes a category and returns
     /// it.
-    pub async fn delete(&self, id: impl AsRef<str>) -> Result<Category> {
+    pub async fn delete(self, id: impl AsRef<str>) -> Result<Category> {
         self.scope
             .call(Method::DELETE, &["categories", id.as_ref()])
             .data()
@@ -234,7 +234,7 @@ impl<'a> Categories<'a> {
     /// `GET /ecommerce/shops/{shop_id}/categories/{id}/products`: one page of the category's
     /// products.
     pub async fn products(
-        &self,
+        self,
         id: impl AsRef<str>,
         query: &ListCategoryProducts,
     ) -> Result<Page<Product>> {
@@ -248,7 +248,7 @@ impl<'a> Categories<'a> {
     /// `PUT /ecommerce/shops/{shop_id}/categories/{id}/products/{product_id}`: adds a
     /// product to the category and returns the product.
     pub async fn assign_product(
-        &self,
+        self,
         id: impl AsRef<str>,
         product_id: impl AsRef<str>,
     ) -> Result<Product> {
@@ -264,7 +264,7 @@ impl<'a> Categories<'a> {
     /// `DELETE /ecommerce/shops/{shop_id}/categories/{id}/products/{product_id}`: removes a
     /// product from the category and returns the product.
     pub async fn unassign_product(
-        &self,
+        self,
         id: impl AsRef<str>,
         product_id: impl AsRef<str>,
     ) -> Result<Product> {

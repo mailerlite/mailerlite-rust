@@ -38,7 +38,7 @@ pub struct Imports<'a> {
 
 impl Imports<'_> {
     /// `POST /ecommerce/shops/{shop_id}/categories/import`: creates several categories.
-    pub async fn categories(&self, categories: &[CreateCategory]) -> Result<Vec<Category>> {
+    pub async fn categories(self, categories: &[CreateCategory]) -> Result<Vec<Category>> {
         self.scope
             .call(Method::POST, &["categories", "import"])
             .json(categories)
@@ -49,7 +49,7 @@ impl Imports<'_> {
     /// `POST /ecommerce/shops/{shop_id}/customers/import`: queues several customers for
     /// import in the background. Fails with `413` if they would exceed the account's
     /// subscriber limit.
-    pub async fn customers(&self, customers: &[CreateCustomer]) -> Result<Vec<ImportedCustomer>> {
+    pub async fn customers(self, customers: &[CreateCustomer]) -> Result<Vec<ImportedCustomer>> {
         self.scope
             .call(Method::POST, &["customers", "import"])
             .json(customers)
@@ -59,7 +59,7 @@ impl Imports<'_> {
 
     /// `POST /ecommerce/shops/{shop_id}/products/import`: creates several products, with
     /// [`CreateProduct::categories`].
-    pub async fn products(&self, products: &[CreateProduct]) -> Result<Vec<Product>> {
+    pub async fn products(self, products: &[CreateProduct]) -> Result<Vec<Product>> {
         self.scope
             .call(Method::POST, &["products", "import"])
             .json(products)
@@ -69,18 +69,18 @@ impl Imports<'_> {
 
     /// `POST /ecommerce/shops/{shop_id}/orders/import`: creates several orders with their
     /// customers, carts and cart items.
-    pub async fn orders(&self, orders: &[CreateOrder]) -> Result<Vec<Order>> {
+    pub async fn orders(self, orders: &[CreateOrder]) -> Result<Vec<Order>> {
         self.import_orders(orders, None).await
     }
 
     /// Like [`orders`](Self::orders), but records them without triggering automations, e.g.
     /// when backfilling historical orders.
-    pub async fn orders_without_automations(&self, orders: &[CreateOrder]) -> Result<Vec<Order>> {
+    pub async fn orders_without_automations(self, orders: &[CreateOrder]) -> Result<Vec<Order>> {
         self.import_orders(orders, Some(true)).await
     }
 
     async fn import_orders(
-        &self,
+        self,
         orders: &[CreateOrder],
         without_automations: Option<bool>,
     ) -> Result<Vec<Order>> {

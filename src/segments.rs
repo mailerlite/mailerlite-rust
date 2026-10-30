@@ -84,7 +84,7 @@ impl MailerLite {
 
 impl<'a> Segments<'a> {
     /// `GET /segments`: one page of segments.
-    pub async fn list(&self, query: &ListSegments) -> Result<Page<Segment>> {
+    pub async fn list(self, query: &ListSegments) -> Result<Page<Segment>> {
         self.client
             .call(Method::GET, &["segments"])
             .query(query)
@@ -95,10 +95,10 @@ impl<'a> Segments<'a> {
     /// Every segment, fetching pages lazily.
     #[cfg(feature = "stream")]
     pub fn list_all(
-        &self,
+        self,
         query: ListSegments,
     ) -> impl futures_util::Stream<Item = Result<Segment>> + 'a {
-        let segments = *self;
+        let segments = self;
         crate::pagination::stream::paged(
             query,
             move |query| async move { segments.list(&query).await },
@@ -106,7 +106,7 @@ impl<'a> Segments<'a> {
     }
 
     /// `PUT /segments/{id}`: renames a segment (name at most 255 characters).
-    pub async fn update(&self, id: impl AsRef<str>, name: &str) -> Result<Segment> {
+    pub async fn update(self, id: impl AsRef<str>, name: &str) -> Result<Segment> {
         self.client
             .call(Method::PUT, &["segments", id.as_ref()])
             .json(&NameBody { name })
@@ -115,7 +115,7 @@ impl<'a> Segments<'a> {
     }
 
     /// `DELETE /segments/{id}`: deletes a segment (its subscribers are kept).
-    pub async fn delete(&self, id: impl AsRef<str>) -> Result<()> {
+    pub async fn delete(self, id: impl AsRef<str>) -> Result<()> {
         self.client
             .call(Method::DELETE, &["segments", id.as_ref()])
             .send_empty()
@@ -125,7 +125,7 @@ impl<'a> Segments<'a> {
     /// `GET /segments/{id}/subscribers`: one page of the segment's subscribers (active by
     /// default).
     pub async fn subscribers(
-        &self,
+        self,
         id: impl AsRef<str>,
         query: &ListSubscribers,
     ) -> Result<CursorPage<Subscriber>> {
@@ -139,11 +139,11 @@ impl<'a> Segments<'a> {
     /// Every subscriber of the segment matching `query`, fetching pages lazily.
     #[cfg(feature = "stream")]
     pub fn subscribers_all(
-        &self,
+        self,
         id: impl Into<Id>,
         query: ListSubscribers,
     ) -> impl futures_util::Stream<Item = Result<Subscriber>> + 'a {
-        let segments = *self;
+        let segments = self;
         let id = id.into();
         crate::pagination::stream::cursored(query, move |query| {
             let id = id.clone();

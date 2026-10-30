@@ -217,7 +217,7 @@ pub struct Customers<'a> {
 
 impl<'a> Customers<'a> {
     /// `GET /ecommerce/shops/{shop_id}/customers`: one page of customers.
-    pub async fn list(&self, query: &ListCustomers) -> Result<Page<Customer>> {
+    pub async fn list(self, query: &ListCustomers) -> Result<Page<Customer>> {
         self.scope
             .call(Method::GET, &["customers"])
             .query(query)
@@ -228,10 +228,10 @@ impl<'a> Customers<'a> {
     /// Every customer matching `query`, fetching pages lazily.
     #[cfg(feature = "stream")]
     pub fn list_all(
-        &self,
+        self,
         query: ListCustomers,
     ) -> impl futures_util::Stream<Item = Result<Customer>> + 'a {
-        let customers = *self;
+        let customers = self;
         crate::pagination::stream::paged(
             query,
             move |query| async move { customers.list(&query).await },
@@ -239,12 +239,12 @@ impl<'a> Customers<'a> {
     }
 
     /// `GET /ecommerce/shops/{shop_id}/customers?limit=0`: number of customers.
-    pub async fn count(&self) -> Result<u64> {
+    pub async fn count(self) -> Result<u64> {
         self.scope.count(&["customers"]).await
     }
 
     /// `GET /ecommerce/shops/{shop_id}/customers/{id}`: one customer.
-    pub async fn get(&self, id: impl AsRef<str>) -> Result<Customer> {
+    pub async fn get(self, id: impl AsRef<str>) -> Result<Customer> {
         self.scope
             .call(Method::GET, &["customers", id.as_ref()])
             .data()
@@ -253,7 +253,7 @@ impl<'a> Customers<'a> {
 
     /// `POST /ecommerce/shops/{shop_id}/customers`: creates a customer, linking it to the
     /// subscriber with the same email if one exists.
-    pub async fn create(&self, customer: &CreateCustomer) -> Result<Customer> {
+    pub async fn create(self, customer: &CreateCustomer) -> Result<Customer> {
         self.scope
             .call(Method::POST, &["customers"])
             .json(customer)
@@ -265,7 +265,7 @@ impl<'a> Customers<'a> {
     ///
     /// The API matches customers by email: sending a different email than the stored one
     /// updates (or creates) the customer with that email, not the one at `id`.
-    pub async fn update(&self, id: impl AsRef<str>, customer: &CreateCustomer) -> Result<Customer> {
+    pub async fn update(self, id: impl AsRef<str>, customer: &CreateCustomer) -> Result<Customer> {
         self.scope
             .call(Method::PUT, &["customers", id.as_ref()])
             .json(customer)
@@ -275,7 +275,7 @@ impl<'a> Customers<'a> {
 
     /// `DELETE /ecommerce/shops/{shop_id}/customers/{id}`: deletes a customer and returns
     /// it. The linked subscriber is not affected.
-    pub async fn delete(&self, id: impl AsRef<str>) -> Result<Customer> {
+    pub async fn delete(self, id: impl AsRef<str>) -> Result<Customer> {
         self.scope
             .call(Method::DELETE, &["customers", id.as_ref()])
             .data()

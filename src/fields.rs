@@ -132,7 +132,7 @@ impl MailerLite {
 
 impl<'a> Fields<'a> {
     /// `GET /fields`: one page of fields.
-    pub async fn list(&self, query: &ListFields) -> Result<Page<Field>> {
+    pub async fn list(self, query: &ListFields) -> Result<Page<Field>> {
         self.client
             .call(Method::GET, &["fields"])
             .query(query)
@@ -143,10 +143,10 @@ impl<'a> Fields<'a> {
     /// Every field matching `query`, fetching pages lazily.
     #[cfg(feature = "stream")]
     pub fn list_all(
-        &self,
+        self,
         query: ListFields,
     ) -> impl futures_util::Stream<Item = Result<Field>> + 'a {
-        let fields = *self;
+        let fields = self;
         crate::pagination::stream::paged(
             query,
             move |query| async move { fields.list(&query).await },
@@ -154,7 +154,7 @@ impl<'a> Fields<'a> {
     }
 
     /// `POST /fields`: creates a field (name at most 255 characters).
-    pub async fn create(&self, name: &str, field_type: FieldType) -> Result<Field> {
+    pub async fn create(self, name: &str, field_type: FieldType) -> Result<Field> {
         self.client
             .call(Method::POST, &["fields"])
             .json(&CreateBody {
@@ -166,7 +166,7 @@ impl<'a> Fields<'a> {
     }
 
     /// `PUT /fields/{id}`: renames a field. The type cannot be changed.
-    pub async fn update(&self, id: impl AsRef<str>, name: &str) -> Result<Field> {
+    pub async fn update(self, id: impl AsRef<str>, name: &str) -> Result<Field> {
         self.client
             .call(Method::PUT, &["fields", id.as_ref()])
             .json(&NameBody { name })
@@ -175,7 +175,7 @@ impl<'a> Fields<'a> {
     }
 
     /// `DELETE /fields/{id}`: deletes a field and its values on every subscriber.
-    pub async fn delete(&self, id: impl AsRef<str>) -> Result<()> {
+    pub async fn delete(self, id: impl AsRef<str>) -> Result<()> {
         self.client
             .call(Method::DELETE, &["fields", id.as_ref()])
             .send_empty()

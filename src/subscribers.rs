@@ -689,7 +689,7 @@ impl MailerLite {
 
 impl<'a> Subscribers<'a> {
     /// `GET /subscribers`: one page of subscribers.
-    pub async fn list(&self, query: &ListSubscribers) -> Result<CursorPage<Subscriber>> {
+    pub async fn list(self, query: &ListSubscribers) -> Result<CursorPage<Subscriber>> {
         self.client
             .call(Method::GET, &["subscribers"])
             .query(query)
@@ -700,17 +700,17 @@ impl<'a> Subscribers<'a> {
     /// Every subscriber matching `query`, fetching pages lazily.
     #[cfg(feature = "stream")]
     pub fn list_all(
-        &self,
+        self,
         query: ListSubscribers,
     ) -> impl futures_util::Stream<Item = Result<Subscriber>> + 'a {
-        let subscribers = *self;
+        let subscribers = self;
         crate::pagination::stream::cursored(query, move |query| async move {
             subscribers.list(&query).await
         })
     }
 
     /// `GET /subscribers?limit=0`: total number of subscribers.
-    pub async fn count(&self) -> Result<u64> {
+    pub async fn count(self) -> Result<u64> {
         let total: Total = self
             .client
             .call(Method::GET, &["subscribers"])
@@ -721,7 +721,7 @@ impl<'a> Subscribers<'a> {
     }
 
     /// `GET /subscribers/{id_or_email}`: one subscriber, including its groups.
-    pub async fn get(&self, id_or_email: impl AsRef<str>) -> Result<Subscriber> {
+    pub async fn get(self, id_or_email: impl AsRef<str>) -> Result<Subscriber> {
         self.client
             .call(Method::GET, &["subscribers", id_or_email.as_ref()])
             .data()
@@ -743,7 +743,7 @@ impl<'a> Subscribers<'a> {
     /// }
     /// # Ok(()) }
     /// ```
-    pub async fn create(&self, subscriber: &CreateSubscriber) -> Result<Upserted<Subscriber>> {
+    pub async fn create(self, subscriber: &CreateSubscriber) -> Result<Upserted<Subscriber>> {
         let response = self
             .client
             .call(Method::POST, &["subscribers"])
@@ -758,7 +758,7 @@ impl<'a> Subscribers<'a> {
 
     /// `PUT /subscribers/{id}`: updates a subscriber.
     pub async fn update(
-        &self,
+        self,
         id: impl AsRef<str>,
         update: &UpdateSubscriber,
     ) -> Result<Subscriber> {
@@ -771,7 +771,7 @@ impl<'a> Subscribers<'a> {
 
     /// `DELETE /subscribers/{id}`: deletes a subscriber. Their data is kept so they can
     /// resubscribe; use [`Subscribers::forget`] to erase it.
-    pub async fn delete(&self, id: impl AsRef<str>) -> Result<()> {
+    pub async fn delete(self, id: impl AsRef<str>) -> Result<()> {
         self.client
             .call(Method::DELETE, &["subscribers", id.as_ref()])
             .send_empty()
@@ -779,7 +779,7 @@ impl<'a> Subscribers<'a> {
     }
 
     /// `POST /subscribers/{id}/forget`: erases the subscriber's data within 30 days (GDPR).
-    pub async fn forget(&self, id: impl AsRef<str>) -> Result<Forgotten> {
+    pub async fn forget(self, id: impl AsRef<str>) -> Result<Forgotten> {
         self.client
             .call(Method::POST, &["subscribers", id.as_ref(), "forget"])
             .send()
@@ -792,7 +792,7 @@ impl<'a> Subscribers<'a> {
     /// `None`. Pages after the first repeat entries (the API skips without limiting), so raise
     /// [`ListActivity::limit`] instead of paging.
     pub async fn activity(
-        &self,
+        self,
         id: impl AsRef<str>,
         query: &ListActivity,
     ) -> Result<Page<Activity>> {
@@ -805,7 +805,7 @@ impl<'a> Subscribers<'a> {
 
     /// `GET /subscribers/import/{import_id}`: progress of an import started with
     /// [`Groups::import_subscribers`](crate::groups::Groups::import_subscribers).
-    pub async fn import_status(&self, import_id: impl AsRef<str>) -> Result<ImportStatus> {
+    pub async fn import_status(self, import_id: impl AsRef<str>) -> Result<ImportStatus> {
         self.client
             .call(Method::GET, &["subscribers", "import", import_id.as_ref()])
             .data()
@@ -814,7 +814,7 @@ impl<'a> Subscribers<'a> {
 
     /// `GET /subscribers/{id}/reports/ecommerce`: the subscriber's order totals in a shop.
     pub async fn ecommerce_stats(
-        &self,
+        self,
         id: impl AsRef<str>,
         shop_id: impl AsRef<str>,
     ) -> Result<EcommerceReport> {
@@ -832,7 +832,7 @@ impl<'a> Subscribers<'a> {
 
     /// `GET /subscribers/{id}/reports/ecommerce/orders`: the subscriber's orders in a shop.
     pub async fn ecommerce_orders(
-        &self,
+        self,
         id: impl AsRef<str>,
         query: &ListReportOrders,
     ) -> Result<Page<ReportOrder>> {

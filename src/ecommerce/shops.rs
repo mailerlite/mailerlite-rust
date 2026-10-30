@@ -239,7 +239,7 @@ pub struct Shops<'a> {
 impl<'a> Shops<'a> {
     /// `GET /ecommerce/shops`: one page of shops. The first call creates the account's
     /// MailerLite shop (`platform: "mailerlite"`, `internal: true`).
-    pub async fn list(&self, query: &ListShops) -> Result<Page<Shop>> {
+    pub async fn list(self, query: &ListShops) -> Result<Page<Shop>> {
         self.client
             .call(Method::GET, &["ecommerce", "shops"])
             .query(query)
@@ -249,11 +249,8 @@ impl<'a> Shops<'a> {
 
     /// Every shop, fetching pages lazily.
     #[cfg(feature = "stream")]
-    pub fn list_all(
-        &self,
-        query: ListShops,
-    ) -> impl futures_util::Stream<Item = Result<Shop>> + 'a {
-        let shops = *self;
+    pub fn list_all(self, query: ListShops) -> impl futures_util::Stream<Item = Result<Shop>> + 'a {
+        let shops = self;
         crate::pagination::stream::paged(
             query,
             move |query| async move { shops.list(&query).await },
@@ -261,7 +258,7 @@ impl<'a> Shops<'a> {
     }
 
     /// `GET /ecommerce/shops?limit=0`: total number of shops.
-    pub async fn count(&self) -> Result<u64> {
+    pub async fn count(self) -> Result<u64> {
         let total: Total = self
             .client
             .call(Method::GET, &["ecommerce", "shops"])
@@ -272,7 +269,7 @@ impl<'a> Shops<'a> {
     }
 
     /// `GET /ecommerce/shops/{id}`: one shop.
-    pub async fn get(&self, id: impl AsRef<str>) -> Result<Shop> {
+    pub async fn get(self, id: impl AsRef<str>) -> Result<Shop> {
         self.client
             .call(Method::GET, &["ecommerce", "shops", id.as_ref()])
             .data()
@@ -280,7 +277,7 @@ impl<'a> Shops<'a> {
     }
 
     /// `POST /ecommerce/shops`: connects a shop.
-    pub async fn create(&self, shop: &CreateShop) -> Result<Shop> {
+    pub async fn create(self, shop: &CreateShop) -> Result<Shop> {
         self.client
             .call(Method::POST, &["ecommerce", "shops"])
             .json(shop)
@@ -290,7 +287,7 @@ impl<'a> Shops<'a> {
 
     /// `PUT /ecommerce/shops/{id}`: updates a shop. The MailerLite shop cannot be updated
     /// (`403`).
-    pub async fn update(&self, id: impl AsRef<str>, shop: &CreateShop) -> Result<Shop> {
+    pub async fn update(self, id: impl AsRef<str>, shop: &CreateShop) -> Result<Shop> {
         self.client
             .call(Method::PUT, &["ecommerce", "shops", id.as_ref()])
             .json(shop)
@@ -300,7 +297,7 @@ impl<'a> Shops<'a> {
 
     /// `DELETE /ecommerce/shops/{id}`: deletes a shop and returns it. The MailerLite shop
     /// cannot be deleted (`403`).
-    pub async fn delete(&self, id: impl AsRef<str>) -> Result<Shop> {
+    pub async fn delete(self, id: impl AsRef<str>) -> Result<Shop> {
         self.client
             .call(Method::DELETE, &["ecommerce", "shops", id.as_ref()])
             .data()
@@ -310,7 +307,7 @@ impl<'a> Shops<'a> {
     /// `GET /ecommerce/shops/{id}/reports/stats`: orders and revenue your emails earned in
     /// the shop between `start_date` and `end_date` (inclusive, `YYYY-MM-DD`).
     pub async fn stats(
-        &self,
+        self,
         id: impl AsRef<str>,
         start_date: &str,
         end_date: &str,

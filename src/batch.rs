@@ -242,7 +242,7 @@ impl Batch<'_> {
     /// envelope (more than [`MAX_REQUESTS`] items, or a method other than `GET`, `POST`, `PUT`
     /// or `DELETE`). Failures of individual calls are reported in
     /// [`BatchResponse::responses`] instead.
-    pub async fn send(&self, request: &BatchRequest) -> Result<BatchResponse> {
+    pub async fn send(self, request: &BatchRequest) -> Result<BatchResponse> {
         self.client
             .call(Method::POST, &["batch"])
             .json(request)

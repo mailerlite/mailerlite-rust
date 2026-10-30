@@ -1500,10 +1500,7 @@ impl MailerLite {
 impl<'a> Campaigns<'a> {
     /// `GET /campaigns`: one page of campaigns. Every status when no filter is set; with another
     /// filter but no [`ListCampaigns::status`], only `ready` campaigns.
-    pub async fn list(
-        &self,
-        query: &ListCampaigns,
-    ) -> Result<Page<Campaign, CampaignAggregations>> {
+    pub async fn list(self, query: &ListCampaigns) -> Result<Page<Campaign, CampaignAggregations>> {
         self.client
             .call(Method::GET, &["campaigns"])
             .query(query)
@@ -1514,10 +1511,10 @@ impl<'a> Campaigns<'a> {
     /// Every campaign matching `query`, fetching pages lazily.
     #[cfg(feature = "stream")]
     pub fn list_all(
-        &self,
+        self,
         query: ListCampaigns,
     ) -> impl futures_util::Stream<Item = Result<Campaign>> + 'a {
-        let campaigns = *self;
+        let campaigns = self;
         crate::pagination::stream::paged(
             query,
             move |query| async move { campaigns.list(&query).await },
@@ -1525,7 +1522,7 @@ impl<'a> Campaigns<'a> {
     }
 
     /// `GET /campaigns/{id}`: one campaign.
-    pub async fn get(&self, id: impl AsRef<str>) -> Result<Campaign> {
+    pub async fn get(self, id: impl AsRef<str>) -> Result<Campaign> {
         self.client
             .call(Method::GET, &["campaigns", id.as_ref()])
             .data()
@@ -1533,7 +1530,7 @@ impl<'a> Campaigns<'a> {
     }
 
     /// `POST /campaigns`: creates a draft campaign.
-    pub async fn create(&self, campaign: &CreateCampaign) -> Result<Campaign> {
+    pub async fn create(self, campaign: &CreateCampaign) -> Result<Campaign> {
         self.client
             .call(Method::POST, &["campaigns"])
             .json(campaign)
@@ -1542,7 +1539,7 @@ impl<'a> Campaigns<'a> {
     }
 
     /// `PUT /campaigns/{id}`: updates a draft campaign (`422` for other statuses).
-    pub async fn update(&self, id: impl AsRef<str>, campaign: &UpdateCampaign) -> Result<Campaign> {
+    pub async fn update(self, id: impl AsRef<str>, campaign: &UpdateCampaign) -> Result<Campaign> {
         self.client
             .call(Method::PUT, &["campaigns", id.as_ref()])
             .json(campaign)
@@ -1563,7 +1560,7 @@ impl<'a> Campaigns<'a> {
     /// # Ok(()) }
     /// ```
     pub async fn schedule(
-        &self,
+        self,
         id: impl AsRef<str>,
         schedule: &ScheduleCampaign,
     ) -> Result<Campaign> {
@@ -1576,7 +1573,7 @@ impl<'a> Campaigns<'a> {
 
     /// `POST /campaigns/{id}/cancel`: moves a `ready` campaign back to draft (`400` for other
     /// statuses).
-    pub async fn cancel(&self, id: impl AsRef<str>) -> Result<Campaign> {
+    pub async fn cancel(self, id: impl AsRef<str>) -> Result<Campaign> {
         self.client
             .call(Method::POST, &["campaigns", id.as_ref(), "cancel"])
             .data()
@@ -1584,7 +1581,7 @@ impl<'a> Campaigns<'a> {
     }
 
     /// `DELETE /campaigns/{id}`: deletes a campaign.
-    pub async fn delete(&self, id: impl AsRef<str>) -> Result<()> {
+    pub async fn delete(self, id: impl AsRef<str>) -> Result<()> {
         self.client
             .call(Method::DELETE, &["campaigns", id.as_ref()])
             .send_empty()
@@ -1594,7 +1591,7 @@ impl<'a> Campaigns<'a> {
     /// `GET /campaigns/{id}/reports/subscriber-activity`: one page of recipient activity of a
     /// sent campaign.
     pub async fn subscriber_activity(
-        &self,
+        self,
         id: impl AsRef<str>,
         query: &ListCampaignActivity,
     ) -> Result<Page<CampaignActivity, CampaignActivityAggregations>> {
@@ -1611,11 +1608,11 @@ impl<'a> Campaigns<'a> {
     /// Every recipient activity matching `query`, fetching pages lazily.
     #[cfg(feature = "stream")]
     pub fn subscriber_activity_all(
-        &self,
+        self,
         id: impl Into<Id>,
         query: ListCampaignActivity,
     ) -> impl futures_util::Stream<Item = Result<CampaignActivity>> + 'a {
-        let campaigns = *self;
+        let campaigns = self;
         let id = id.into();
         crate::pagination::stream::paged(query, move |query| {
             let id = id.clone();
@@ -1626,7 +1623,7 @@ impl<'a> Campaigns<'a> {
     /// `GET /campaigns/{id}/reports/ecommerce`: orders and revenue the campaign earned in a
     /// shop.
     pub async fn ecommerce_stats(
-        &self,
+        self,
         id: impl AsRef<str>,
         shop_id: impl AsRef<str>,
     ) -> Result<CampaignEcommerceReport> {
@@ -1644,7 +1641,7 @@ impl<'a> Campaigns<'a> {
 
     /// `GET /campaigns/{id}/reports/ecommerce/orders`: orders the campaign earned in a shop.
     pub async fn ecommerce_orders(
-        &self,
+        self,
         id: impl AsRef<str>,
         query: &ListReportOrders,
     ) -> Result<Page<ReportOrder>> {
@@ -1659,7 +1656,7 @@ impl<'a> Campaigns<'a> {
     }
 
     /// `GET /campaigns/languages`: languages available for the unsubscribe template.
-    pub async fn languages(&self) -> Result<Vec<Language>> {
+    pub async fn languages(self) -> Result<Vec<Language>> {
         self.client
             .call(Method::GET, &["campaigns", "languages"])
             .data()

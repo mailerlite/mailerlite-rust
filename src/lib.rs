@@ -120,3 +120,18 @@ pub use types::{FieldValue, Id, Rate, Sort, Timestamp};
 /// Every request goes to production. For a one-off local run, edit this constant and
 /// revert it before committing.
 const BASE_URL: &str = "https://connect.mailerlite.com/api";
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn futures_do_not_borrow_the_resource_handle() {
+        let client = MailerLite::new("key").unwrap();
+        let query = subscribers::ListSubscribers::new();
+
+        // The handle is a temporary; the future must not borrow it.
+        let future = client.subscribers().list(&query);
+        drop(future);
+    }
+}

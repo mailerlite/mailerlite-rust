@@ -538,7 +538,7 @@ pub struct Products<'a> {
 
 impl<'a> Products<'a> {
     /// `GET /ecommerce/shops/{shop_id}/products`: one page of products.
-    pub async fn list(&self, query: &ListProducts) -> Result<Page<Product>> {
+    pub async fn list(self, query: &ListProducts) -> Result<Page<Product>> {
         self.scope
             .call(Method::GET, &["products"])
             .query(query)
@@ -549,10 +549,10 @@ impl<'a> Products<'a> {
     /// Every product matching `query`, fetching pages lazily.
     #[cfg(feature = "stream")]
     pub fn list_all(
-        &self,
+        self,
         query: ListProducts,
     ) -> impl futures_util::Stream<Item = Result<Product>> + 'a {
-        let products = *self;
+        let products = self;
         crate::pagination::stream::paged(
             query,
             move |query| async move { products.list(&query).await },
@@ -560,12 +560,12 @@ impl<'a> Products<'a> {
     }
 
     /// `GET /ecommerce/shops/{shop_id}/products?limit=0`: number of products.
-    pub async fn count(&self) -> Result<u64> {
+    pub async fn count(self) -> Result<u64> {
         self.scope.count(&["products"]).await
     }
 
     /// `GET /ecommerce/shops/{shop_id}/products/{id}`: one product.
-    pub async fn get(&self, id: impl AsRef<str>) -> Result<Product> {
+    pub async fn get(self, id: impl AsRef<str>) -> Result<Product> {
         self.scope
             .call(Method::GET, &["products", id.as_ref()])
             .data()
@@ -573,7 +573,7 @@ impl<'a> Products<'a> {
     }
 
     /// `POST /ecommerce/shops/{shop_id}/products`: creates a product.
-    pub async fn create(&self, product: &CreateProduct) -> Result<Product> {
+    pub async fn create(self, product: &CreateProduct) -> Result<Product> {
         self.scope
             .call(Method::POST, &["products"])
             .json(product)
@@ -582,7 +582,7 @@ impl<'a> Products<'a> {
     }
 
     /// `PUT /ecommerce/shops/{shop_id}/products/{id}`: updates a product.
-    pub async fn update(&self, id: impl AsRef<str>, product: &CreateProduct) -> Result<Product> {
+    pub async fn update(self, id: impl AsRef<str>, product: &CreateProduct) -> Result<Product> {
         self.scope
             .call(Method::PUT, &["products", id.as_ref()])
             .json(product)
@@ -592,7 +592,7 @@ impl<'a> Products<'a> {
 
     /// `PUT /ecommerce/shops/{shop_id}/products/{id}/change-status`: enables (`true`) or
     /// disables (`false`) a product.
-    pub async fn change_status(&self, id: impl AsRef<str>, enabled: bool) -> Result<Product> {
+    pub async fn change_status(self, id: impl AsRef<str>, enabled: bool) -> Result<Product> {
         self.scope
             .call(Method::PUT, &["products", id.as_ref(), "change-status"])
             .json(&StatusBody { status: enabled })
@@ -601,7 +601,7 @@ impl<'a> Products<'a> {
     }
 
     /// `DELETE /ecommerce/shops/{shop_id}/products/{id}`: deletes a product and returns it.
-    pub async fn delete(&self, id: impl AsRef<str>) -> Result<Product> {
+    pub async fn delete(self, id: impl AsRef<str>) -> Result<Product> {
         self.scope
             .call(Method::DELETE, &["products", id.as_ref()])
             .data()
@@ -611,7 +611,7 @@ impl<'a> Products<'a> {
     /// `PUT /ecommerce/shops/{shop_id}/products/{id}/categories/multiple`: adds the product
     /// to several categories at once (see [`AssignCategories::replace`]).
     pub async fn assign_categories(
-        &self,
+        self,
         id: impl AsRef<str>,
         categories: &AssignCategories,
     ) -> Result<Product> {

@@ -208,7 +208,7 @@ impl MailerLite {
 
 impl<'a> Groups<'a> {
     /// `GET /groups`: one page of groups.
-    pub async fn list(&self, query: &ListGroups) -> Result<Page<Group>> {
+    pub async fn list(self, query: &ListGroups) -> Result<Page<Group>> {
         self.client
             .call(Method::GET, &["groups"])
             .query(query)
@@ -219,10 +219,10 @@ impl<'a> Groups<'a> {
     /// Every group matching `query`, fetching pages lazily.
     #[cfg(feature = "stream")]
     pub fn list_all(
-        &self,
+        self,
         query: ListGroups,
     ) -> impl futures_util::Stream<Item = Result<Group>> + 'a {
-        let groups = *self;
+        let groups = self;
         crate::pagination::stream::paged(
             query,
             move |query| async move { groups.list(&query).await },
@@ -230,7 +230,7 @@ impl<'a> Groups<'a> {
     }
 
     /// `POST /groups`: creates a group (name at most 255 characters).
-    pub async fn create(&self, name: &str) -> Result<Group> {
+    pub async fn create(self, name: &str) -> Result<Group> {
         self.client
             .call(Method::POST, &["groups"])
             .json(&NameBody { name })
@@ -239,7 +239,7 @@ impl<'a> Groups<'a> {
     }
 
     /// `PUT /groups/{id}`: renames a group.
-    pub async fn update(&self, id: impl AsRef<str>, name: &str) -> Result<Group> {
+    pub async fn update(self, id: impl AsRef<str>, name: &str) -> Result<Group> {
         self.client
             .call(Method::PUT, &["groups", id.as_ref()])
             .json(&NameBody { name })
@@ -248,7 +248,7 @@ impl<'a> Groups<'a> {
     }
 
     /// `DELETE /groups/{id}`: deletes a group (its subscribers are kept).
-    pub async fn delete(&self, id: impl AsRef<str>) -> Result<()> {
+    pub async fn delete(self, id: impl AsRef<str>) -> Result<()> {
         self.client
             .call(Method::DELETE, &["groups", id.as_ref()])
             .send_empty()
@@ -257,7 +257,7 @@ impl<'a> Groups<'a> {
 
     /// `GET /groups/{id}/subscribers`: one page of the group's subscribers (active by default).
     pub async fn subscribers(
-        &self,
+        self,
         id: impl AsRef<str>,
         query: &ListSubscribers,
     ) -> Result<CursorPage<Subscriber>> {
@@ -271,11 +271,11 @@ impl<'a> Groups<'a> {
     /// Every subscriber of the group matching `query`, fetching pages lazily.
     #[cfg(feature = "stream")]
     pub fn subscribers_all(
-        &self,
+        self,
         id: impl Into<Id>,
         query: ListSubscribers,
     ) -> impl futures_util::Stream<Item = Result<Subscriber>> + 'a {
-        let groups = *self;
+        let groups = self;
         let id = id.into();
         crate::pagination::stream::cursored(query, move |query| {
             let id = id.clone();
@@ -285,7 +285,7 @@ impl<'a> Groups<'a> {
 
     /// `POST /subscribers/{subscriber_id}/groups/{group_id}`: adds a subscriber to the group.
     pub async fn assign_subscriber(
-        &self,
+        self,
         group_id: impl AsRef<str>,
         subscriber_id: impl AsRef<str>,
     ) -> Result<Group> {
@@ -307,7 +307,7 @@ impl<'a> Groups<'a> {
     /// group. `subscriber_id` may also be the subscriber's email, as shown in MailerLite's
     /// basic integration guide (the endpoint reference only mentions ids).
     pub async fn unassign_subscriber(
-        &self,
+        self,
         group_id: impl AsRef<str>,
         subscriber_id: impl AsRef<str>,
     ) -> Result<()> {
@@ -329,7 +329,7 @@ impl<'a> Groups<'a> {
     /// background. Limited to 20 imports per minute; poll progress with
     /// [`Subscribers::import_status`](crate::subscribers::Subscribers::import_status).
     pub async fn import_subscribers(
-        &self,
+        self,
         id: impl AsRef<str>,
         subscribers: &[ImportSubscriber],
     ) -> Result<ImportStarted> {

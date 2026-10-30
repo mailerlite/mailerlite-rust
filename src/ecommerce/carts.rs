@@ -321,7 +321,7 @@ pub struct Carts<'a> {
 
 impl<'a> Carts<'a> {
     /// `GET /ecommerce/shops/{shop_id}/carts`: one page of carts.
-    pub async fn list(&self, query: &ListCarts) -> Result<Page<Cart>> {
+    pub async fn list(self, query: &ListCarts) -> Result<Page<Cart>> {
         self.scope
             .call(Method::GET, &["carts"])
             .query(query)
@@ -331,11 +331,8 @@ impl<'a> Carts<'a> {
 
     /// Every cart matching `query`, fetching pages lazily.
     #[cfg(feature = "stream")]
-    pub fn list_all(
-        &self,
-        query: ListCarts,
-    ) -> impl futures_util::Stream<Item = Result<Cart>> + 'a {
-        let carts = *self;
+    pub fn list_all(self, query: ListCarts) -> impl futures_util::Stream<Item = Result<Cart>> + 'a {
+        let carts = self;
         crate::pagination::stream::paged(
             query,
             move |query| async move { carts.list(&query).await },
@@ -343,12 +340,12 @@ impl<'a> Carts<'a> {
     }
 
     /// `GET /ecommerce/shops/{shop_id}/carts?limit=0`: number of carts.
-    pub async fn count(&self) -> Result<u64> {
+    pub async fn count(self) -> Result<u64> {
         self.scope.count(&["carts"]).await
     }
 
     /// `GET /ecommerce/shops/{shop_id}/carts/{id}`: one cart.
-    pub async fn get(&self, id: impl AsRef<str>) -> Result<Cart> {
+    pub async fn get(self, id: impl AsRef<str>) -> Result<Cart> {
         self.scope
             .call(Method::GET, &["carts", id.as_ref()])
             .data()
@@ -357,7 +354,7 @@ impl<'a> Carts<'a> {
 
     /// `PUT /ecommerce/shops/{shop_id}/carts/{id}`: updates a cart. Change its items with
     /// [`ShopScope::cart_items`](super::ShopScope::cart_items).
-    pub async fn update(&self, id: impl AsRef<str>, cart: &UpdateCart) -> Result<Cart> {
+    pub async fn update(self, id: impl AsRef<str>, cart: &UpdateCart) -> Result<Cart> {
         self.scope
             .call(Method::PUT, &["carts", id.as_ref()])
             .json(cart)
@@ -376,7 +373,7 @@ pub struct CartItems<'a> {
 
 impl<'a> CartItems<'a> {
     /// `GET /ecommerce/shops/{shop_id}/carts/{cart_id}/items`: one page of items.
-    pub async fn list(&self, query: &ListCartItems) -> Result<Page<CartItem>> {
+    pub async fn list(self, query: &ListCartItems) -> Result<Page<CartItem>> {
         self.scope
             .call(Method::GET, &["carts", self.cart_id, "items"])
             .query(query)
@@ -387,10 +384,10 @@ impl<'a> CartItems<'a> {
     /// Every item of the cart, fetching pages lazily.
     #[cfg(feature = "stream")]
     pub fn list_all(
-        &self,
+        self,
         query: ListCartItems,
     ) -> impl futures_util::Stream<Item = Result<CartItem>> + 'a {
-        let items = *self;
+        let items = self;
         crate::pagination::stream::paged(
             query,
             move |query| async move { items.list(&query).await },
@@ -398,12 +395,12 @@ impl<'a> CartItems<'a> {
     }
 
     /// `GET /ecommerce/shops/{shop_id}/carts/{cart_id}/items?limit=0`: number of items.
-    pub async fn count(&self) -> Result<u64> {
+    pub async fn count(self) -> Result<u64> {
         self.scope.count(&["carts", self.cart_id, "items"]).await
     }
 
     /// `GET /ecommerce/shops/{shop_id}/carts/{cart_id}/items/{id}`: one item.
-    pub async fn get(&self, id: impl AsRef<str>) -> Result<CartItem> {
+    pub async fn get(self, id: impl AsRef<str>) -> Result<CartItem> {
         self.scope
             .call(Method::GET, &["carts", self.cart_id, "items", id.as_ref()])
             .data()
@@ -411,7 +408,7 @@ impl<'a> CartItems<'a> {
     }
 
     /// `POST /ecommerce/shops/{shop_id}/carts/{cart_id}/items`: adds an item to the cart.
-    pub async fn create(&self, item: &CreateCartItem) -> Result<CartItem> {
+    pub async fn create(self, item: &CreateCartItem) -> Result<CartItem> {
         self.scope
             .call(Method::POST, &["carts", self.cart_id, "items"])
             .json(item)
@@ -423,7 +420,7 @@ impl<'a> CartItems<'a> {
     ///
     /// Send the full item: an omitted `quantity` resets to 1 and an omitted `variant` to empty.
     /// The product is always a MailerLite id here, even with `with_resource_id`.
-    pub async fn update(&self, id: impl AsRef<str>, item: &CreateCartItem) -> Result<CartItem> {
+    pub async fn update(self, id: impl AsRef<str>, item: &CreateCartItem) -> Result<CartItem> {
         self.scope
             .call(Method::PUT, &["carts", self.cart_id, "items", id.as_ref()])
             .json(item)
@@ -433,7 +430,7 @@ impl<'a> CartItems<'a> {
 
     /// `DELETE /ecommerce/shops/{shop_id}/carts/{cart_id}/items/{id}`: removes an item and
     /// returns it.
-    pub async fn delete(&self, id: impl AsRef<str>) -> Result<CartItem> {
+    pub async fn delete(self, id: impl AsRef<str>) -> Result<CartItem> {
         self.scope
             .call(
                 Method::DELETE,

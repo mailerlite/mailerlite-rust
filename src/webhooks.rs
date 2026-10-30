@@ -290,7 +290,7 @@ impl MailerLite {
 
 impl<'a> Webhooks<'a> {
     /// `GET /webhooks`: one page of webhooks.
-    pub async fn list(&self, query: &ListWebhooks) -> Result<Page<Webhook>> {
+    pub async fn list(self, query: &ListWebhooks) -> Result<Page<Webhook>> {
         self.client
             .call(Method::GET, &["webhooks"])
             .query(query)
@@ -301,10 +301,10 @@ impl<'a> Webhooks<'a> {
     /// Every webhook, fetching pages lazily.
     #[cfg(feature = "stream")]
     pub fn list_all(
-        &self,
+        self,
         query: ListWebhooks,
     ) -> impl futures_util::Stream<Item = Result<Webhook>> + 'a {
-        let webhooks = *self;
+        let webhooks = self;
         crate::pagination::stream::paged(
             query,
             move |query| async move { webhooks.list(&query).await },
@@ -312,7 +312,7 @@ impl<'a> Webhooks<'a> {
     }
 
     /// `GET /webhooks/{id}`: one webhook.
-    pub async fn get(&self, id: impl AsRef<str>) -> Result<Webhook> {
+    pub async fn get(self, id: impl AsRef<str>) -> Result<Webhook> {
         self.client
             .call(Method::GET, &["webhooks", id.as_ref()])
             .data()
@@ -320,7 +320,7 @@ impl<'a> Webhooks<'a> {
     }
 
     /// `POST /webhooks`: creates a webhook.
-    pub async fn create(&self, webhook: &CreateWebhook) -> Result<Webhook> {
+    pub async fn create(self, webhook: &CreateWebhook) -> Result<Webhook> {
         self.client
             .call(Method::POST, &["webhooks"])
             .json(webhook)
@@ -329,7 +329,7 @@ impl<'a> Webhooks<'a> {
     }
 
     /// `PUT /webhooks/{id}`: updates the fields set in `update`.
-    pub async fn update(&self, id: impl AsRef<str>, update: &UpdateWebhook) -> Result<Webhook> {
+    pub async fn update(self, id: impl AsRef<str>, update: &UpdateWebhook) -> Result<Webhook> {
         self.client
             .call(Method::PUT, &["webhooks", id.as_ref()])
             .json(update)
@@ -338,7 +338,7 @@ impl<'a> Webhooks<'a> {
     }
 
     /// `DELETE /webhooks/{id}`: deletes a webhook.
-    pub async fn delete(&self, id: impl AsRef<str>) -> Result<()> {
+    pub async fn delete(self, id: impl AsRef<str>) -> Result<()> {
         self.client
             .call(Method::DELETE, &["webhooks", id.as_ref()])
             .send_empty()
