@@ -76,9 +76,9 @@ pub struct Form {
     /// Configuration warnings shown in the app.
     #[serde(default, deserialize_with = "de::null_default")]
     pub warnings: Vec<Value>,
-    /// Double opt-in setting. The docs only show `null`, so the raw JSON is kept.
+    /// Whether signups must confirm by email (double opt-in).
     #[serde(default)]
-    pub double_optin: Option<Value>,
+    pub double_optin: Option<bool>,
     /// Preview image URL.
     #[serde(default)]
     pub screenshot_url: Option<String>,

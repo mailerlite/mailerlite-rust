@@ -5,7 +5,10 @@
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
 
-use crate::{MailerLite, Result, types::Id};
+use crate::{
+    MailerLite, Result,
+    types::{Id, de},
+};
 
 /// A timezone MailerLite accepts.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -19,10 +22,10 @@ pub struct Timezone {
     #[serde(default)]
     pub name_for_humans: String,
     /// UTC offset, e.g. `+03:00`.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub offset_name: String,
     /// UTC offset in minutes, e.g. `180`.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub offset: i32,
 }
 
