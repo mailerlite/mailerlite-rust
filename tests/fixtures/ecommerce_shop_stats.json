@@ -1,0 +1,19 @@
+{
+  "data": {
+    "ecommerce": {
+      "orders_count": 4,
+      "revenue": 40,
+      "average_order_value": 10,
+      "conversion_rate": "0%"
+    },
+    "series": [
+      {
+        "date": "2026-01-01",
+        "campaign_orders_count": 3,
+        "automation_orders_count": 1,
+        "automation_revenue": 10,
+        "campaign_revenue": 30
+      }
+    ]
+  }
+}

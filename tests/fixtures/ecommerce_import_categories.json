@@ -1,0 +1,18 @@
+{
+  "data": [
+    {
+      "id": 46919150796276752,
+      "name": "Category 1",
+      "exclude_from_automations": false,
+      "created_at": "2022-02-13T09:46:29.000000Z",
+      "updated_at": "2022-02-13T09:46:29.000000Z"
+    },
+    {
+      "id": 46919150798373905,
+      "name": "Category 2",
+      "exclude_from_automations": false,
+      "created_at": "2022-02-13T09:46:29.000000Z",
+      "updated_at": "2022-02-13T09:46:29.000000Z"
+    }
+  ]
+}

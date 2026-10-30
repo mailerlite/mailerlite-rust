@@ -1,0 +1,43 @@
+{
+  "data": [
+    {
+      "id": "1234566457534276",
+      "name": "Category 1",
+      "exclude_from_automations": false,
+      "created_at": "2021-09-01 14:03:50",
+      "updated_at": "2021-09-01 14:03:50"
+    }
+  ],
+  "links": {
+    "first": "https://connect.mailerlite.com/api/ecommerce/shops/:shop_id/categories?page=1",
+    "last": "https://connect.mailerlite.com/api/ecommerce/shops/:shop_id/categories?page=1",
+    "prev": null,
+    "next": null
+  },
+  "meta": {
+    "current_page": 1,
+    "from": 1,
+    "last_page": 1,
+    "links": [
+      {
+        "url": null,
+        "label": "&laquo; Previous",
+        "active": false
+      },
+      {
+        "url": "https://connect.mailerlite.com/api/ecommerce/shops/:shop_id/categories?page=1",
+        "label": "1",
+        "active": true
+      },
+      {
+        "url": null,
+        "label": "Next &raquo;",
+        "active": false
+      }
+    ],
+    "path": "https://connect.mailerlite.com/api/ecommerce/shops/:shop_id/categories",
+    "per_page": 100,
+    "to": 1,
+    "total": 1
+  }
+}

@@ -1,0 +1,120 @@
+{
+   "data": {
+       "id": "52016443246511136",
+       "resource_id": "new-order1",
+       "shop": {
+           "id": "134",
+           "name": "Super Amazing T-Shirts",
+           "url": "superamazingtshirts.com",
+           "currency": "USD",
+           "enabled": true,
+           "enable_popups": false,
+           "group": null,
+           "created_at": "2022-04-10T15:24:56.000000Z",
+           "updated_at": "2022-04-10T15:24:56.000000Z",
+           "currency_sign": "$"
+       },
+       "customer": {
+           "id": "52016278146123709",
+           "resource_id": "customer1",
+           "email": "customer@email.com",
+           "accepts_marketing": true,
+           "total_spent": 20,
+           "orders_count": 1,
+           "subscriber": {
+               "id": "52016278181775299",
+               "email": "customer@email.com",
+               "status": "active",
+               "source": "ecommerce",
+               "sent": 0,
+               "opens_count": 0,
+               "clicks_count": 0,
+               "open_rate": 0,
+               "click_rate": 0,
+               "ip_address": null,
+               "subscribed_at": "2022-04-10 16:03:08",
+               "unsubscribed_at": null,
+               "created_at": "2022-04-10 16:03:08",
+               "updated_at": "2022-04-10 16:03:08",
+               "opted_in_at": null,
+               "optin_ip": null
+           }
+       },
+       "cart": {
+           "id": "52016443227636766",
+           "resource_id": "cart1",
+           "checkout_url": null,
+           "cart_total": "0",
+           "items": [
+               {
+                   "id": "52016443234976799",
+                   "resource_id": "cart-item1",
+                   "product": {
+                       "id": "52015669709899317",
+                       "name": "T-Shirt 1",
+                       "resource_id": "prod-tshirt1",
+                       "price": "20",
+                       "url": null,
+                       "image": null,
+                       "exclude_from_automations": false,
+                       "enabled": true,
+                       "categories": [
+                           {
+                               "id": "52014701898368045",
+                               "resource_id": "cat-superdeals",
+                               "name": "Superdeals",
+                               "exclude_from_automations": false,
+                               "created_at": "2022-04-10T15:38:05.000000Z",
+                               "updated_at": "2022-04-10T15:38:05.000000Z"
+                           },
+                           {
+                               "id": "52014701909902383",
+                               "resource_id": "cat-pattern",
+                               "name": "Pattern",
+                               "exclude_from_automations": false,
+                               "created_at": "2022-04-10T15:38:05.000000Z",
+                               "updated_at": "2022-04-10T15:38:05.000000Z"
+                           }
+                       ]
+                   },
+                   "variant": null,
+                   "quantity": 1,
+                   "price": "20"
+               },
+               {
+                   "id": "52016782600308050",
+                   "resource_id": "cart-item2",
+                   "product": {
+                       "id": "52015669714093622",
+                       "name": "T-Shirt 2",
+                       "resource_id": "prod-tshirt2",
+                       "price": "20",
+                       "url": null,
+                       "image": null,
+                       "exclude_from_automations": false,
+                       "enabled": true,
+                       "categories": [
+                           {
+                               "id": "52014701903610926",
+                               "resource_id": "cat-single-color",
+                               "name": "Single color",
+                               "exclude_from_automations": false,
+                               "created_at": "2022-04-10T15:38:05.000000Z",
+                               "updated_at": "2022-04-10T15:38:05.000000Z"
+                           }
+                       ]
+                   },
+                   "variant": null,
+                   "quantity": 1,
+                   "price": "20"
+               }
+           ]
+       },
+       "total": "20",
+       "status": "complete",
+       "attribution": null,
+       "created_at": "2022-04-10T16:05:45.000000Z",
+       "updated_at": "2022-04-10T16:14:32.000000Z",
+       "completed_at": null
+   }
+}

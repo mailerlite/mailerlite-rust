@@ -1,0 +1,54 @@
+{
+  "data": [
+    {
+      "id": 46920297804203043,
+      "name": "Product name",
+      "price": 123.4,
+      "url": null,
+      "image": null,
+      "exclude_from_automations": false,
+      "enabled": true,
+      "categories": [
+        {
+          "id": 46919150796276752,
+          "name": "Category 1",
+          "exclude_from_automations": false,
+          "created_at": "2022-02-13T09:46:29.000000Z",
+          "updated_at": "2022-02-13T09:46:29.000000Z"
+        },
+        {
+          "id": 46919150798373905,
+          "name": "Category 2",
+          "exclude_from_automations": false,
+          "created_at": "2022-02-13T09:46:29.000000Z",
+          "updated_at": "2022-02-13T09:46:29.000000Z"
+        }
+      ]
+    },
+    {
+      "id": 46920297809445924,
+      "name": "Product 2 name",
+      "price": 123.4,
+      "url": null,
+      "image": null,
+      "exclude_from_automations": false,
+      "enabled": true,
+      "categories": [
+        {
+          "id": 46919150796276752,
+          "name": "Category 1",
+          "exclude_from_automations": false,
+          "created_at": "2022-02-13T09:46:29.000000Z",
+          "updated_at": "2022-02-13T09:46:29.000000Z"
+        },
+        {
+          "id": 46919150798373905,
+          "name": "Category 2",
+          "exclude_from_automations": false,
+          "created_at": "2022-02-13T09:46:29.000000Z",
+          "updated_at": "2022-02-13T09:46:29.000000Z"
+        }
+      ]
+    }
+  ]
+}

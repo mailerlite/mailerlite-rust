@@ -1,0 +1,52 @@
+{
+   "data": [
+       {
+           "id": "52015833343329937",
+           "name": "T-Shirt 1",
+           "resource_id": "prod-tshirt1",
+           "price": 20,
+           "url": null,
+           "image": null,
+           "exclude_from_automations": false,
+           "enabled": true,
+           "categories": [
+               {
+                   "id": "52014701898368045",
+                   "resource_id": "cat-superdeals",
+                   "name": "Superdeals",
+                   "exclude_from_automations": false,
+                   "created_at": "2022-04-10T15:38:05.000000Z",
+                   "updated_at": "2022-04-10T15:38:05.000000Z"
+               },
+               {
+                   "id": "52014701909902383",
+                   "resource_id": "cat-pattern",
+                   "name": "Pattern",
+                   "exclude_from_automations": false,
+                   "created_at": "2022-04-10T15:38:05.000000Z",
+                   "updated_at": "2022-04-10T15:38:05.000000Z"
+               }
+           ]
+       },
+       {
+           "id": "52015833348572818",
+           "name": "T-Shirt 2",
+           "resource_id": "prod-tshirt2",
+           "price": 20,
+           "url": null,
+           "image": null,
+           "exclude_from_automations": false,
+           "enabled": true,
+           "categories": [
+               {
+                   "id": "52014701903610926",
+                   "resource_id": "cat-single-color",
+                   "name": "Single color",
+                   "exclude_from_automations": false,
+                   "created_at": "2022-04-10T15:38:05.000000Z",
+                   "updated_at": "2022-04-10T15:38:05.000000Z"
+               }
+           ]
+       }
+   ]
+}

@@ -1,0 +1,14 @@
+{
+   "data": {
+       "id": "134",
+       "name": "Super Amazing T-Shirts",
+       "url": "superamazingtshirts.com",
+       "currency": "USD",
+       "enabled": true,
+       "enable_popups": null,
+       "group": null,
+       "created_at": "2022-04-10T15:24:56.000000Z",
+       "updated_at": "2022-04-10T15:24:56.000000Z",
+       "currency_sign": "$"
+   }
+}

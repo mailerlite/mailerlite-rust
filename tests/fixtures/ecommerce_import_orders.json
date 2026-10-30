@@ -1,0 +1,150 @@
+{
+  "data": [
+    {
+      "id": 46920756608631854,
+      "customer": {
+        "id": 46920756260504617,
+        "email": "customer@email.com",
+        "accepts_marketing": true,
+        "total_spent": null,
+        "orders_count": null,
+        "subscriber": {
+          "id": "46920756366410794",
+          "email": "customer@email.com",
+          "status": "active",
+          "source": "manual",
+          "sent": 0,
+          "opens_count": 0,
+          "clicks_count": 0,
+          "open_rate": 0,
+          "click_rate": 0,
+          "ip_address": null,
+          "subscribed_at": "2022-02-13 10:12:00",
+          "unsubscribed_at": null,
+          "created_at": "2022-02-13 10:12:00",
+          "updated_at": "2022-02-13 10:12:00",
+          "opted_in_at": null,
+          "optin_ip": null
+        }
+      },
+      "cart": {
+        "id": 46920756586611756,
+        "resource_id": null,
+        "checkout_url": null,
+        "cart_total": "0",
+        "items": [
+          {
+            "id": 46920756598146093,
+            "product": {
+              "id": 46920297804203043,
+              "name": "Product name",
+              "price": "123.4",
+              "url": null,
+              "image": null,
+              "exclude_from_automations": false,
+              "enabled": true,
+              "categories": [
+                {
+                  "id": 46919150796276752,
+                  "name": "Category 1",
+                  "exclude_from_automations": false,
+                  "created_at": "2022-02-13T09:46:29.000000Z",
+                  "updated_at": "2022-02-13T09:46:29.000000Z"
+                },
+                {
+                  "id": 46919150798373905,
+                  "name": "Category 2",
+                  "exclude_from_automations": false,
+                  "created_at": "2022-02-13T09:46:29.000000Z",
+                  "updated_at": "2022-02-13T09:46:29.000000Z"
+                }
+              ]
+            },
+            "variant": "product variant",
+            "quantity": 1,
+            "price": "123.4"
+          }
+        ]
+      },
+      "total": 123.4,
+      "status": "pending",
+      "attribution": null,
+      "created_at": "2022-02-13T10:12:00.000000Z",
+      "updated_at": "2022-02-13T10:12:00.000000Z",
+      "completed_at": null
+    },
+    {
+      "id": 46920756705100851,
+      "customer": {
+        "id": 46920756614923311,
+        "email": "customer2@email.com",
+        "accepts_marketing": true,
+        "total_spent": null,
+        "orders_count": null,
+        "subscriber": {
+          "id": "46920756639040560",
+          "email": "customer2@email.com",
+          "status": "active",
+          "source": "manual",
+          "sent": 0,
+          "opens_count": 0,
+          "clicks_count": 0,
+          "open_rate": 0,
+          "click_rate": 0,
+          "ip_address": null,
+          "subscribed_at": "2022-02-13 10:12:00",
+          "unsubscribed_at": null,
+          "created_at": "2022-02-13 10:12:00",
+          "updated_at": "2022-02-13 10:12:00",
+          "opted_in_at": null,
+          "optin_ip": null
+        }
+      },
+      "cart": {
+        "id": 46920756693566513,
+        "resource_id": null,
+        "checkout_url": null,
+        "cart_total": "0",
+        "items": [
+          {
+            "id": 46920756700906546,
+            "product": {
+              "id": 46920297804203043,
+              "name": "Product name",
+              "price": "123.4",
+              "url": null,
+              "image": null,
+              "exclude_from_automations": false,
+              "enabled": true,
+              "categories": [
+                {
+                  "id": 46919150796276752,
+                  "name": "Category 1",
+                  "exclude_from_automations": false,
+                  "created_at": "2022-02-13T09:46:29.000000Z",
+                  "updated_at": "2022-02-13T09:46:29.000000Z"
+                },
+                {
+                  "id": 46919150798373905,
+                  "name": "Category 2",
+                  "exclude_from_automations": false,
+                  "created_at": "2022-02-13T09:46:29.000000Z",
+                  "updated_at": "2022-02-13T09:46:29.000000Z"
+                }
+              ]
+            },
+            "variant": "product variant",
+            "quantity": 1,
+            "price": "123.4"
+          }
+        ]
+      },
+      "total": 123.4,
+      "status": "pending",
+      "attribution": null,
+      "created_at": "2022-02-13T10:12:00.000000Z",
+      "updated_at": "2022-02-13T10:12:00.000000Z",
+      "completed_at": null
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "data": {
+    "id": "31986843543567834",
+    "name": "Product name",
+    "price": 123.4,
+    "url": "https://shop-url.com/product-name",
+    "image": "https://shop-url.com/product-image.jpg",
+    "exclude_from_automations": false,
+    "enabled": true,
+    "short_description": "Product's short description.",
+    "description": "Product's longer description.",
+    "categories": [],
+    "variants": [
+      {
+        "id": "31986843543567900",
+        "name": "Black / Medium",
+        "attributes": {
+          "color": "Black",
+          "size": "Medium"
+        },
+        "price": 123.4,
+        "price_type": "fixed",
+        "resource_id": "variant-123",
+        "image_url": "https://shop-url.com/product-black.jpg"
+      }
+    ]
+  }
+}

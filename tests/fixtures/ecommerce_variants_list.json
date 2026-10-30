@@ -1,0 +1,16 @@
+{
+  "data": [
+    {
+      "id": "31986843543567900",
+      "name": "Black / Medium",
+      "attributes": {
+        "color": "Black",
+        "size": "Medium"
+      },
+      "price": 123.4,
+      "price_type": "fixed",
+      "resource_id": "variant-123",
+      "image_url": "https://shop-url.com/product-black.jpg"
+    }
+  ]
+}

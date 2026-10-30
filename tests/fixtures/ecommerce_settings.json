@@ -1,0 +1,7 @@
+{
+  "data": {
+    "ecommerce_tracking_in_campaigns": false,
+    "ecommerce_tracking_in_automations": true,
+    "ecommerce_attribution_window": 30
+  }
+}

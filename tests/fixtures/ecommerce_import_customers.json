@@ -1,0 +1,16 @@
+{
+  "data": [
+    {
+      "resource_id": "1001",
+      "email": "customer@email.com",
+      "accepts_marketing": true,
+      "create_subscriber": true
+    },
+    {
+      "resource_id": "1002",
+      "email": "customer2@email.com",
+      "accepts_marketing": false,
+      "create_subscriber": false
+    }
+  ]
+}
