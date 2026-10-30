@@ -20,7 +20,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let largest = groups
         .list(
             &ListGroups::new()
-                .sort(Sort::desc(GroupSort::Total))
+                .sort(Sort::desc(GroupSort::ActiveCount))
                 .limit(3),
         )
         .await?;

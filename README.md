@@ -100,7 +100,7 @@ use mailerlite_rs::{Sort, groups::{GroupSort, ListGroups}};
 // One page.
 let page = client
     .groups()
-    .list(&ListGroups::new().sort(Sort::desc(GroupSort::Total)).limit(25))
+    .list(&ListGroups::new().sort(Sort::desc(GroupSort::ActiveCount)).limit(25))
     .await?;
 println!("{} groups in total", page.meta.total);
 

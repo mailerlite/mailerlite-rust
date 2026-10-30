@@ -65,11 +65,16 @@ pub struct Group {
 
 string_enum! {
     /// Sort field for [`ListGroups`].
+    ///
+    /// These are the values the live API accepts. The docs list `total`, which the API rejects
+    /// with `400` (verified 2026-10-30); use [`ActiveCount`](Self::ActiveCount) instead.
     pub enum GroupSort {
+        /// Group id.
+        Id => "id",
         /// Name.
         Name => "name",
-        /// Member count.
-        Total => "total",
+        /// Active subscribers.
+        ActiveCount => "active_count",
         /// Open rate.
         OpenRate => "open_rate",
         /// Click rate.
@@ -125,7 +130,7 @@ impl ListGroups {
         self
     }
 
-    /// Sort order, e.g. `Sort::desc(GroupSort::Total)`.
+    /// Sort order, e.g. `Sort::desc(GroupSort::ActiveCount)`.
     #[must_use]
     pub fn sort(mut self, sort: Sort<GroupSort>) -> Self {
         self.sort = Some(sort);
