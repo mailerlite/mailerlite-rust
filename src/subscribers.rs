@@ -580,7 +580,7 @@ pub struct ImportStatus {
     #[serde(default)]
     pub percent: u8,
     /// `true` once the import finished.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub done: bool,
     /// Sample of invalid rows.
     #[serde(default, deserialize_with = "de::null_default")]

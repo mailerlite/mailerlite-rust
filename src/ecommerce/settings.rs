@@ -3,7 +3,7 @@
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
 
-use crate::{MailerLite, Result};
+use crate::{MailerLite, Result, types::de};
 
 /// Account defaults for e-commerce tracking, copied to each campaign or automation when it
 /// is created.
@@ -11,10 +11,10 @@ use crate::{MailerLite, Result};
 #[non_exhaustive]
 pub struct EcommerceSettings {
     /// Whether new campaigns track e-commerce.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub ecommerce_tracking_in_campaigns: bool,
     /// Whether new automations track e-commerce. Always `false` while no shop is enabled.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub ecommerce_tracking_in_automations: bool,
     /// Days after a click during which a purchase is attributed to the email.
     #[serde(default)]

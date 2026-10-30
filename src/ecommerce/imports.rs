@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use super::{
     Category, CreateCategory, CreateCustomer, CreateOrder, CreateProduct, Order, Product, Scope,
 };
-use crate::Result;
+use crate::{Result, types::de};
 
 /// A customer accepted by [`Imports::customers`]. Customers are saved in the background, so
 /// the response only echoes the accepted data.
@@ -19,10 +19,10 @@ pub struct ImportedCustomer {
     /// Email address.
     pub email: String,
     /// Whether the customer accepts marketing emails.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub accepts_marketing: bool,
     /// Whether a subscriber is created for the customer.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub create_subscriber: bool,
 }
 

@@ -227,7 +227,7 @@ pub struct Campaign {
     #[serde(default, deserialize_with = "de::null_default")]
     pub emails: Vec<Email>,
     /// Whether an automation uses the campaign.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub used_in_automations: bool,
     /// Readable type, e.g. `"Regular"`.
     #[serde(default)]
@@ -236,7 +236,7 @@ pub struct Campaign {
     #[serde(default)]
     pub stats: Option<EmailStats>,
     /// Whether sending was stopped.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub is_stopped: bool,
     /// Whether an A/B test has a winner (`None` for non-test campaigns).
     #[serde(default)]
@@ -251,13 +251,13 @@ pub struct Campaign {
     #[serde(default)]
     pub winner_selected_manually_at: Option<Timestamp>,
     /// Whether the campaign uses e-commerce blocks.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub uses_ecommerce: bool,
     /// Whether the campaign contains a survey.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub uses_survey: bool,
     /// Whether the campaign is complete enough to be scheduled.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub can_be_scheduled: bool,
     /// Warnings about the campaign's content or settings.
     #[serde(default, deserialize_with = "de::null_default")]
@@ -266,7 +266,7 @@ pub struct Campaign {
     #[serde(default)]
     pub initial_created_at: Option<Timestamp>,
     /// Whether the campaign is being sent right now.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub is_currently_sending_out: bool,
 }
 
@@ -276,13 +276,13 @@ pub struct Campaign {
 #[allow(clippy::struct_excessive_bools)]
 pub struct CampaignSettings {
     /// Whether opens are tracked.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub track_opens: bool,
     /// Whether Google Analytics tags are added to links.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub use_google_analytics: bool,
     /// Whether e-commerce link tracking is on.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub ecommerce_tracking: bool,
 }
 
@@ -336,13 +336,13 @@ pub struct Email {
     #[serde(default)]
     pub updated_at: Option<Timestamp>,
     /// Whether the content has been designed.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub is_designed: bool,
     /// Language id (a string or a number depending on the endpoint).
     #[serde(default)]
     pub language_id: Option<Id>,
     /// Whether this email won its test.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub is_winner: bool,
     /// Delivery statistics.
     #[serde(default, deserialize_with = "de::null_default")]
@@ -352,7 +352,7 @@ pub struct Email {
     #[serde(default)]
     pub send_after: Option<Value>,
     /// Whether opens are tracked.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub track_opens: bool,
 }
 

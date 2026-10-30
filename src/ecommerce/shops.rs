@@ -24,7 +24,7 @@ pub struct Shop {
     #[serde(default)]
     pub currency: String,
     /// Whether e-commerce features are enabled for the shop.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub enabled: bool,
     /// Whether pop-ups are enabled on the shop.
     #[serde(default)]
@@ -331,7 +331,7 @@ impl<'a> Shops<'a> {
 #[cfg(test)]
 mod tests {
     use reqwest::Method;
-    use serde_json::json;
+    use serde_json::{Value, json};
 
     use super::*;
     use crate::http::mock::{client, fixture};
@@ -480,5 +480,15 @@ mod tests {
         let requests = mock.requests();
         requests[0].assert(Method::GET, "ecommerce/shops?page=1");
         requests[1].assert(Method::GET, "ecommerce/shops?page=2");
+    }
+
+    #[test]
+    fn null_flags_decode_as_false() {
+        let mut shop = fixture("ecommerce_shop")["data"].clone();
+        shop["enabled"] = Value::Null;
+        shop["enable_popups"] = Value::Null;
+
+        let shop: Shop = serde_json::from_value(shop).unwrap();
+        assert!(!shop.enabled);
     }
 }

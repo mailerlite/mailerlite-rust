@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     MailerLite, Page, Result,
-    types::{Id, Timestamp, string_enum},
+    types::{Id, Timestamp, de, string_enum},
 };
 
 string_enum! {
@@ -74,7 +74,7 @@ pub struct Webhook {
     #[serde(default)]
     pub events: Vec<WebhookEvent>,
     /// Whether deliveries are enabled.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub enabled: bool,
     /// HMAC-SHA256 key used to sign deliveries (the `Signature` header).
     #[serde(default)]
@@ -86,7 +86,7 @@ pub struct Webhook {
     #[serde(default)]
     pub updated_at: Option<Timestamp>,
     /// Whether events are delivered in batches.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub batchable: bool,
 }
 

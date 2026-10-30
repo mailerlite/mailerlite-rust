@@ -58,7 +58,7 @@ pub struct Automation {
     #[serde(default)]
     pub name: String,
     /// Whether the automation is running.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub enabled: bool,
     /// Trigger settings.
     #[serde(default, deserialize_with = "de::object_or_default")]
@@ -70,10 +70,10 @@ pub struct Automation {
     #[serde(default, deserialize_with = "de::null_default")]
     pub triggers: Vec<Trigger>,
     /// Whether every step is fully configured.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub complete: bool,
     /// Whether a step or trigger is broken (e.g. refers to a deleted group).
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub broken: bool,
     /// Warnings about the automation.
     #[serde(default, deserialize_with = "de::null_default")]
@@ -91,7 +91,7 @@ pub struct Automation {
     #[serde(default)]
     pub created_at: Option<Timestamp>,
     /// Whether the content was flagged as banned.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub has_banned_content: bool,
     /// Subscribers that currently qualify for the trigger.
     #[serde(default, deserialize_with = "de::null_default")]
@@ -103,7 +103,7 @@ pub struct Automation {
 #[non_exhaustive]
 pub struct TriggerData {
     /// Whether e-commerce activity is tracked.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub track_ecommerce: bool,
     /// Whether a subscriber can go through the automation more than once.
     #[serde(default)]
@@ -135,7 +135,7 @@ pub struct Trigger {
     #[serde(default, deserialize_with = "de::null_default")]
     pub excluded_groups: Vec<TriggerGroup>,
     /// Whether the trigger is broken.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub broken: bool,
 }
 
@@ -176,7 +176,7 @@ pub struct Step {
     #[serde(default)]
     pub parent_id: Option<Id>,
     /// Whether the step is fully configured.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub complete: bool,
     /// Whether the step is broken (not sent for every step kind).
     #[serde(default)]

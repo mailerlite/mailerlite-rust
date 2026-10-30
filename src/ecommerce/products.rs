@@ -36,10 +36,10 @@ pub struct Product {
     #[serde(default)]
     pub image: Option<String>,
     /// If `true`, the product never triggers automations.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub exclude_from_automations: bool,
     /// Whether the product is enabled (`false` if the response omits it).
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub enabled: bool,
     /// Short description (HTML stripped).
     #[serde(default)]
@@ -114,10 +114,10 @@ pub struct ProductDiscount {
     #[serde(default, deserialize_with = "de::number")]
     pub value: f64,
     /// Whether `value` is a percentage.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub is_percentage: bool,
     /// Whether the discount is active.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub enabled: bool,
     /// Start (`Y-m-d H:i:s`).
     #[serde(default)]

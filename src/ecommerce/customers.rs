@@ -22,7 +22,7 @@ pub struct Customer {
     /// Email address.
     pub email: String,
     /// Whether the customer accepts marketing emails.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub accepts_marketing: bool,
     /// Total spent in the shop.
     #[serde(default, deserialize_with = "de::optional_number")]

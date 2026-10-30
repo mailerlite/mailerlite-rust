@@ -59,19 +59,19 @@ pub struct Form {
     #[serde(default)]
     pub last_registration_at: Option<Timestamp>,
     /// Whether the form is published.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub active: bool,
     /// Whether MailerLite flagged the form as broken.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub is_broken: bool,
     /// Whether the form has been designed.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub has_content: bool,
     /// What the current API key may do with the form.
     #[serde(default)]
     pub can: FormPermissions,
     /// Whether an automation is triggered by the form.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub used_in_automations: bool,
     /// Configuration warnings shown in the app.
     #[serde(default, deserialize_with = "de::null_default")]
@@ -89,7 +89,7 @@ pub struct Form {
 #[non_exhaustive]
 pub struct FormPermissions {
     /// The form can be updated.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub update: bool,
 }
 

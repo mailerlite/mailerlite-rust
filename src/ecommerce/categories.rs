@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use super::{Product, Scope};
 use crate::{
     Page, Result,
-    types::{Id, Sort, Timestamp, string_enum},
+    types::{Id, Sort, Timestamp, de, string_enum},
 };
 
 /// A product category.
@@ -22,7 +22,7 @@ pub struct Category {
     /// Category name.
     pub name: String,
     /// If `true`, products in this category never trigger automations.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "de::null_default")]
     pub exclude_from_automations: bool,
     /// Creation time.
     #[serde(default)]
