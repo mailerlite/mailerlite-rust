@@ -28,8 +28,11 @@ pub struct Order {
     /// Order total in the shop's currency.
     #[serde(default, deserialize_with = "de::number")]
     pub total: f64,
-    /// Order status.
-    pub status: OrderStatus,
+    /// Order status. `None` when the API returns `null`, as it does for an order that was
+    /// just created without an explicit status (verified against the live API, 2026-10-30);
+    /// the docs say such orders default to `pending`.
+    #[serde(default)]
+    pub status: Option<OrderStatus>,
     /// The email that earned the order, or `None` if it is not attributed.
     #[serde(default)]
     pub attribution: Option<Attribution>,
@@ -379,7 +382,7 @@ impl<'a> Orders<'a> {
 #[cfg(test)]
 mod tests {
     use reqwest::Method;
-    use serde_json::json;
+    use serde_json::{Value, json};
 
     use super::*;
     use crate::http::mock::{client, fixture};
@@ -408,7 +411,7 @@ mod tests {
         let total = shop.orders().count().await.unwrap();
 
         let order = &page.data[0];
-        assert_eq!(order.status, OrderStatus::Complete);
+        assert_eq!(order.status, Some(OrderStatus::Complete));
         assert!((order.total - 123.4).abs() < f64::EPSILON);
         let attribution = order.attribution.as_ref().unwrap();
         assert_eq!(attribution.email_id, "31986843064993540");
@@ -553,7 +556,7 @@ mod tests {
         assert_eq!(created.attribution, None);
         let subscriber = created.customer.subscriber.as_ref().unwrap();
         assert_eq!(subscriber.source.as_deref(), Some("ecommerce"));
-        assert_eq!(completed.status, OrderStatus::Complete);
+        assert_eq!(completed.status, Some(OrderStatus::Complete));
         assert!((completed.total - 20.0).abs() < f64::EPSILON);
         assert_eq!(completed.customer.total_spent, Some(20.0));
         assert_eq!(completed.cart.items.len(), 2);
@@ -589,5 +592,15 @@ mod tests {
                 "ecommerce/shops/134/orders/new-order1?with_resource_id=",
             )
             .body(&json!({"status": "complete"}));
+    }
+
+    /// Live API (2026-10-30): creating an order without a status returned `"status": null`.
+    #[test]
+    fn null_status_decodes_as_none() {
+        let mut order = fixture("ecommerce_order")["data"].clone();
+        order["status"] = Value::Null;
+
+        let order: Order = serde_json::from_value(order).unwrap();
+        assert_eq!(order.status, None);
     }
 }
