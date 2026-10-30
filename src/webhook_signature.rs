@@ -45,7 +45,7 @@ fn decode_hex(hex: &str) -> Option<Vec<u8>> {
     }
 
     let bytes = hex.as_bytes();
-    if bytes.len() % 2 != 0 {
+    if !bytes.len().is_multiple_of(2) {
         return None;
     }
     bytes
