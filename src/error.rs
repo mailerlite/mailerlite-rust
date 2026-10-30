@@ -222,6 +222,9 @@ impl Error {
 /// and this type keeps both parts, with the field errors in the order the API sent them. Some
 /// business-rule failures (e.g. updating a campaign that isn't a draft) come back as a `422`
 /// with only a message, in which case [`iter`](Self::iter) is empty.
+///
+/// Fields the API lists without any non-blank message are ignored: every [`FieldError`] has
+/// at least one message to show.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ValidationError {
     message: String,
@@ -262,7 +265,7 @@ impl ValidationError {
         self.errors.len()
     }
 
-    /// `true` when the API sent only a message and no field errors.
+    /// `true` when the API sent only a message and no field errors (with a message).
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.errors.is_empty()
@@ -300,7 +303,7 @@ impl fmt::Display for ValidationError {
 
 impl std::error::Error for ValidationError {}
 
-/// One field's validation errors. Always holds at least one message.
+/// One field's validation errors. Always holds at least one non-blank message.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FieldError {
     field: String,
@@ -488,14 +491,10 @@ impl std::error::Error for ApiError {}
 
 /// Field errors when there are any (the message is derived from them), else the message.
 fn write_details(f: &mut fmt::Formatter<'_>, message: &str, errors: &[FieldError]) -> fmt::Result {
-    let mut fields = errors
-        .iter()
-        .filter(|error| !error.messages.is_empty())
-        .peekable();
-    if fields.peek().is_none() {
+    if errors.is_empty() {
         return f.write_str(message);
     }
-    for (index, error) in fields.enumerate() {
+    for (index, error) in errors.iter().enumerate() {
         if index > 0 {
             f.write_str("; ")?;
         }
@@ -630,9 +629,11 @@ impl<'de> Deserialize<'de> for FieldErrors {
     }
 }
 
+/// Every non-blank message in `value`; blank strings and `null` carry nothing to show.
 fn messages(value: Value) -> Vec<String> {
     match value {
         Value::Null => Vec::new(),
+        Value::String(text) if text.trim().is_empty() => Vec::new(),
         Value::String(text) => vec![text],
         Value::Array(items) => items.into_iter().flat_map(messages).collect(),
         other => vec![other.to_string()],
@@ -856,7 +857,7 @@ mod tests {
     fn fields_without_messages_are_dropped() {
         let err = error(
             StatusCode::UNPROCESSABLE_ENTITY,
-            br#"{"message":"Bad","errors":{"email":[],"name":null,"groups.0":["Invalid."]}}"#,
+            br#"{"message":"Bad","errors":{"email":[],"name":null,"city":["", "  "],"groups.0":["Invalid."]}}"#,
         );
         let invalid = err.validation().unwrap();
 
