@@ -1,0 +1,21 @@
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let automation_id: String = String::from("Your Automation ID");
+
+    let step_id: String = String::from("Your Step ID");
+
+    let data: Data = Data::new().add("ab_test_winner", "a_path");
+
+    let response: Response = mailerlite
+        .automation_step()
+        .select_ab_test_winner(automation_id, step_id, data.clone())
+        .await;
+
+    println!("{:#?}", response);
+}

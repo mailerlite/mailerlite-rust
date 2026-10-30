@@ -60,6 +60,47 @@ MailerLite Rust SDK
         - [Get the subscribers activity for an automation](#get-the-subscribers-activity-for-an-automation)
         - [Create an automation](#create-an-automation)
         - [Delete an automation](#delete-an-automation)
+        - [Update an automation](#update-an-automation)
+        - [Copy an automation](#copy-an-automation)
+        - [Enable an automation](#enable-an-automation)
+        - [Disable an automation](#disable-an-automation)
+        - [Send a test of an automation](#send-a-test-of-an-automation)
+        - [Add subscribers to an automation](#add-subscribers-to-an-automation)
+        - [Re-add subscribers to an automation](#re-add-subscribers-to-an-automation)
+        - [Copy automation subscribers to groups](#copy-automation-subscribers-to-groups)
+        - [Cancel an automation for subscribers](#cancel-an-automation-for-subscribers)
+        - [Skip a delay for automation subscribers](#skip-a-delay-for-automation-subscribers)
+        - [Get the content of an automation email](#get-the-content-of-an-automation-email)
+        - [Update the content of an automation email](#update-the-content-of-an-automation-email)
+        - [Get the report stats of an automation email](#get-the-report-stats-of-an-automation-email)
+        - [Get the unsubscribe reasons of an automation email](#get-the-unsubscribe-reasons-of-an-automation-email)
+        - [Get the monthly email stats of an automation](#get-the-monthly-email-stats-of-an-automation)
+    - [Automation triggers](#automation-triggers)
+        - [Get a list of automation triggers](#get-a-list-of-automation-triggers)
+        - [Get an automation trigger](#get-an-automation-trigger)
+        - [Create an automation trigger](#create-an-automation-trigger)
+        - [Update an automation trigger](#update-an-automation-trigger)
+        - [Delete an automation trigger](#delete-an-automation-trigger)
+        - [Get the run counts of all automation triggers](#get-the-run-counts-of-all-automation-triggers)
+        - [Get the run counts of an automation trigger](#get-the-run-counts-of-an-automation-trigger)
+        - [Get the subscribers of an automation trigger](#get-the-subscribers-of-an-automation-trigger)
+    - [Automation steps](#automation-steps)
+        - [Get a list of automation steps](#get-a-list-of-automation-steps)
+        - [Get an automation step](#get-an-automation-step)
+        - [Create an automation step](#create-an-automation-step)
+        - [Update an automation step](#update-an-automation-step)
+        - [Delete an automation step](#delete-an-automation-step)
+        - [Copy an automation step](#copy-an-automation-step)
+        - [Reorder automation steps](#reorder-automation-steps)
+        - [Select the winner of an A/B test step](#select-the-winner-of-an-ab-test-step)
+        - [Get the run counts of all automation steps](#get-the-run-counts-of-all-automation-steps)
+        - [Get the run counts of an automation step](#get-the-run-counts-of-an-automation-step)
+        - [Get the stats of all A/B test steps of an automation](#get-the-stats-of-all-ab-test-steps-of-an-automation)
+        - [Get the stats of an A/B test step of an automation](#get-the-stats-of-an-ab-test-step-of-an-automation)
+        - [Get the subscribers on an automation step](#get-the-subscribers-on-an-automation-step)
+    - [Automation templates](#automation-templates)
+        - [Get a list of automation templates](#get-a-list-of-automation-templates)
+        - [Create an automation from a template](#create-an-automation-from-a-template)
     - [Webhooks](#webhooks)
         - [Get a list of webhooks](#get-a-list-of-webhooks)
         - [Get a webhook](#get-a-webhook)
@@ -1432,6 +1473,1188 @@ async fn main() {
     let id: String = String::from("Your Automation ID");
 
     let response: Response = mailerlite.automation().delete(id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Update an automation
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example update_automation
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Automation ID");
+
+    let data: Data = Data::new().add("name", "Dummy Automation");
+
+    let response: Response = mailerlite.automation().update(id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Copy an automation
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example copy_automation
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Automation ID");
+
+    let response: Response = mailerlite.automation().copy(id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Enable an automation
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example enable_automation
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Automation ID");
+
+    let response: Response = mailerlite.automation().enable(id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Disable an automation
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example disable_automation
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Automation ID");
+
+    let response: Response = mailerlite.automation().disable(id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Send a test of an automation
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example test_automation
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Automation ID");
+
+    let data: Data = Data::new().add("email", "dummy@example.com");
+
+    let response: Response = mailerlite.automation().test(id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Add subscribers to an automation
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example add_subscribers_to_automation
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Automation ID");
+
+    let data: Data = Data::new().add("emails[0]", "dummy@example.com").add("groups[0]", "Your Group ID").add("step_id", "Your Step ID");
+
+    let response: Response = mailerlite.automation().add_subscribers(id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Re-add subscribers to an automation
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example readd_subscribers_to_automation
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Automation ID");
+
+    let data: Data = Data::new().add("readd_subscribers_to", "last_completed_step").add("filter[status]", "completed");
+
+    let response: Response = mailerlite.automation().readd_subscribers(id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Copy automation subscribers to groups
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example add_automation_subscribers_to_group
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Automation ID");
+
+    let data: Data = Data::new().add("destination_groups[0]", "Your Group ID").add("filter[status]", "active");
+
+    let response: Response = mailerlite.automation().add_subscribers_to_group(id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Cancel an automation for subscribers
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example cancel_automation_for_subscribers
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Automation ID");
+
+    let data: Data = Data::new().add("filter[status]", "active").add("filter[id][0]", "Your Activity ID");
+
+    let response: Response = mailerlite.automation().cancel_subscribers(id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Skip a delay for automation subscribers
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example skip_automation_delay
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Automation ID");
+
+    let data: Data = Data::new().add("filter[status]", "active").add("filter[next_step]", "Your Step ID");
+
+    let response: Response = mailerlite.automation().skip_delay(id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get the content of an automation email
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_automation_email_content
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Automation ID");
+
+    let email_id: String = String::from("Your Email ID");
+
+    let response: Response = mailerlite.automation().email_content(id, email_id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Update the content of an automation email
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example update_automation_email_content
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Automation ID");
+
+    let email_id: String = String::from("Your Email ID");
+
+    let data: Data = Data::new().add("html", "<p>Hello</p>");
+
+    let response: Response = mailerlite.automation().update_email_content(id, email_id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get the report stats of an automation email
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_automation_email_report_stats
+```
+</details>
+
+```rust
+use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Automation ID");
+
+    let email_id: String = String::from("Your Email ID");
+
+    let parameter: Parameter = Parameter::new().add("start_date", "2026-01-01").add("end_date", "2026-01-31");
+
+    let response: Response = mailerlite.automation().email_report_stats(id, email_id, parameter.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get the unsubscribe reasons of an automation email
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_automation_email_unsubscribe_reasons
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Automation ID");
+
+    let email_id: String = String::from("Your Email ID");
+
+    let response: Response = mailerlite.automation().email_unsubscribe_reasons(id, email_id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get the monthly email stats of an automation
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_automation_email_stats
+```
+</details>
+
+```rust
+use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let id: String = String::from("Your Automation ID");
+
+    let parameter: Parameter = Parameter::new().add("start_date", "2026-01-01").add("end_date", "2026-01-31");
+
+    let response: Response = mailerlite.automation().email_stats(id, parameter.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+## Automation triggers
+
+### Get a list of automation triggers
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_automation_triggers
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let automation_id: String = String::from("Your Automation ID");
+
+    let response: Response = mailerlite.automation_trigger().get(automation_id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get an automation trigger
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example find_automation_trigger
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let automation_id: String = String::from("Your Automation ID");
+
+    let trigger_id: String = String::from("Your Trigger ID");
+
+    let response: Response = mailerlite.automation_trigger().find(automation_id, trigger_id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Create an automation trigger
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example create_automation_trigger
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let automation_id: String = String::from("Your Automation ID");
+
+    let data: Data = Data::new().add("type", "subscriber_joins_group").add("data[group_ids][0]", "Your Group ID");
+
+    let response: Response = mailerlite.automation_trigger().create(automation_id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Update an automation trigger
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example update_automation_trigger
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let automation_id: String = String::from("Your Automation ID");
+
+    let trigger_id: String = String::from("Your Trigger ID");
+
+    let data: Data = Data::new().add("data[group_ids][0]", "Your Group ID");
+
+    let response: Response = mailerlite.automation_trigger().update(automation_id, trigger_id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Delete an automation trigger
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example delete_automation_trigger
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let automation_id: String = String::from("Your Automation ID");
+
+    let trigger_id: String = String::from("Your Trigger ID");
+
+    let response: Response = mailerlite.automation_trigger().delete(automation_id, trigger_id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get the run counts of all automation triggers
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_automation_triggers_run_counts
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let automation_id: String = String::from("Your Automation ID");
+
+    let response: Response = mailerlite.automation_trigger().run_counts(automation_id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get the run counts of an automation trigger
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_automation_trigger_run_counts
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let automation_id: String = String::from("Your Automation ID");
+
+    let trigger_id: String = String::from("Your Trigger ID");
+
+    let response: Response = mailerlite.automation_trigger().run_count(automation_id, trigger_id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get the subscribers of an automation trigger
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_automation_trigger_subscribers
+```
+</details>
+
+```rust
+use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let automation_id: String = String::from("Your Automation ID");
+
+    let trigger_id: String = String::from("Your Trigger ID");
+
+    let parameter: Parameter = Parameter::new().add("status", "completed").add("limit", "10");
+
+    let response: Response = mailerlite.automation_trigger().subscribers(automation_id, trigger_id, parameter.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+## Automation steps
+
+### Get a list of automation steps
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_automation_steps
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let automation_id: String = String::from("Your Automation ID");
+
+    let response: Response = mailerlite.automation_step().get(automation_id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get an automation step
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example find_automation_step
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let automation_id: String = String::from("Your Automation ID");
+
+    let step_id: String = String::from("Your Step ID");
+
+    let response: Response = mailerlite.automation_step().find(automation_id, step_id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Create an automation step
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example create_automation_step
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let automation_id: String = String::from("Your Automation ID");
+
+    let data: Data = Data::new().add("type", "delay").add("parent_id", "Your Step ID").add("data[unit]", "days").add("data[value]", "1");
+
+    let response: Response = mailerlite.automation_step().create(automation_id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Update an automation step
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example update_automation_step
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let automation_id: String = String::from("Your Automation ID");
+
+    let step_id: String = String::from("Your Step ID");
+
+    let data: Data = Data::new().add("data[unit]", "days").add("data[value]", "2").add("reschedule_waiting_subscribers", "1");
+
+    let response: Response = mailerlite.automation_step().update(automation_id, step_id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Delete an automation step
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example delete_automation_step
+```
+</details>
+
+```rust
+use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let automation_id: String = String::from("Your Automation ID");
+
+    let step_id: String = String::from("Your Step ID");
+
+    let parameter: Parameter = Parameter::new().add("branch_to_delete", "all");
+
+    let response: Response = mailerlite.automation_step().delete(automation_id, step_id, parameter.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Copy an automation step
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example copy_automation_step
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let automation_id: String = String::from("Your Automation ID");
+
+    let step_id: String = String::from("Your Step ID");
+
+    let data: Data = Data::new().add("parent_id", "Your Step ID");
+
+    let response: Response = mailerlite.automation_step().copy(automation_id, step_id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Reorder automation steps
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example reorder_automation_steps
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let automation_id: String = String::from("Your Automation ID");
+
+    let data: Data = Data::new().add("dragged_step_id", "Your Step ID").add("new_parent_step_id", "Your Parent Step ID");
+
+    let response: Response = mailerlite.automation_step().reorder(automation_id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Select the winner of an A/B test step
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example select_automation_ab_test_winner
+```
+</details>
+
+```rust
+use mailerlite_rs::{data::Data, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let automation_id: String = String::from("Your Automation ID");
+
+    let step_id: String = String::from("Your Step ID");
+
+    let data: Data = Data::new().add("ab_test_winner", "a_path");
+
+    let response: Response = mailerlite.automation_step().select_ab_test_winner(automation_id, step_id, data.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get the run counts of all automation steps
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_automation_steps_run_counts
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let automation_id: String = String::from("Your Automation ID");
+
+    let response: Response = mailerlite.automation_step().run_counts(automation_id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get the run counts of an automation step
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_automation_step_run_counts
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let automation_id: String = String::from("Your Automation ID");
+
+    let step_id: String = String::from("Your Step ID");
+
+    let response: Response = mailerlite.automation_step().run_count(automation_id, step_id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get the stats of all A/B test steps of an automation
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_automation_ab_steps_stats
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let automation_id: String = String::from("Your Automation ID");
+
+    let response: Response = mailerlite.automation_step().ab_stats(automation_id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get the stats of an A/B test step of an automation
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_automation_ab_step_stats
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let automation_id: String = String::from("Your Automation ID");
+
+    let step_id: String = String::from("Your Step ID");
+
+    let response: Response = mailerlite.automation_step().ab_stat(automation_id, step_id).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Get the subscribers on an automation step
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_automation_step_subscribers
+```
+</details>
+
+```rust
+use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let automation_id: String = String::from("Your Automation ID");
+
+    let step_id: String = String::from("Your Step ID");
+
+    let parameter: Parameter = Parameter::new().add("status", "queued").add("filter[search]", "dummy@example.com");
+
+    let response: Response = mailerlite.automation_step().subscribers(automation_id, step_id, parameter.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+## Automation templates
+
+### Get a list of automation templates
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example get_automation_templates
+```
+</details>
+
+```rust
+use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let parameter: Parameter = Parameter::new().add("filter[type]", "welcome").add("limit", "10");
+
+    let response: Response = mailerlite.automation_template().get(parameter.clone()).await;
+
+    println!("{:#?}", response);
+}
+```
+
+### Create an automation from a template
+
+<details>
+<summary>
+You can test out the example by running it with the command provided.
+</summary>
+
+```bash
+cargo run --package mailerlite-rs --example create_automation_from_template
+```
+</details>
+
+```rust
+use mailerlite_rs::{response::Response, MailerLite};
+
+#[tokio::main]
+async fn main() {
+    let api_key: String = String::from("Your MailerLite API Key");
+
+    let mailerlite: MailerLite = MailerLite::new(api_key);
+
+    let template_id: String = String::from("Your Automation Template ID");
+
+    let response: Response = mailerlite.automation_template().select(template_id).await;
 
     println!("{:#?}", response);
 }
