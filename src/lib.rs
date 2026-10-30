@@ -48,6 +48,8 @@ pub mod parameter;
 pub mod response;
 pub mod segment;
 pub mod subscriber;
+#[cfg(test)]
+mod test_support;
 pub mod timezone;
 pub mod webhook;
 
