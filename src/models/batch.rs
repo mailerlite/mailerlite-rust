@@ -32,6 +32,38 @@ impl BatchItemResult {
     ///
     /// The body remains available after either success or failure. Decoding
     /// borrows the JSON tree rather than cloning it before deserialization.
+    /// Check [`Self::is_success`] separately: a failed operation's error body can
+    /// also deserialize successfully. This method never sends an HTTP request.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mailerlite_rs::{
+    ///     models::{batch::BatchItemResult, groups::Group},
+    ///     pagination::NumberedPage,
+    /// };
+    ///
+    /// # fn main() -> Result<(), serde_json::Error> {
+    /// let item = BatchItemResult {
+    ///     code: 200,
+    ///     body: serde_json::json!({"data": [{"id": "123", "name": "Newsletter"}]}),
+    /// };
+    ///
+    /// if item.is_success() {
+    ///     let groups: NumberedPage<Group> = item.decode()?;
+    ///
+    ///     println!("{} groups", groups.data.len());
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`serde_json::Error`] when the item's body does not match `T`,
+    /// including missing fields or incompatible known field types. Choose the
+    /// endpoint's actual envelope rather than assuming every body contains
+    /// `data`. The original body and HTTP status remain available on this item.
     pub fn decode<T: DeserializeOwned>(&self) -> serde_json::Result<T> {
         T::deserialize(&self.body)
     }

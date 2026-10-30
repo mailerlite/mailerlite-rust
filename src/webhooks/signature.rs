@@ -28,6 +28,46 @@ pub enum SignatureError {
 ///
 /// Header values must contain exactly 64 hexadecimal characters. Prefixes,
 /// whitespace and truncated tags are rejected. Both hexadecimal cases work.
+/// The function does not parse JSON or validate the event schema.
+///
+/// # Examples
+///
+/// Enable `webhook-signatures` and add `serde_json` to your application's
+/// dependencies. Your HTTP handler supplies the signing secret, original body
+/// bytes, and `Signature` header; reject a missing header before calling this.
+///
+/// ```
+/// use mailerlite_rs::webhooks::{WebhookPayload, verify_signature};
+///
+/// fn receive(
+///     secret: &str,
+///     body: &[u8],
+///     signature: &str,
+/// ) -> Result<WebhookPayload, Box<dyn std::error::Error>> {
+///     verify_signature(secret, body, signature)?;
+///
+///     Ok(serde_json::from_slice(body)?)
+/// }
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// // Synthetic, independently signed sample; never use this secret in production.
+/// let body = br#"{"event":"future.event","note":"raw bytes"}"#;
+/// let signature = "1b7c95ba98c90ff8e90d9206c689dfa17bb0c42b7b9d542a3a2a8fa58bad53c6";
+///
+/// let payload = receive("test-webhook-secret", body, signature)?;
+/// # let _ = payload;
+/// # Ok(())
+/// # }
+/// ```
+///
+/// # Errors
+///
+/// Returns [`SignatureError::EmptySecret`] for an empty signing secret,
+/// [`SignatureError::InvalidEncoding`] unless the header is exactly 64
+/// hexadecimal characters, or [`SignatureError::Mismatch`] if the tag does not
+/// authenticate the supplied body and secret. Reject the delivery on any of
+/// these errors. A valid signature does not guarantee valid JSON; subsequent
+/// payload decoding can fail separately.
 pub fn verify_signature(secret: &str, body: &[u8], signature: &str) -> Result<(), SignatureError> {
     if secret.is_empty() {
         return Err(SignatureError::EmptySecret);

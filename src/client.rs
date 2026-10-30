@@ -36,10 +36,50 @@ impl fmt::Debug for MailerLite {
 impl MailerLite {
     /// Create a client using the latest API version and default timeouts and pacing.
     /// Automatic retries are disabled by default.
+    ///
+    /// Construction creates a reusable HTTP client but makes no API request.
+    /// Token validity is checked by the server when a request is sent.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    /// # let _ = mailerlite;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Config`] for an empty token or one that cannot be encoded
+    /// as an HTTP header, or [`Error::Transport`] if the HTTP client cannot be
+    /// initialized. This does not authenticate the token with MailerLite.
     pub fn new(token: impl Into<String>) -> Result<Self> {
         Self::builder(token).build()
     }
     /// Configure a client with an explicit bearer token.
+    ///
+    /// Set optional values on the returned builder, then call
+    /// [`MailerLiteBuilder::build`] to validate them. No request is sent.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::{MailerLite, RetryPolicy};
+    /// use std::time::Duration;
+    ///
+    /// # fn main() -> mailerlite_rs::Result<()> {
+    /// let mailerlite = MailerLite::builder("your-api-token")
+    ///     .request_timeout(Duration::from_secs(15))
+    ///     .retry_policy(RetryPolicy::safe_reads())
+    ///     .build()?;
+    /// # let _ = mailerlite;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn builder(token: impl Into<String>) -> MailerLiteBuilder {
         MailerLiteBuilder::new(token)
     }

@@ -29,6 +29,26 @@ pub struct CursorPage<T> {
 
 impl<T> CursorPage<T> {
     /// Return the next cursor without interpreting its contents.
+    ///
+    /// `None` means no continuation was supplied, even if `links.next` is set.
+    /// Pass the cursor unchanged to the same resource's list builder, preserving
+    /// its filters. This accessor makes no request and does not detect cycles;
+    /// automatic streams perform cycle detection while fetching pages.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mailerlite_rs::pagination::CursorPage;
+    ///
+    /// # fn main() -> Result<(), serde_json::Error> {
+    /// let page: CursorPage<u64> = serde_json::from_str(
+    ///     r#"{"data":[1],"meta":{"next_cursor":"opaque+/="}}"#,
+    /// )?;
+    ///
+    /// assert_eq!(page.next_cursor(), Some("opaque+/="));
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn next_cursor(&self) -> Option<&str> {
         self.meta.next_cursor.as_deref()
     }

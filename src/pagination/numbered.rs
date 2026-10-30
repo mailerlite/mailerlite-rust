@@ -76,6 +76,26 @@ pub struct NumberedPage<T> {
 
 impl<T> NumberedPage<T> {
     /// Return the next page only when metadata establishes one exists.
+    ///
+    /// Returns `None` when either page number is absent, the current page is zero,
+    /// or the current page is at or beyond the last page. It never guesses from
+    /// `links.next` or the number of items. This accessor makes no request and
+    /// does not validate that the server returned the page you requested.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mailerlite_rs::pagination::NumberedPage;
+    ///
+    /// # fn main() -> Result<(), serde_json::Error> {
+    /// let page: NumberedPage<u64> = serde_json::from_str(
+    ///     r#"{"data":[1],"meta":{"current_page":1,"last_page":3}}"#,
+    /// )?;
+    ///
+    /// assert_eq!(page.next_page(), Some(2));
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn next_page(&self) -> Option<u64> {
         let current = self.meta.current_page?;
         let last = self.meta.last_page?;

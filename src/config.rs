@@ -20,6 +20,24 @@ pub enum ApiVersion {
 }
 impl ApiVersion {
     /// Validate a Gregorian date and select it as the API version.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mailerlite_rs::ApiVersion;
+    ///
+    /// # fn main() -> mailerlite_rs::Result<()> {
+    /// let version = ApiVersion::pinned("2026-10-30")?;
+    /// # let _ = version;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Config`] unless the input is a valid Gregorian date in
+    /// `YYYY-MM-DD` format with a nonzero year. Whether the server supports that
+    /// version is not checked locally.
     pub fn pinned(date: impl Into<String>) -> Result<Self> {
         let date = date.into();
         validate_date(&date)?;
@@ -150,6 +168,34 @@ impl MailerLiteBuilder {
         self
     }
     /// Validate configuration and build the reusable client.
+    ///
+    /// No authentication or other API request is performed during construction.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::{ApiVersion, MailerLite};
+    ///
+    /// # fn main() -> mailerlite_rs::Result<()> {
+    /// let mailerlite = MailerLite::builder("your-api-token")
+    ///     .api_version(ApiVersion::pinned("2026-10-30")?)
+    ///     .build()?;
+    /// # let _ = mailerlite;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Config`] for an empty or invalid token header, invalid
+    /// version date, zero timeout or response-size limit, or a duration beyond
+    /// the supported clock range. The base URL must be HTTP(S), have a host, and
+    /// contain no userinfo, query, or fragment; invalid URLs also return
+    /// `Error::Config`. A zero pacing interval is allowed.
+    ///
+    /// Returns [`Error::Transport`] if creating the default HTTP client fails.
+    /// An injected client's redirect, retry, and proxy policies are not validated;
+    /// see [`MailerLite::http_client_builder`].
     pub fn build(self) -> Result<MailerLite> {
         if self.token.expose_secret().is_empty() {
             return Err(Error::Config("API token must not be empty".into()));
