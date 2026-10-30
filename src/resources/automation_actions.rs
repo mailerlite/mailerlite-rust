@@ -128,6 +128,25 @@ pub enum AutomationRepeatableSettings {
 }
 impl AutomationRepeatableSettings {
     /// Construct a positive waiting interval, rejecting zero locally.
+    ///
+    /// These parameters are constructed locally; no API request is made.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mailerlite_rs::resources::automation_actions::{AutomationRepeatableSettings, AutomationRepeatableUnit};
+    ///
+    /// # fn main() -> mailerlite_rs::Result<()> {
+    /// let params = AutomationRepeatableSettings::wait(2, AutomationRepeatableUnit::Day)?;
+    /// # let _ = params;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::Config`] when `value` is zero. No account or trigger policy is
+    /// checked until the parameters are submitted.
     pub fn wait(value: u64, unit: AutomationRepeatableUnit) -> Result<Self> {
         let value = std::num::NonZeroU64::new(value)
             .ok_or_else(|| Error::Config("repeatable waiting interval must be positive".into()))?;
@@ -187,6 +206,32 @@ impl AutomationTriggerDefinition {
         self
     }
     /// Set typed subtype fields, preserving the flattened replacement-list format.
+    ///
+    /// These parameters are constructed locally; no API request is made.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mailerlite_rs::resources::automation_actions::AutomationTriggerDefinition;
+    /// use mailerlite_rs::models::automation_configuration::{
+    ///     GroupTriggerConfiguration, TriggerConfiguration,
+    /// };
+    ///
+    /// # fn main() -> mailerlite_rs::Result<()> {
+    /// let configuration = TriggerConfiguration::Group(
+    ///     GroupTriggerConfiguration::new(["789"]),
+    /// );
+    /// let params = AutomationTriggerDefinition::new("subscriber_joins_group").configuration(configuration)?;
+    /// # let _ = params;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::Serialize`] if serialization fails or [`crate::Error::Config`] if
+    /// configuration does not produce an object. A discriminator mismatch also returns
+    /// `Error::Config`.
     pub fn configuration(
         mut self,
         configuration: crate::models::automation_configuration::TriggerConfiguration,
@@ -206,6 +251,27 @@ impl AutomationTriggerDefinition {
     ///
     /// Reserved envelope fields must use their typed setters. All remaining
     /// subtype-specific validation is performed by the server.
+    ///
+    /// These parameters are constructed locally; no API request is made.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mailerlite_rs::resources::automation_actions::AutomationTriggerDefinition;
+    ///
+    /// # fn main() -> mailerlite_rs::Result<()> {
+    /// let params = AutomationTriggerDefinition::new("subscriber_joins_group")
+    ///     .extension_setting("future_setting", true)?;
+    /// # let _ = params;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::Config`] for a modeled or reserved trigger key. Use typed setters
+    /// for known settings. Unknown keys are intended only for future server fields and remain
+    /// subject to server validation.
     pub fn extension_setting(
         mut self,
         key: impl Into<String>,
@@ -616,6 +682,34 @@ struct ActivitySelection {
 
 impl Automations<'_> {
     /// Update an automation's name, shared trigger settings, or replacement triggers.
+    ///
+    /// Supplied trigger lists replace existing triggers; omitted fields are not submitted. Changes
+    /// to settings or triggers require an inactive automation. This write is never automatically
+    /// retried. A timeout or transport failure after dispatch does not establish whether the server
+    /// applied it; inspect the result before repeating the operation.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::automation_actions::UpdateAutomation;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automations().update("123", UpdateAutomation::new("Welcome"))
+    ///     .await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Empty path identifiers and dot path segments (`.` or `..`) return [`crate::Error::Config`] before
+    /// dispatch. Request serialization can return [`crate::Error::Serialize`]. API rejection
+    /// returns [`crate::Error::Api`], including server-side validation and account restrictions.
+    /// HTTP execution can also return [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn update(
         &self,
         id: impl AsRef<str>,
@@ -635,6 +729,30 @@ impl Automations<'_> {
     ///
     /// The copy is inactive and its workflow is built in the background. Poll
     /// the returned automation until `building_in_progress` clears before editing or enabling it.
+    ///
+    /// This write is never automatically retried. A timeout or transport failure after dispatch
+    /// does not establish whether the server applied it; inspect the result before repeating the
+    /// operation.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automations().copy("123").await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Empty path identifiers and dot path segments (`.` or `..`) return [`crate::Error::Config`] before
+    /// dispatch. API rejection returns [`crate::Error::Api`], including server-side validation and
+    /// account restrictions. HTTP execution can also return [`crate::Error::Transport`],
+    /// [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn copy(&self, id: impl AsRef<str>) -> Result<Response<Automation>> {
         self.client
             .data(
@@ -647,6 +765,30 @@ impl Automations<'_> {
             .await
     }
     /// Enable an automation; this can send email.
+    ///
+    /// This write is never automatically retried. A timeout or transport failure after dispatch
+    /// does not establish whether the server applied it; inspect the result before repeating the
+    /// operation.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automations().enable("123").await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Empty path identifiers and dot path segments (`.` or `..`) return [`crate::Error::Config`] before
+    /// dispatch. API rejection returns [`crate::Error::Api`], including server-side validation and
+    /// account restrictions. HTTP execution can also return [`crate::Error::Transport`],
+    /// [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn enable(&self, id: impl AsRef<str>) -> Result<Response<Automation>> {
         self.client
             .data(
@@ -659,6 +801,30 @@ impl Automations<'_> {
             .await
     }
     /// Disable an automation.
+    ///
+    /// This write is never automatically retried. A timeout or transport failure after dispatch
+    /// does not establish whether the server applied it; inspect the result before repeating the
+    /// operation.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automations().disable("123").await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Empty path identifiers and dot path segments (`.` or `..`) return [`crate::Error::Config`] before
+    /// dispatch. API rejection returns [`crate::Error::Api`], including server-side validation and
+    /// account restrictions. HTTP execution can also return [`crate::Error::Transport`],
+    /// [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn disable(&self, id: impl AsRef<str>) -> Result<Response<Automation>> {
         self.client
             .data(
@@ -676,6 +842,33 @@ impl Automations<'_> {
     /// conditions are not simulated. The server limits this operation to 10
     /// requests per hour. A successful empty response confirms job acceptance,
     /// not completed delivery; the SDK never retries this operation.
+    ///
+    /// This write is never automatically retried. A timeout or transport failure after dispatch
+    /// does not establish whether the server applied it; inspect the result before repeating the
+    /// operation.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::automation_actions::TestAutomation;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automations().test("123", TestAutomation::new("jane@example.com"))
+    ///     .await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Empty path identifiers and dot path segments (`.` or `..`) return [`crate::Error::Config`] before
+    /// dispatch. Request serialization can return [`crate::Error::Serialize`]. API rejection
+    /// returns [`crate::Error::Api`], including server-side validation and account restrictions.
+    /// HTTP execution can also return [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn test(&self, id: impl AsRef<str>, params: TestAutomation) -> Result<Response<()>> {
         self.client
             .empty(
@@ -689,6 +882,35 @@ impl Automations<'_> {
     }
     /// Enroll subscribers; this can send email.
     /// Completion means the background job was accepted, not that every subscriber was processed.
+    ///
+    /// This write is never automatically retried. A timeout or transport failure after dispatch
+    /// does not establish whether the server applied it; inspect the result before repeating the
+    /// operation.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::automation_actions::AddAutomationSubscribers;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automations().add_subscribers(
+    ///     "123", AddAutomationSubscribers::new().email("jane@example.com"),
+    /// ).await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// An empty email and group selection returns [`crate::Error::Config`]. Empty identifiers and
+    /// dot path segments (`.` or `..`) return [`crate::Error::Config`] before dispatch. Request
+    /// serialization can return [`crate::Error::Serialize`]. API rejection returns
+    /// [`crate::Error::Api`], including server-side validation and account restrictions. HTTP
+    /// execution can also return [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn add_subscribers(
         &self,
         id: impl AsRef<str>,
@@ -711,6 +933,42 @@ impl Automations<'_> {
     }
     /// Re-enroll selected subscribers.
     /// Completion means the background job was accepted, not that every subscriber was processed.
+    ///
+    /// Re-enrollment can execute workflow actions and send email. This write is never automatically
+    /// retried. A timeout or transport failure after dispatch does not establish whether the server
+    /// applied it; inspect the result before repeating the operation.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::automation_actions::{
+    ///     AutomationActivityFilter, ReaddAutomationSubscribers, ReaddDestination,
+    /// };
+    /// use mailerlite_rs::resources::automations::ActivityStatus;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automations().readd_subscribers(
+    ///     "123",
+    ///     ReaddAutomationSubscribers::new(
+    ///         ReaddDestination::LastCompletedStep,
+    ///         AutomationActivityFilter::new(ActivityStatus::Completed).id("456"),
+    ///     ),
+    /// ).await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Selecting active runs, or a selected-step destination without a step ID, returns
+    /// [`crate::Error::Config`]. Empty path identifiers and dot path segments (`.` or `..`) return
+    /// [`crate::Error::Config`] before dispatch. Request serialization can return
+    /// [`crate::Error::Serialize`]. API rejection returns [`crate::Error::Api`], including server-
+    /// side validation and account restrictions. HTTP execution can also return
+    /// [`crate::Error::Transport`], [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn readd_subscribers(
         &self,
         id: impl AsRef<str>,
@@ -740,6 +998,38 @@ impl Automations<'_> {
     }
     /// Assign selected automation subscribers to groups.
     /// Completion means the background job was accepted, not that every subscriber was processed.
+    ///
+    /// This write is never automatically retried. A timeout or transport failure after dispatch
+    /// does not establish whether the server applied it; inspect the result before repeating the
+    /// operation.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::automation_actions::{AddAutomationSubscribersToGroup, AutomationActivityFilter};
+    /// use mailerlite_rs::resources::automations::ActivityStatus;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automations().add_subscribers_to_group(
+    ///     "123",
+    ///     AddAutomationSubscribersToGroup::new(
+    ///         "789", AutomationActivityFilter::new(ActivityStatus::Completed).id("456"),
+    ///     ),
+    /// ).await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Empty path identifiers and dot path segments (`.` or `..`) return [`crate::Error::Config`] before
+    /// dispatch. Request serialization can return [`crate::Error::Serialize`]. API rejection
+    /// returns [`crate::Error::Api`], including server-side validation and account restrictions.
+    /// HTTP execution can also return [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn add_subscribers_to_group(
         &self,
         id: impl AsRef<str>,
@@ -757,6 +1047,36 @@ impl Automations<'_> {
     }
     /// Cancel selected subscriber executions.
     /// Completion means the background job was accepted, not that every subscriber was processed.
+    ///
+    /// This write is never automatically retried. A timeout or transport failure after dispatch
+    /// does not establish whether the server applied it; inspect the result before repeating the
+    /// operation.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::automation_actions::AutomationActivityFilter;
+    /// use mailerlite_rs::resources::automations::ActivityStatus;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automations().cancel_subscribers(
+    ///     "123", AutomationActivityFilter::new(ActivityStatus::Active).id("456"),
+    /// ).await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Selecting a status other than active returns [`crate::Error::Config`]. Empty identifiers and
+    /// dot path segments (`.` or `..`) return [`crate::Error::Config`] before dispatch. Request
+    /// serialization can return [`crate::Error::Serialize`]. API rejection returns
+    /// [`crate::Error::Api`], including server-side validation and account restrictions. HTTP
+    /// execution can also return [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn cancel_subscribers(
         &self,
         id: impl AsRef<str>,
@@ -780,6 +1100,36 @@ impl Automations<'_> {
     }
     /// Skip delays for selected executions.
     /// Completion means the background job was accepted, not that every subscriber was processed.
+    ///
+    /// This write is never automatically retried. A timeout or transport failure after dispatch
+    /// does not establish whether the server applied it; inspect the result before repeating the
+    /// operation.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::automation_actions::AutomationActivityFilter;
+    /// use mailerlite_rs::resources::automations::ActivityStatus;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automations().skip_delay(
+    ///     "123", AutomationActivityFilter::new(ActivityStatus::Active).id("456"),
+    /// ).await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Selecting a status other than active returns [`crate::Error::Config`]. Empty identifiers and
+    /// dot path segments (`.` or `..`) return [`crate::Error::Config`] before dispatch. Request
+    /// serialization can return [`crate::Error::Serialize`]. API rejection returns
+    /// [`crate::Error::Api`], including server-side validation and account restrictions. HTTP
+    /// execution can also return [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn skip_delay(
         &self,
         id: impl AsRef<str>,
@@ -802,6 +1152,26 @@ impl Automations<'_> {
             .await
     }
     /// Read email content.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automations().email_content("123", "456").await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Empty path identifiers and dot path segments (`.` or `..`) return [`crate::Error::Config`] before
+    /// dispatch. API rejection returns [`crate::Error::Api`], including server-side validation and
+    /// account restrictions. HTTP execution can also return [`crate::Error::Transport`],
+    /// [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn email_content(
         &self,
         id: impl AsRef<str>,
@@ -824,6 +1194,34 @@ impl Automations<'_> {
             .await
     }
     /// Update email content.
+    ///
+    /// The supplied HTML replaces the email content; it is not a partial patch. This write is never
+    /// automatically retried. A timeout or transport failure after dispatch does not establish
+    /// whether the server applied it; inspect the result before repeating the operation.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::automation_actions::UpdateAutomationEmailContent;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automations().update_email_content(
+    ///     "123", "456", UpdateAutomationEmailContent::new("<p>Hello Jane</p>"),
+    /// ).await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Empty path identifiers and dot path segments (`.` or `..`) return [`crate::Error::Config`] before
+    /// dispatch. Request serialization can return [`crate::Error::Serialize`]. API rejection
+    /// returns [`crate::Error::Api`], including server-side validation and account restrictions.
+    /// HTTP execution can also return [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn update_email_content(
         &self,
         id: impl AsRef<str>,
@@ -847,6 +1245,31 @@ impl Automations<'_> {
             .await
     }
     /// Read email report statistics.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::automation_actions::AutomationReportQuery;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automations().email_report_stats(
+    ///     "123", "456", AutomationReportQuery::new(),
+    /// ).await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Supplying only one of `start_date` and `end_date` returns [`crate::Error::Config`]; date
+    /// syntax and account access are validated by the server. Empty path identifiers and dot path
+    /// segments (`.` or `..`) return [`crate::Error::Config`] before dispatch. API rejection
+    /// returns [`crate::Error::Api`], including server-side validation and account restrictions.
+    /// HTTP execution can also return [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn email_report_stats(
         &self,
         id: impl AsRef<str>,
@@ -871,6 +1294,26 @@ impl Automations<'_> {
             .await
     }
     /// Read email unsubscribe reasons.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automations().email_unsubscribe_reasons("123", "456").await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Empty path identifiers and dot path segments (`.` or `..`) return [`crate::Error::Config`] before
+    /// dispatch. API rejection returns [`crate::Error::Api`], including server-side validation and
+    /// account restrictions. HTTP execution can also return [`crate::Error::Transport`],
+    /// [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn email_unsubscribe_reasons(
         &self,
         id: impl AsRef<str>,
@@ -893,6 +1336,31 @@ impl Automations<'_> {
             .await
     }
     /// Read automation email monthly totals.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::automation_actions::AutomationReportQuery;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automations().email_stats(
+    ///     "123", AutomationReportQuery::new(),
+    /// ).await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Supplying only one of `start_date` and `end_date` returns [`crate::Error::Config`]; date
+    /// syntax and account access are validated by the server. Empty path identifiers and dot path
+    /// segments (`.` or `..`) return [`crate::Error::Config`] before dispatch. API rejection
+    /// returns [`crate::Error::Api`], including server-side validation and account restrictions.
+    /// HTTP execution can also return [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn email_stats(
         &self,
         id: impl AsRef<str>,
@@ -910,6 +1378,31 @@ impl Automations<'_> {
             .await
     }
     /// Read automation e-commerce monthly totals.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::automation_actions::AutomationReportQuery;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automations().ecommerce_stats(
+    ///     "123", AutomationReportQuery::new(),
+    /// ).await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Supplying only one of `start_date` and `end_date` returns [`crate::Error::Config`]; date
+    /// syntax and account access are validated by the server. Empty path identifiers and dot path
+    /// segments (`.` or `..`) return [`crate::Error::Config`] before dispatch. API rejection
+    /// returns [`crate::Error::Api`], including server-side validation and account restrictions.
+    /// HTTP execution can also return [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn ecommerce_stats(
         &self,
         id: impl AsRef<str>,
@@ -927,6 +1420,31 @@ impl Automations<'_> {
             .await
     }
     /// Read email e-commerce overview statistics.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::automation_actions::AutomationReportQuery;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automations().email_ecommerce_stats(
+    ///     "123", "456", AutomationReportQuery::new(),
+    /// ).await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Supplying only one of `start_date` and `end_date` returns [`crate::Error::Config`]; date
+    /// syntax and account access are validated by the server. Empty path identifiers and dot path
+    /// segments (`.` or `..`) return [`crate::Error::Config`] before dispatch. API rejection
+    /// returns [`crate::Error::Api`], including server-side validation and account restrictions.
+    /// HTTP execution can also return [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn email_ecommerce_stats(
         &self,
         id: impl AsRef<str>,
@@ -951,6 +1469,32 @@ impl Automations<'_> {
             .await
     }
     /// Read a page of automation order activity.
+    ///
+    /// Use the returned numbered-page metadata for subsequent explicit requests.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::automation_actions::{AutomationOrderQuery, AutomationOrderTimeFrame};
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automations().ecommerce_orders(
+    ///     "123", AutomationOrderQuery::new(AutomationOrderTimeFrame::AllTime).limit(25),
+    /// ).await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// A zero page or limit, or a custom time frame without both dates, returns
+    /// [`crate::Error::Config`]. Empty path identifiers and dot path segments (`.` or `..`) return
+    /// [`crate::Error::Config`] before dispatch. API rejection returns [`crate::Error::Api`],
+    /// including server-side validation and account restrictions. HTTP execution can also return
+    /// [`crate::Error::Transport`], [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn ecommerce_orders(
         &self,
         id: impl AsRef<str>,

@@ -88,12 +88,64 @@ impl CreateStep {
         self
     }
     /// Construct a step from typed configuration, selecting its matching type.
+    ///
+    /// These parameters are constructed locally; no API request is made.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mailerlite_rs::resources::automation_steps::CreateStep;
+    /// use mailerlite_rs::models::automation_configuration::{
+    ///     DelayConfiguration, DelayUnit, StepConfiguration,
+    /// };
+    ///
+    /// # fn main() -> mailerlite_rs::Result<()> {
+    /// let configuration = StepConfiguration::Delay(
+    ///     DelayConfiguration::new(DelayUnit::Days, 1),
+    /// );
+    /// let params = CreateStep::configured(configuration)?;
+    /// # let _ = params;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::Serialize`] if serialization fails or [`crate::Error::Config`] if
+    /// configuration does not produce an object. The type is selected from the configuration
+    /// automatically; server validation still applies on submission.
     pub fn configured(configuration: StepConfiguration) -> Result<Self> {
         Self::new(configuration.kind()).configuration(configuration)
     }
     /// Replace configuration with the matching typed payload.
     ///
     /// A configuration for a different step type is rejected locally.
+    ///
+    /// These parameters are constructed locally; no API request is made.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mailerlite_rs::resources::automation_steps::{CreateStep, StepType};
+    /// use mailerlite_rs::models::automation_configuration::{
+    ///     DelayConfiguration, DelayUnit, StepConfiguration,
+    /// };
+    ///
+    /// # fn main() -> mailerlite_rs::Result<()> {
+    /// let configuration = StepConfiguration::Delay(
+    ///     DelayConfiguration::new(DelayUnit::Days, 1),
+    /// );
+    /// let params = CreateStep::new(StepType::Delay).configuration(configuration)?;
+    /// # let _ = params;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::Serialize`] if configuration serialization fails, or
+    /// [`crate::Error::Config`] if it does not produce an object. A configuration with a different
+    /// step type also returns `Error::Config`.
     pub fn configuration(mut self, configuration: StepConfiguration) -> Result<Self> {
         if self.kind != configuration.kind() {
             return Err(Error::Config(
@@ -104,6 +156,25 @@ impl CreateStep {
         Ok(self)
     }
     /// Add a future configuration field. Known fields must use typed configuration.
+    ///
+    /// These parameters are constructed locally; no API request is made.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mailerlite_rs::resources::automation_steps::{CreateStep, StepType};
+    ///
+    /// # fn main() -> mailerlite_rs::Result<()> {
+    /// let params = CreateStep::new(StepType::Delay).extension_data("future_setting", true)?;
+    /// # let _ = params;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::Config`] if the key is a modeled step field. Unknown keys are only
+    /// an escape hatch for future server fields; acceptance is checked by the API.
     pub fn extension_data(
         mut self,
         field: impl Into<String>,
@@ -149,11 +220,56 @@ impl UpdateStep {
     /// The server knows the existing type and rejects incompatible payloads.
     /// Omission and null in this payload preserve their wire distinction; the
     /// backend replaces configuration, so omitted settings can be cleared.
+    ///
+    /// These parameters are constructed locally; no API request is made.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mailerlite_rs::resources::automation_steps::UpdateStep;
+    /// use mailerlite_rs::models::automation_configuration::{
+    ///     DelayConfiguration, DelayUnit, StepConfiguration,
+    /// };
+    ///
+    /// # fn main() -> mailerlite_rs::Result<()> {
+    /// let configuration = StepConfiguration::Delay(
+    ///     DelayConfiguration::new(DelayUnit::Days, 1),
+    /// );
+    /// let params = UpdateStep::new().configuration(configuration)?;
+    /// # let _ = params;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::Serialize`] if configuration serialization fails, or
+    /// [`crate::Error::Config`] if it does not produce an object. The server, not this helper,
+    /// checks compatibility with the existing step type.
     pub fn configuration(mut self, configuration: StepConfiguration) -> Result<Self> {
         self.data = configuration_fields(&configuration)?;
         Ok(self)
     }
     /// Add a future field; known fields must use typed configuration.
+    ///
+    /// These parameters are constructed locally; no API request is made.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mailerlite_rs::resources::automation_steps::UpdateStep;
+    ///
+    /// # fn main() -> mailerlite_rs::Result<()> {
+    /// let params = UpdateStep::new().extension_data("future_setting", true)?;
+    /// # let _ = params;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::Config`] if the key is a modeled step field. Unknown keys are only
+    /// an escape hatch for future server fields; acceptance is checked by the API.
     pub fn extension_data(
         mut self,
         field: impl Into<String>,
@@ -379,6 +495,26 @@ impl<'a> AutomationSteps<'a> {
         Self { client }
     }
     /// List every step in workflow order.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automation_steps().list("123").await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Empty path identifiers and dot path segments (`.` or `..`) return [`crate::Error::Config`] before
+    /// dispatch. API rejection returns [`crate::Error::Api`], including server-side validation and
+    /// account restrictions. HTTP execution can also return [`crate::Error::Transport`],
+    /// [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn list(&self, automation: impl AsRef<str>) -> Result<Response<Vec<AutomationStep>>> {
         self.client
             .data(
@@ -391,6 +527,26 @@ impl<'a> AutomationSteps<'a> {
             .await
     }
     /// Fetch one step with its type-specific configuration.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automation_steps().get("123", "456").await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Empty path identifiers and dot path segments (`.` or `..`) return [`crate::Error::Config`] before
+    /// dispatch. API rejection returns [`crate::Error::Api`], including server-side validation and
+    /// account restrictions. HTTP execution can also return [`crate::Error::Transport`],
+    /// [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn get(
         &self,
         automation: impl AsRef<str>,
@@ -407,6 +563,37 @@ impl<'a> AutomationSteps<'a> {
             .await
     }
     /// Create a step in an inactive automation.
+    ///
+    /// This write is never automatically retried. A timeout or transport failure after dispatch
+    /// does not establish whether the server applied it; inspect the result before repeating the
+    /// operation.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::automation_steps::CreateStep;
+    /// use mailerlite_rs::models::automation_configuration::{
+    ///     DelayConfiguration, DelayUnit, StepConfiguration,
+    /// };
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automation_steps().create(
+    ///     "123", CreateStep::configured(StepConfiguration::Delay(DelayConfiguration::new(DelayUnit::Days, 1)))?,
+    /// ).await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Empty path identifiers and dot path segments (`.` or `..`) return [`crate::Error::Config`] before
+    /// dispatch. Request serialization can return [`crate::Error::Serialize`]. API rejection
+    /// returns [`crate::Error::Api`], including server-side validation and account restrictions.
+    /// HTTP execution can also return [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn create(
         &self,
         automation: impl AsRef<str>,
@@ -423,6 +610,41 @@ impl<'a> AutomationSteps<'a> {
             .await
     }
     /// Replace step configuration. Send the complete data for the step's type.
+    ///
+    /// The automation must be inactive. Omitted settings in the replacement configuration can be
+    /// cleared by the server. This write is never automatically retried. A timeout or transport
+    /// failure after dispatch does not establish whether the server applied it; inspect the result
+    /// before repeating the operation.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::automation_steps::UpdateStep;
+    /// use mailerlite_rs::models::automation_configuration::{
+    ///     DelayConfiguration, DelayUnit, StepConfiguration,
+    /// };
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automation_steps().update(
+    ///     "123", "456",
+    ///     UpdateStep::new().configuration(StepConfiguration::Delay(
+    ///         DelayConfiguration::new(DelayUnit::Days, 1),
+    ///     ))?,
+    /// ).await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Empty path identifiers and dot path segments (`.` or `..`) return [`crate::Error::Config`] before
+    /// dispatch. Request serialization can return [`crate::Error::Serialize`]. API rejection
+    /// returns [`crate::Error::Api`], including server-side validation and account restrictions.
+    /// HTTP execution can also return [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn update(
         &self,
         automation: impl AsRef<str>,
@@ -440,6 +662,32 @@ impl<'a> AutomationSteps<'a> {
             .await
     }
     /// Delete a step, with explicit branch handling for condition and A/B steps.
+    ///
+    /// The automation must be inactive. Branch selection can remove child workflow branches; choose
+    /// it explicitly for condition or A/B steps. This write is never automatically retried. A
+    /// timeout or transport failure after dispatch does not establish whether the server applied
+    /// it; inspect the result before repeating the operation.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::automation_steps::DeleteStep;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automation_steps().delete("123", "456", DeleteStep::new()).await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Empty path identifiers and dot path segments (`.` or `..`) return [`crate::Error::Config`] before
+    /// dispatch. API rejection returns [`crate::Error::Api`], including server-side validation and
+    /// account restrictions. HTTP execution can also return [`crate::Error::Transport`],
+    /// [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn delete(
         &self,
         automation: impl AsRef<str>,
@@ -461,6 +709,34 @@ impl<'a> AutomationSteps<'a> {
             .await
     }
     /// Copy a step and return the updated automation.
+    ///
+    /// The automation must be inactive; this adds a new workflow step. This write is never
+    /// automatically retried. A timeout or transport failure after dispatch does not establish
+    /// whether the server applied it; inspect the result before repeating the operation.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::automation_steps::CopyStep;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automation_steps().copy(
+    ///     "123", "456", CopyStep::new().parent_id("789"),
+    /// ).await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Empty path identifiers and dot path segments (`.` or `..`) return [`crate::Error::Config`] before
+    /// dispatch. Request serialization can return [`crate::Error::Serialize`]. API rejection
+    /// returns [`crate::Error::Api`], including server-side validation and account restrictions.
+    /// HTTP execution can also return [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn copy(
         &self,
         automation: impl AsRef<str>,
@@ -484,6 +760,35 @@ impl<'a> AutomationSteps<'a> {
             .await
     }
     /// Move a step and return the updated automation.
+    ///
+    /// The automation must be inactive. Moving a step changes the workflow path; supply branch
+    /// handling when relevant. This write is never automatically retried. A timeout or transport
+    /// failure after dispatch does not establish whether the server applied it; inspect the result
+    /// before repeating the operation.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::automation_steps::ReorderSteps;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automation_steps().reorder(
+    ///     "123", ReorderSteps::new("456").new_parent_step_id("789"),
+    /// ).await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Empty path identifiers and dot path segments (`.` or `..`) return [`crate::Error::Config`] before
+    /// dispatch. Request serialization can return [`crate::Error::Serialize`]. API rejection
+    /// returns [`crate::Error::Api`], including server-side validation and account restrictions.
+    /// HTTP execution can also return [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn reorder(
         &self,
         automation: impl AsRef<str>,
@@ -500,6 +805,33 @@ impl<'a> AutomationSteps<'a> {
             .await
     }
     /// Select an A/B winning path and return its statistics.
+    ///
+    /// This changes the selected workflow path. The server validates the step type and allowable
+    /// state. This write is never automatically retried. A timeout or transport failure after
+    /// dispatch does not establish whether the server applied it; inspect the result before
+    /// repeating the operation.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::automation_steps::AbWinner;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automation_steps().select_ab_test_winner("123", "456", AbWinner::APath)
+    ///     .await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Empty path identifiers and dot path segments (`.` or `..`) return [`crate::Error::Config`] before
+    /// dispatch. API rejection returns [`crate::Error::Api`], including server-side validation and
+    /// account restrictions. HTTP execution can also return [`crate::Error::Transport`],
+    /// [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn select_ab_test_winner(
         &self,
         automation: impl AsRef<str>,
@@ -523,6 +855,26 @@ impl<'a> AutomationSteps<'a> {
             .await
     }
     /// Fetch execution counts for every step.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automation_steps().run_counts("123").await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Empty path identifiers and dot path segments (`.` or `..`) return [`crate::Error::Config`] before
+    /// dispatch. API rejection returns [`crate::Error::Api`], including server-side validation and
+    /// account restrictions. HTTP execution can also return [`crate::Error::Transport`],
+    /// [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn run_counts(
         &self,
         automation: impl AsRef<str>,
@@ -538,6 +890,26 @@ impl<'a> AutomationSteps<'a> {
             .await
     }
     /// Fetch execution counts for one step.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automation_steps().run_count("123", "456").await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Empty path identifiers and dot path segments (`.` or `..`) return [`crate::Error::Config`] before
+    /// dispatch. API rejection returns [`crate::Error::Api`], including server-side validation and
+    /// account restrictions. HTTP execution can also return [`crate::Error::Transport`],
+    /// [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn run_count(
         &self,
         automation: impl AsRef<str>,
@@ -560,6 +932,26 @@ impl<'a> AutomationSteps<'a> {
             .await
     }
     /// Fetch statistics for every A/B step.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automation_steps().ab_stats("123").await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Empty path identifiers and dot path segments (`.` or `..`) return [`crate::Error::Config`] before
+    /// dispatch. API rejection returns [`crate::Error::Api`], including server-side validation and
+    /// account restrictions. HTTP execution can also return [`crate::Error::Transport`],
+    /// [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn ab_stats(
         &self,
         automation: impl AsRef<str>,
@@ -575,6 +967,26 @@ impl<'a> AutomationSteps<'a> {
             .await
     }
     /// Fetch statistics for one A/B step.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automation_steps().ab_stat("123", "456").await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Empty path identifiers and dot path segments (`.` or `..`) return [`crate::Error::Config`] before
+    /// dispatch. API rejection returns [`crate::Error::Api`], including server-side validation and
+    /// account restrictions. HTTP execution can also return [`crate::Error::Transport`],
+    /// [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn ab_stat(
         &self,
         automation: impl AsRef<str>,
@@ -596,6 +1008,31 @@ impl<'a> AutomationSteps<'a> {
             .await
     }
     /// Fetch one numbered page of step subscriber executions.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::automation_steps::{StepSubscribers, StepSubscriberStatus};
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automation_steps().subscribers(
+    ///     "123", "456", StepSubscribers::new(StepSubscriberStatus::Queued).limit(25),
+    /// ).await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// A zero page, limit outside 1 through 1000, or sort other than `date`, `-date`, `email`, or
+    /// `-email` returns [`crate::Error::Config`]. Empty path identifiers and dot path segments (`.` or
+    /// `..`) return [`crate::Error::Config`] before dispatch. API rejection returns
+    /// [`crate::Error::Api`], including server-side validation and account restrictions. HTTP
+    /// execution can also return [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn subscribers(
         &self,
         automation: impl AsRef<str>,

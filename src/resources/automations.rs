@@ -53,10 +53,53 @@ impl<'a> Automations<'a> {
         Self { client }
     }
     /// List automations.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automations().list().limit(25).send().await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Builder creation does not fail or send a request. The following errors
+    /// occur when the request is sent or the stream is polled.
+    ///
+    /// A zero page or limit returns [`crate::Error::Config`] when the request is sent.  API
+    /// rejection returns [`crate::Error::Api`], including server-side validation and account
+    /// restrictions. HTTP execution can also return [`crate::Error::Transport`],
+    /// [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub fn list(&self) -> ListAutomations<'a> {
         ListAutomations::new(self.client, vec!["automations".into()])
     }
     /// Fetch an automation.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automations().get("123").await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Empty path identifiers and dot path segments (`.` or `..`) return [`crate::Error::Config`] before
+    /// dispatch. API rejection returns [`crate::Error::Api`], including server-side validation and
+    /// account restrictions. HTTP execution can also return [`crate::Error::Transport`],
+    /// [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn get(&self, id: impl AsRef<str>) -> Result<Response<Automation>> {
         self.client
             .data(
@@ -69,6 +112,32 @@ impl<'a> Automations<'a> {
             .await
     }
     /// Create a disabled draft automation.
+    ///
+    /// This write is never automatically retried. A timeout or transport failure after dispatch
+    /// does not establish whether the server applied it; inspect the result before repeating the
+    /// operation.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::automations::CreateAutomation;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automations().create(CreateAutomation::new("Welcome"))
+    ///     .await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// The server validates the name and account permissions. Request serialization can return
+    /// [`crate::Error::Serialize`]. API rejection returns [`crate::Error::Api`], including server-
+    /// side validation and account restrictions. HTTP execution can also return
+    /// [`crate::Error::Transport`], [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn create(&self, params: CreateAutomation) -> Result<Response<Automation>> {
         self.client
             .data(
@@ -81,6 +150,30 @@ impl<'a> Automations<'a> {
             .await
     }
     /// Delete an automation.
+    ///
+    /// Success is an empty response confirming deletion. This write is never automatically retried.
+    /// A timeout or transport failure after dispatch does not establish whether the server applied
+    /// it; inspect the result before repeating the operation.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automations().delete("123").await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Empty path identifiers and dot path segments (`.` or `..`) return [`crate::Error::Config`] before
+    /// dispatch. API rejection returns [`crate::Error::Api`], including server-side validation and
+    /// account restrictions. HTTP execution can also return [`crate::Error::Transport`],
+    /// [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn delete(&self, id: impl AsRef<str>) -> Result<Response<()>> {
         self.client
             .empty(
@@ -93,6 +186,32 @@ impl<'a> Automations<'a> {
             .await
     }
     /// Inspect subscriber executions with a required status filter.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::automations::ActivityStatus;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automations().activity("123", ActivityStatus::Completed)
+    ///     .limit(25).send().await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Builder creation does not fail or send a request. The following errors
+    /// occur when the request is sent or the stream is polled.
+    ///
+    /// A zero page or limit returns [`crate::Error::Config`] when the request is sent. Empty
+    /// identifiers and dot path segments (`.` or `..`) return [`crate::Error::Config`] before
+    /// dispatch. API rejection returns [`crate::Error::Api`], including server-side validation and
+    /// account restrictions. HTTP execution can also return [`crate::Error::Transport`],
+    /// [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub fn activity(
         &self,
         id: impl AsRef<str>,
@@ -155,6 +274,26 @@ impl<'a> ListAutomations<'a> {
         self
     }
     /// Fetch one page.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automations().list().limit(25).send().await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// A zero page or limit returns [`crate::Error::Config`] when the request is sent.  API
+    /// rejection returns [`crate::Error::Api`], including server-side validation and account
+    /// restrictions. HTTP execution can also return [`crate::Error::Transport`],
+    /// [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn send(self) -> Result<Response<NumberedPage<Automation>>> {
         validate_query(&self.query)?;
         let path: Vec<&str> = self.path.iter().map(String::as_str).collect();
@@ -163,6 +302,35 @@ impl<'a> ListAutomations<'a> {
             .await
     }
     /// Fetch subsequent pages lazily while preserving request filters.
+    ///
+    /// Requires the `stream` feature; this example also uses `futures-util`. Requests begin when
+    /// polled and preserve filters. Server-provided links are never followed. Each page request has
+    /// its own deadline; dropping the stream stops further fetches.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use futures_util::TryStreamExt;
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let resource = mailerlite.automations();
+    /// let stream = resource.list().limit(25).into_stream();
+    /// tokio::pin!(stream);
+    ///
+    /// while let Some(_item) = stream.try_next().await? {
+    ///     // Process this item before requesting the next.
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Errors are yielded as stream items: validation and HTTP errors are the same as
+    /// [`Self::send`]. A reported current page that differs from the requested page yields
+    /// [`crate::Error::Pagination`]. The stream terminates after an error; previously yielded items
+    /// are not rolled back. Missing continuation metadata ends the stream normally.
     #[cfg(feature = "stream")]
     pub fn into_stream(self) -> impl futures_core::Stream<Item = Result<Automation>> + 'a {
         crate::pagination::validated_stream(
@@ -232,6 +400,29 @@ impl<'a> ListAutomationActivity<'a> {
         self
     }
     /// Fetch one page.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::automations::ActivityStatus;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automations().activity("123", ActivityStatus::Completed)
+    ///     .limit(25).send().await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// A zero page or limit returns [`crate::Error::Config`] when the request is sent. Empty
+    /// identifiers and dot path segments (`.` or `..`) return [`crate::Error::Config`] before
+    /// dispatch. API rejection returns [`crate::Error::Api`], including server-side validation and
+    /// account restrictions. HTTP execution can also return [`crate::Error::Transport`],
+    /// [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn send(self) -> Result<Response<NumberedPage<AutomationActivity>>> {
         validate_query(&self.query)?;
         let path: Vec<&str> = self.path.iter().map(String::as_str).collect();
@@ -240,6 +431,36 @@ impl<'a> ListAutomationActivity<'a> {
             .await
     }
     /// Fetch subsequent pages lazily while preserving request filters.
+    ///
+    /// Requires the `stream` feature; this example also uses `futures-util`. Requests begin when
+    /// polled and preserve filters. Server-provided links are never followed. Each page request has
+    /// its own deadline; dropping the stream stops further fetches.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use futures_util::TryStreamExt;
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::automations::ActivityStatus;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let resource = mailerlite.automations();
+    /// let stream = resource.activity("123", ActivityStatus::Completed).limit(25).into_stream();
+    /// tokio::pin!(stream);
+    ///
+    /// while let Some(_item) = stream.try_next().await? {
+    ///     // Process this item before requesting the next.
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Errors are yielded as stream items: validation and HTTP errors are the same as
+    /// [`Self::send`]. A reported current page that differs from the requested page yields
+    /// [`crate::Error::Pagination`]. The stream terminates after an error; previously yielded items
+    /// are not rolled back. Missing continuation metadata ends the stream normally.
     #[cfg(feature = "stream")]
     pub fn into_stream(self) -> impl futures_core::Stream<Item = Result<AutomationActivity>> + 'a {
         crate::pagination::validated_stream(

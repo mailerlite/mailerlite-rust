@@ -43,10 +43,62 @@ impl CreateAutomationTrigger {
         )
     }
     /// Construct a trigger with typed configuration and the matching discriminator.
+    ///
+    /// These parameters are constructed locally; no API request is made.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mailerlite_rs::resources::automation_triggers::CreateAutomationTrigger;
+    /// use mailerlite_rs::models::automation_configuration::{
+    ///     GroupTriggerConfiguration, TriggerConfiguration,
+    /// };
+    ///
+    /// # fn main() -> mailerlite_rs::Result<()> {
+    /// let configuration = TriggerConfiguration::Group(
+    ///     GroupTriggerConfiguration::new(["789"]),
+    /// );
+    /// let params = CreateAutomationTrigger::configured(configuration)?;
+    /// # let _ = params;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::Serialize`] if serialization fails or [`crate::Error::Config`] if
+    /// configuration does not produce an object. The discriminator is selected automatically;
+    /// server validation still applies on submission.
     pub fn configured(configuration: TriggerConfiguration) -> Result<Self> {
         Self::new(configuration.kind()).configuration(configuration)
     }
     /// Replace configuration, rejecting a mismatch with this trigger's type.
+    ///
+    /// These parameters are constructed locally; no API request is made.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mailerlite_rs::resources::automation_triggers::CreateAutomationTrigger;
+    /// use mailerlite_rs::models::automation_configuration::{
+    ///     GroupTriggerConfiguration, TriggerConfiguration,
+    /// };
+    ///
+    /// # fn main() -> mailerlite_rs::Result<()> {
+    /// let configuration = TriggerConfiguration::Group(
+    ///     GroupTriggerConfiguration::new(["789"]),
+    /// );
+    /// let params = CreateAutomationTrigger::new("subscriber_joins_group").configuration(configuration)?;
+    /// # let _ = params;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::Serialize`] if serialization fails or [`crate::Error::Config`] if
+    /// configuration does not produce an object. A discriminator mismatch also returns
+    /// `Error::Config`.
     pub fn configuration(mut self, configuration: TriggerConfiguration) -> Result<Self> {
         if self.kind != configuration.kind() {
             return Err(Error::Config(
@@ -63,6 +115,26 @@ impl CreateAutomationTrigger {
         self
     }
     /// Add a future configuration key; known keys must use typed configuration.
+    ///
+    /// These parameters are constructed locally; no API request is made.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mailerlite_rs::resources::automation_triggers::CreateAutomationTrigger;
+    ///
+    /// # fn main() -> mailerlite_rs::Result<()> {
+    /// let params = CreateAutomationTrigger::new("subscriber_joins_group").extension_setting("future_setting", true)?;
+    /// # let _ = params;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::Config`] for a modeled or reserved trigger key. Use typed setters
+    /// for known settings. Unknown keys are intended only for future server fields and remain
+    /// subject to server validation.
     pub fn extension_setting(
         self,
         key: impl Into<String>,
@@ -106,6 +178,32 @@ impl UpdateAutomationTrigger {
     }
     /// Replace data with typed configuration for the existing trigger.
     /// The API validates the existing trigger's discriminator and ownership.
+    ///
+    /// These parameters are constructed locally; no API request is made.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mailerlite_rs::resources::automation_triggers::UpdateAutomationTrigger;
+    /// use mailerlite_rs::models::automation_configuration::{
+    ///     GroupTriggerConfiguration, TriggerConfiguration,
+    /// };
+    ///
+    /// # fn main() -> mailerlite_rs::Result<()> {
+    /// let configuration = TriggerConfiguration::Group(
+    ///     GroupTriggerConfiguration::new(["789"]),
+    /// );
+    /// let params = UpdateAutomationTrigger::new().configuration(configuration)?;
+    /// # let _ = params;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::Serialize`] if serialization fails or [`crate::Error::Config`] if
+    /// configuration does not produce an object. Compatibility with the existing trigger type is
+    /// checked by the server.
     pub fn configuration(mut self, configuration: TriggerConfiguration) -> Result<Self> {
         self.data = configuration_fields(&configuration)?;
         Ok(self)
@@ -115,6 +213,26 @@ impl UpdateAutomationTrigger {
         self
     }
     /// Add a future field; known keys must use typed configuration.
+    ///
+    /// These parameters are constructed locally; no API request is made.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mailerlite_rs::resources::automation_triggers::UpdateAutomationTrigger;
+    ///
+    /// # fn main() -> mailerlite_rs::Result<()> {
+    /// let params = UpdateAutomationTrigger::new().extension_setting("future_setting", true)?;
+    /// # let _ = params;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::Config`] for a modeled or reserved trigger key. Use typed setters
+    /// for known settings. Unknown keys are intended only for future server fields and remain
+    /// subject to server validation.
     pub fn extension_setting(
         self,
         key: impl Into<String>,
@@ -155,6 +273,26 @@ impl<'a> AutomationTriggers<'a> {
         Self { client }
     }
     /// List all triggers on an automation; this endpoint is not paginated.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automation_triggers().list("123").await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Empty path identifiers and dot path segments (`.` or `..`) return [`crate::Error::Config`] before
+    /// dispatch. API rejection returns [`crate::Error::Api`], including server-side validation and
+    /// account restrictions. HTTP execution can also return [`crate::Error::Transport`],
+    /// [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn list(&self, automation: impl AsRef<str>) -> Result<Response<Vec<Trigger>>> {
         self.client
             .data(
@@ -167,6 +305,26 @@ impl<'a> AutomationTriggers<'a> {
             .await
     }
     /// Fetch one trigger and its type-specific configuration.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automation_triggers().get("123", "456").await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Empty path identifiers and dot path segments (`.` or `..`) return [`crate::Error::Config`] before
+    /// dispatch. API rejection returns [`crate::Error::Api`], including server-side validation and
+    /// account restrictions. HTTP execution can also return [`crate::Error::Transport`],
+    /// [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn get(
         &self,
         automation: impl AsRef<str>,
@@ -188,6 +346,34 @@ impl<'a> AutomationTriggers<'a> {
             .await
     }
     /// Create a trigger on an inactive automation, subject to its plan's trigger limit.
+    ///
+    /// This write is never automatically retried. A timeout or transport failure after dispatch
+    /// does not establish whether the server applied it; inspect the result before repeating the
+    /// operation.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::automation_triggers::CreateAutomationTrigger;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automation_triggers().create(
+    ///     "123", CreateAutomationTrigger::new("subscriber_joins_group").group_ids(["789"]),
+    /// ).await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Empty path identifiers and dot path segments (`.` or `..`) return [`crate::Error::Config`] before
+    /// dispatch. Request serialization can return [`crate::Error::Serialize`]. API rejection
+    /// returns [`crate::Error::Api`], including server-side validation and account restrictions.
+    /// HTTP execution can also return [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn create(
         &self,
         automation: impl AsRef<str>,
@@ -204,6 +390,35 @@ impl<'a> AutomationTriggers<'a> {
             .await
     }
     /// Replace a trigger's configuration on an inactive automation.
+    ///
+    /// Omitted settings are cleared by the server; send the complete desired configuration. The
+    /// existing trigger type cannot change. This write is never automatically retried. A timeout or
+    /// transport failure after dispatch does not establish whether the server applied it; inspect
+    /// the result before repeating the operation.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::automation_triggers::UpdateAutomationTrigger;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automation_triggers().update(
+    ///     "123", "456", UpdateAutomationTrigger::new().group_ids(["789"]),
+    /// ).await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Empty path identifiers and dot path segments (`.` or `..`) return [`crate::Error::Config`] before
+    /// dispatch. Request serialization can return [`crate::Error::Serialize`]. API rejection
+    /// returns [`crate::Error::Api`], including server-side validation and account restrictions.
+    /// HTTP execution can also return [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn update(
         &self,
         automation: impl AsRef<str>,
@@ -226,6 +441,30 @@ impl<'a> AutomationTriggers<'a> {
             .await
     }
     /// Remove a trigger from an inactive automation.
+    ///
+    /// This write is never automatically retried. A timeout or transport failure after dispatch
+    /// does not establish whether the server applied it; inspect the result before repeating the
+    /// operation.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automation_triggers().delete("123", "456").await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Empty path identifiers and dot path segments (`.` or `..`) return [`crate::Error::Config`] before
+    /// dispatch. API rejection returns [`crate::Error::Api`], including server-side validation and
+    /// account restrictions. HTTP execution can also return [`crate::Error::Transport`],
+    /// [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn delete(
         &self,
         automation: impl AsRef<str>,
@@ -247,6 +486,26 @@ impl<'a> AutomationTriggers<'a> {
             .await
     }
     /// Fetch execution counts for all visible triggers and the optional manual trigger.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automation_triggers().run_counts("123").await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Empty path identifiers and dot path segments (`.` or `..`) return [`crate::Error::Config`] before
+    /// dispatch. API rejection returns [`crate::Error::Api`], including server-side validation and
+    /// account restrictions. HTTP execution can also return [`crate::Error::Transport`],
+    /// [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn run_counts(
         &self,
         automation: impl AsRef<str>,
@@ -262,6 +521,26 @@ impl<'a> AutomationTriggers<'a> {
             .await
     }
     /// Fetch completed and queued execution counts for one trigger.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automation_triggers().run_count("123", "456").await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Empty path identifiers and dot path segments (`.` or `..`) return [`crate::Error::Config`] before
+    /// dispatch. API rejection returns [`crate::Error::Api`], including server-side validation and
+    /// account restrictions. HTTP execution can also return [`crate::Error::Transport`],
+    /// [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn run_count(
         &self,
         automation: impl AsRef<str>,
@@ -284,6 +563,34 @@ impl<'a> AutomationTriggers<'a> {
             .await
     }
     /// List subscribers brought into an automation by a trigger, with required status.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::automation_triggers::TriggerSubscriberStatus;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automation_triggers()
+    ///     .subscribers("123", "456", TriggerSubscriberStatus::Completed)
+    ///     .limit(25).send().await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Builder creation does not fail or send a request. The following errors
+    /// occur when the request is sent or the stream is polled.
+    ///
+    /// At dispatch, a zero page, a limit outside 1 through 1000, or sort other than `date`,
+    /// `-date`, `email`, or `-email` returns [`crate::Error::Config`]. Empty path identifiers and dot
+    /// path segments (`.` or `..`) return [`crate::Error::Config`] before dispatch. API rejection
+    /// returns [`crate::Error::Api`], including server-side validation and account restrictions.
+    /// HTTP execution can also return [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub fn subscribers(
         &self,
         automation: impl Into<String>,
@@ -352,6 +659,31 @@ impl<'a> TriggerSubscribers<'a> {
         )
     }
     /// Fetch one numbered page.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::automation_triggers::TriggerSubscriberStatus;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.automation_triggers()
+    ///     .subscribers("123", "456", TriggerSubscriberStatus::Completed)
+    ///     .limit(25).send().await?;
+    ///
+    /// println!("HTTP {}", response.metadata.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// At dispatch, a zero page, a limit outside 1 through 1000, or sort other than `date`,
+    /// `-date`, `email`, or `-email` returns [`crate::Error::Config`]. Empty path identifiers and dot
+    /// path segments (`.` or `..`) return [`crate::Error::Config`] before dispatch. API rejection
+    /// returns [`crate::Error::Api`], including server-side validation and account restrictions.
+    /// HTTP execution can also return [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn send(self) -> Result<Response<NumberedPage<StepSubscriber>>> {
         validate(&self.query)?;
         let path: Vec<&str> = self.path.iter().map(String::as_str).collect();
@@ -360,6 +692,37 @@ impl<'a> TriggerSubscribers<'a> {
             .await
     }
     /// Fetch pages lazily without following server-provided navigation URLs.
+    ///
+    /// Requires the `stream` feature; this example also uses `futures-util`. Requests begin when
+    /// polled and preserve filters. Server-provided links are never followed. Each page request has
+    /// its own deadline; dropping the stream stops further fetches.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use futures_util::TryStreamExt;
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::automation_triggers::TriggerSubscriberStatus;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let resource = mailerlite.automation_triggers();
+    /// let stream = resource
+    ///     .subscribers("123", "456", TriggerSubscriberStatus::Completed).limit(25).into_stream();
+    /// tokio::pin!(stream);
+    ///
+    /// while let Some(_item) = stream.try_next().await? {
+    ///     // Process this item before requesting the next.
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Errors are yielded as stream items: validation and HTTP errors are the same as
+    /// [`Self::send`]. A reported current page that differs from the requested page yields
+    /// [`crate::Error::Pagination`]. The stream terminates after an error; previously yielded items
+    /// are not rolled back. Missing continuation metadata ends the stream normally.
     #[cfg(feature = "stream")]
     pub fn into_stream(self) -> impl futures_core::Stream<Item = Result<StepSubscriber>> + 'a {
         crate::pagination::validated_stream(
