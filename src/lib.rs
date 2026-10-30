@@ -25,6 +25,9 @@
 //! [`subscribers`](MailerLite::subscribers), [`groups`](MailerLite::groups),
 //! [`segments`](MailerLite::segments), [`fields`](MailerLite::fields),
 //! [`forms`](MailerLite::forms), [`automations`](MailerLite::automations),
+//! [`automation_steps`](MailerLite::automation_steps),
+//! [`automation_triggers`](MailerLite::automation_triggers),
+//! [`automation_templates`](MailerLite::automation_templates),
 //! [`campaigns`](MailerLite::campaigns), [`webhooks`](MailerLite::webhooks),
 //! [`batch`](MailerLite::batch), [`timezones`](MailerLite::timezones) and
 //! [`ecommerce`](MailerLite::ecommerce). Endpoints the SDK does not model yet are reachable

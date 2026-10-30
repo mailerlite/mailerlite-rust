@@ -281,6 +281,8 @@ pub(crate) mod stream {
 
     paged_query!(
         crate::automations::ListAutomations,
+        crate::automations::ListWorkflowSubscribers,
+        crate::automations::ListAutomationTemplates,
         crate::campaigns::ListCampaignActivity,
         crate::campaigns::ListCampaigns,
         crate::ecommerce::ListCartItems,

@@ -141,6 +141,9 @@ while let Some(group) = all.try_next().await? {
 | Segments | `client.segments()` | [`get_segments`](examples/get_segments.rs), [`get_segment_subscribers`](examples/get_segment_subscribers.rs), … |
 | Fields | `client.fields()` | [`get_fields`](examples/get_fields.rs), [`create_field`](examples/create_field.rs), … |
 | Forms | `client.forms()` | [`get_forms`](examples/get_forms.rs), [`get_form_subscribers`](examples/get_form_subscribers.rs), … |
+| Automation steps | `client.automation_steps()` | [`create_automation_step`](examples/create_automation_step.rs), [`get_automation_step_subscribers`](examples/get_automation_step_subscribers.rs), … |
+| Automation triggers | `client.automation_triggers()` | [`create_automation_trigger`](examples/create_automation_trigger.rs), [`get_automation_trigger_subscribers`](examples/get_automation_trigger_subscribers.rs), … |
+| Automation templates | `client.automation_templates()` | [`get_automation_templates`](examples/get_automation_templates.rs), [`create_automation_from_template`](examples/create_automation_from_template.rs) |
 | Automations | `client.automations()` | [`get_automations`](examples/get_automations.rs), [`get_subscribers_activity_for_automation`](examples/get_subscribers_activity_for_automation.rs), … |
 | Campaigns & languages | `client.campaigns()` | [`create_campaign`](examples/create_campaign.rs), [`schedule_campaign`](examples/schedule_campaign.rs), [`get_campaign_languages`](examples/get_campaign_languages.rs), … |
 | Webhooks | `client.webhooks()` | [`create_webhook`](examples/create_webhook.rs), [`verify_webhook_signature`](examples/verify_webhook_signature.rs), … |
@@ -166,6 +169,20 @@ Endpoints the SDK doesn't model yet are reachable with the same auth and error h
 use mailerlite_rs::Method;
 
 let body: serde_json::Value = client.request(Method::GET, "subscribers").query(&[("limit", "5")]).send().await?;
+```
+
+Automation actions, steps, triggers, templates and email reports use the same typed builders
+and JSON requests as the rest of v2. Workflow configuration varies by step or trigger kind,
+so `data` accepts a JSON object. Reports not yet covered by the public API documentation
+return the full `serde_json::Value` response.
+
+```rust,no_run
+# async fn run(client: mailerlite_rs::MailerLite) -> mailerlite_rs::Result<()> {
+use mailerlite_rs::automations::{CreateAutomationStep, StepType};
+let step = client.automation_steps()
+    .create("automation-id", &CreateAutomationStep::new(StepType::Delay))
+    .await?;
+# Ok(()) }
 ```
 
 ## Features

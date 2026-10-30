@@ -28,6 +28,7 @@ Handle methods are plural now, and e-commerce lives under one scoped handle:
 | `mailerlite.campaign()` | `client.campaigns()` |
 | `mailerlite.group()` | `client.groups()` |
 | `mailerlite.segment()` / `field()` / `form()` | `client.segments()` / `fields()` / `forms()` |
+| `mailerlite.automation_step()` / `automation_trigger()` / `automation_template()` | `client.automation_steps()` / `automation_triggers()` / `automation_templates()` |
 | `mailerlite.automation()` / `webhook()` | `client.automations()` / `webhooks()` |
 | `mailerlite.batch()` / `timezone()` | `client.batch()` / `timezones()` |
 | `mailerlite.ecommerce_shop()` | `client.ecommerce().shops()` |
@@ -84,3 +85,22 @@ if upserted.created {
 - E-commerce `with_resource_id()` mode for addressing resources by your own ids.
 - `MailerLite::request` for endpoints the SDK doesn't model yet.
 - `webhook_signature::verify` (feature `webhook-signature`).
+
+## Automation workflow additions
+
+The automation endpoints added to 1.x also use typed JSON bodies in 2.0:
+
+- `automation().update(id, Data)` becomes `automations().update(id, &UpdateAutomation::new(name))`.
+- Step and trigger `get` / `find` become `list` / `get` on the plural handles.
+- Step and trigger `create` / `update` take `CreateAutomationStep`, `UpdateAutomationStep`,
+  `CreateAutomationTrigger` or `UpdateAutomationTrigger`. Their `data` fields are JSON objects;
+  updates replace the complete kind-specific configuration.
+- Subscriber actions use `AddAutomationSubscribers`, `AutomationRunAction`,
+  `CopyAutomationSubscribers` and `ReaddAutomationSubscribers`. Filters are nested JSON objects,
+  with `AutomationRunFilter::new(status)` selecting the run state.
+- `test(id, Data)` takes an email address; `update_email_content(id, email_id, Data)` takes HTML.
+- `AutomationEmailStatsQuery` supplies dates for email reports. Reports outside the public docs
+  keep their complete JSON response as `serde_json::Value`.
+- `automation_template().select(id)` becomes `automation_templates().select(id)` and returns an
+  `Automation`. Building happens in the background, so wait for
+  `trigger_data.building_in_progress` to clear before enabling it.

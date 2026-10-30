@@ -1,5 +1,8 @@
 //! Automations: <https://developers.mailerlite.com/api/automations>
 
+mod workflow;
+pub use workflow::*;
+
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -20,6 +23,12 @@ string_enum! {
         Email => "email",
         /// Branches on a condition.
         Condition => "condition",
+        /// Splits subscribers into test paths.
+        AbTest => "ab_test",
+        /// Calls a webhook.
+        Webhook => "webhook",
+        /// Performs an action.
+        Action => "action",
     }
 }
 
@@ -105,6 +114,9 @@ pub struct Automation {
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct TriggerData {
+    /// Whether a copied or template workflow is still being built in the background.
+    #[serde(default)]
+    pub building_in_progress: Option<bool>,
     /// Whether e-commerce activity is tracked.
     #[serde(default, deserialize_with = "de::null_default")]
     pub track_ecommerce: bool,
