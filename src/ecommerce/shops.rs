@@ -60,9 +60,10 @@ pub struct ShopGroup {
     pub id: Id,
     /// Group name.
     pub name: String,
-    /// Member count.
-    #[serde(default)]
-    pub total: u64,
+    /// Active subscribers in the group. The API sends `active_count` (the docs say `total`;
+    /// both are accepted).
+    #[serde(default, alias = "total", deserialize_with = "de::null_default")]
+    pub active_count: u64,
     /// Open rate.
     #[serde(default)]
     pub open_rate: Rate,
@@ -354,7 +355,7 @@ mod tests {
         assert_eq!(shop.id, "31986843064993537");
         assert_eq!(shop.currency_sign.as_deref(), Some("$"));
         let group = shop.group.as_ref().unwrap();
-        assert_eq!((group.id.as_str(), group.total), ("1", 20));
+        assert_eq!((group.id.as_str(), group.active_count), ("1", 20));
         assert_eq!(group.open_rate.string, "0%");
         assert_eq!(page.meta.per_page, 50);
         assert_eq!(total, 100);

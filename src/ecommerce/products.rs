@@ -56,7 +56,8 @@ pub struct Product {
     /// Creation time.
     #[serde(default)]
     pub created_at: Option<Timestamp>,
-    /// MailerLite shop: product type.
+    /// Product type. Every product reports one (`one-time` unless set); other types only
+    /// exist in the MailerLite shop.
     #[serde(default, rename = "type")]
     pub product_type: Option<ProductType>,
     /// MailerLite shop: ISO 4217 currency code of the product.
@@ -250,7 +251,9 @@ impl ListProducts {
 ///
 /// Products of the **MailerLite shop** additionally require [`price`](Self::price),
 /// [`currency`](Self::currency) and [`settings`](Self::settings) (with at least `action`) on
-/// both create and update; see
+/// both create and update. They only allow the `one-time` and `booking` types, can't have
+/// categories or variants, and `one-time` products also need downloadable `assets`, which this
+/// type can't express yet (use [`MailerLite::request`](crate::MailerLite::request)). See
 /// <https://developers.mailerlite.com/ecommerce/products#mailerlite-shop-products> for the
 /// settings and booking fields.
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -282,8 +285,9 @@ pub struct CreateProduct {
     /// Your own id for the product.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub resource_id: Option<String>,
-    /// Category ids (or category `resource_id`s with `with_resource_id`). Documented for
-    /// [`Imports::products`](super::Imports::products).
+    /// Category ids. They are read as category `resource_id`s whenever the product itself has
+    /// a [`resource_id`](Self::resource_id) (even without `with_resource_id`), otherwise as
+    /// MailerLite category ids. Not allowed for MailerLite shop products.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub categories: Vec<Id>,
     /// MailerLite shop: ISO 4217 currency code.

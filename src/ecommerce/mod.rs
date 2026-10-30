@@ -18,7 +18,9 @@
 //! Call [`ShopScope::with_resource_id`] and every request through that scope carries the
 //! `with_resource_id` flag. In that mode every id *below* the shop is one of your
 //! `resource_id`s: ids in the path and references in request bodies (product categories, cart
-//! item products, ...). The shop itself is still addressed by its MailerLite id.
+//! item products, ...). The shop itself is still addressed by its MailerLite id, and variant
+//! endpoints ([`ShopScope::variants`]) and id filters such as `filter[category]` or
+//! `filter[customer]` always take MailerLite ids.
 //!
 //! ```no_run
 //! # async fn run(client: mailerlite_rs::MailerLite) -> mailerlite_rs::Result<()> {
@@ -146,7 +148,7 @@ impl<'a> ShopScope<'a> {
     /// Switches to your own ids: every request through this scope adds the
     /// `with_resource_id` query flag, so every id in the path below the shop and every id
     /// reference in a request body is read as a `resource_id` you assigned. The shop id
-    /// itself stays the MailerLite shop id.
+    /// itself stays the MailerLite shop id, as do variant endpoints and list id filters.
     #[must_use]
     pub fn with_resource_id(mut self) -> Self {
         self.with_resource_id = true;
@@ -174,10 +176,17 @@ impl<'a> ShopScope<'a> {
     }
 
     /// Variant endpoints of the product `product_id`.
+    ///
+    /// Variant endpoints only take MailerLite ids (product and variant), even on a
+    /// [`with_resource_id`](Self::with_resource_id) scope, and never send the flag: the API
+    /// rejects variant syncs that carry it.
     #[must_use]
     pub fn variants<'s>(&'s self, product_id: &'s str) -> Variants<'s> {
         Variants {
-            scope: self.scope(),
+            scope: Scope {
+                with_resource_id: false,
+                ..self.scope()
+            },
             product_id,
         }
     }

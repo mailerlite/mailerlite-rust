@@ -193,8 +193,9 @@ pub struct CreateOrder {
     /// Your own id for the order.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub resource_id: Option<String>,
-    /// Don't trigger automations for this order (it is then never attributed). Mentioned
-    /// in the revenue attribution docs; not listed in the request body table.
+    /// Record the order without triggering automations (it is then never attributed). For
+    /// imports this per-order value is ignored; use
+    /// [`Imports::orders_without_automations`](super::Imports::orders_without_automations).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub without_automations: Option<bool>,
 }

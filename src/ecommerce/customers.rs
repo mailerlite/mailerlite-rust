@@ -33,10 +33,10 @@ pub struct Customer {
     /// The linked subscriber, or `None` if the customer has none.
     #[serde(default)]
     pub subscriber: Option<Subscriber>,
-    /// Creation time.
+    /// Creation time. Not currently sent by the API, so normally `None`.
     #[serde(default)]
     pub created_at: Option<Timestamp>,
-    /// Last update time.
+    /// Last update time. Not currently sent by the API, so normally `None`.
     #[serde(default)]
     pub updated_at: Option<Timestamp>,
 }
@@ -262,6 +262,9 @@ impl<'a> Customers<'a> {
     }
 
     /// `PUT /ecommerce/shops/{shop_id}/customers/{id}`: updates a customer.
+    ///
+    /// The API matches customers by email: sending a different email than the stored one
+    /// updates (or creates) the customer with that email, not the one at `id`.
     pub async fn update(&self, id: impl AsRef<str>, customer: &CreateCustomer) -> Result<Customer> {
         self.scope
             .call(Method::PUT, &["customers", id.as_ref()])

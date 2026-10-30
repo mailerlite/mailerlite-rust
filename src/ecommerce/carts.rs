@@ -20,7 +20,7 @@ pub struct Cart {
     /// Your own id for the cart, if any.
     #[serde(default)]
     pub resource_id: Option<String>,
-    /// The order the cart belongs to.
+    /// The order the cart belongs to. The API sends `""` for a cart without an order.
     #[serde(default)]
     pub ecommerce_order_id: Option<Id>,
     /// Checkout URL.
@@ -420,6 +420,9 @@ impl<'a> CartItems<'a> {
     }
 
     /// `PUT /ecommerce/shops/{shop_id}/carts/{cart_id}/items/{id}`: updates an item.
+    ///
+    /// Send the full item: an omitted `quantity` resets to 1 and an omitted `variant` to empty.
+    /// The product is always a MailerLite id here, even with `with_resource_id`.
     pub async fn update(&self, id: impl AsRef<str>, item: &CreateCartItem) -> Result<CartItem> {
         self.scope
             .call(Method::PUT, &["carts", self.cart_id, "items", id.as_ref()])

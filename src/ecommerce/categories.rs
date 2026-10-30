@@ -225,8 +225,6 @@ impl<'a> Categories<'a> {
     /// `DELETE /ecommerce/shops/{shop_id}/categories/{id}`: deletes a category and returns
     /// it.
     pub async fn delete(&self, id: impl AsRef<str>) -> Result<Category> {
-        // The API returns the bare category here, without the `data` envelope; `data()`
-        // accepts both.
         self.scope
             .call(Method::DELETE, &["categories", id.as_ref()])
             .data()
@@ -270,7 +268,6 @@ impl<'a> Categories<'a> {
         id: impl AsRef<str>,
         product_id: impl AsRef<str>,
     ) -> Result<Product> {
-        // Bare product, no `data` envelope.
         self.scope
             .call(
                 Method::DELETE,

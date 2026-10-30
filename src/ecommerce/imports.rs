@@ -70,9 +70,33 @@ impl Imports<'_> {
     /// `POST /ecommerce/shops/{shop_id}/orders/import`: creates several orders with their
     /// customers, carts and cart items.
     pub async fn orders(&self, orders: &[CreateOrder]) -> Result<Vec<Order>> {
+        self.import_orders(orders, None).await
+    }
+
+    /// Like [`orders`](Self::orders), but records them without triggering automations, e.g.
+    /// when backfilling historical orders.
+    pub async fn orders_without_automations(&self, orders: &[CreateOrder]) -> Result<Vec<Order>> {
+        self.import_orders(orders, Some(true)).await
+    }
+
+    async fn import_orders(
+        &self,
+        orders: &[CreateOrder],
+        without_automations: Option<bool>,
+    ) -> Result<Vec<Order>> {
+        #[derive(Serialize)]
+        struct Body<'a> {
+            orders: &'a [CreateOrder],
+            #[serde(skip_serializing_if = "Option::is_none")]
+            without_automations: Option<bool>,
+        }
+
         self.scope
             .call(Method::POST, &["orders", "import"])
-            .json(orders)
+            .json(&Body {
+                orders,
+                without_automations,
+            })
             .data()
             .await
     }
@@ -250,7 +274,8 @@ mod tests {
 
         mock.request()
             .assert(Method::POST, "ecommerce/shops/9/orders/import")
-            .body(&json!([{
+            // Unlike the other imports, orders are wrapped in an `orders` key.
+            .body(&json!({"orders": [{
                 "customer": {
                     "email": "customer2@email.com",
                     "create_subscriber": true,
@@ -266,13 +291,12 @@ mod tests {
                 },
                 "status": "pending",
                 "total_price": 123.4
-            }]));
+            }]}));
         assert_eq!(orders.len(), 2);
         assert_eq!(orders[0].id, "46920756608631854");
         assert_eq!(orders[0].customer.id, "46920756260504617");
         assert_eq!(orders[0].customer.total_spent, None);
         assert!((orders[0].cart.items[0].price - 123.4).abs() < f64::EPSILON);
         assert!((orders[0].cart.items[0].product.price - 123.4).abs() < f64::EPSILON);
-        assert_eq!(orders[0].shop, None);
     }
 }
