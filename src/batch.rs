@@ -21,8 +21,8 @@
 //! # Ok(()) }
 //! ```
 //!
-//! A batch consisting only of `POST api/subscribers` items is processed as a bulk import and
-//! counts against the import rate limit (5 per minute) in addition to the global limit.
+//! A batch of at least 20 items that are all `POST api/subscribers` is processed as a bulk
+//! import, and counts against the import limit (20 per minute) in addition to the global limit.
 //! Webhook endpoints are not supported inside batches.
 
 use reqwest::Method;
@@ -38,7 +38,8 @@ pub const MAX_REQUESTS: usize = 50;
 #[derive(Clone, Debug, PartialEq, Serialize)]
 #[non_exhaustive]
 pub struct BatchItem {
-    /// HTTP method: `GET`, `POST`, `PUT`, `DELETE` or `PATCH`.
+    /// HTTP method: `GET`, `POST`, `PUT` or `DELETE` (the API rejects the whole batch for any
+    /// other method).
     #[serde(serialize_with = "method_str")]
     pub method: Method,
     /// Path starting with `api/`, e.g. `api/subscribers/123`.
@@ -141,15 +142,6 @@ impl BatchRequest {
         Ok(self.push(BatchItem::new(Method::PUT, path).json(body)?))
     }
 
-    /// Appends a `PATCH` of `body` to `path`.
-    pub fn patch<B: Serialize + ?Sized>(
-        self,
-        path: impl AsRef<str>,
-        body: &B,
-    ) -> serde_json::Result<Self> {
-        Ok(self.push(BatchItem::new(Method::PATCH, path).json(body)?))
-    }
-
     /// Number of calls.
     #[must_use]
     pub fn len(&self) -> usize {
@@ -246,10 +238,10 @@ impl MailerLite {
 impl Batch<'_> {
     /// `POST /batch`: runs every call in `request` in order.
     ///
-    /// The request as a whole fails (usually [`Error::Validation`]) when MailerLite
-    /// rejects the envelope (e.g. more than [`MAX_REQUESTS`] items or a path not starting with
-    /// `api/`; the docs state these rules but not the status code). Failures of individual
-    /// calls are reported in [`BatchResponse::responses`] instead.
+    /// The request as a whole fails with [`Error::Validation`] when MailerLite rejects the
+    /// envelope (more than [`MAX_REQUESTS`] items, or a method other than `GET`, `POST`, `PUT`
+    /// or `DELETE`). Failures of individual calls are reported in
+    /// [`BatchResponse::responses`] instead.
     pub async fn send(&self, request: &BatchRequest) -> Result<BatchResponse> {
         self.client
             .call(Method::POST, &["batch"])
@@ -281,8 +273,6 @@ mod tests {
             .unwrap()
             .put("/api/groups/1", &json!({"name": "VIP"}))
             .unwrap()
-            .patch("api/x", &json!({}))
-            .unwrap()
             .delete("api/segments/2")
             .push(
                 BatchItem::new(Method::POST, "fields").body(json!({"name": "n", "type": "text"})),
@@ -294,12 +284,11 @@ mod tests {
                 {"method": "GET", "path": "api/fields"},
                 {"method": "POST", "path": "api/subscribers", "body": {"email": "ann@example.com"}},
                 {"method": "PUT", "path": "api/groups/1", "body": {"name": "VIP"}},
-                {"method": "PATCH", "path": "api/x", "body": {}},
                 {"method": "DELETE", "path": "api/segments/2"},
                 {"method": "POST", "path": "api/fields", "body": {"name": "n", "type": "text"}}
             ]
         }));
-        assert_eq!(request.len(), 6);
+        assert_eq!(request.len(), 5);
         assert_eq!(
             (response.total, response.successful, response.failed),
             (1, 1, 0)
