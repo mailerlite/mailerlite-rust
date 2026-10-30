@@ -26,7 +26,10 @@ string_enum! {
 }
 
 /// A signup form.
-#[allow(clippy::struct_excessive_bools)] // mirrors the API's flags
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "mirrors the API's boolean flags"
+)]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct Form {

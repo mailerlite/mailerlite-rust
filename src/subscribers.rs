@@ -198,7 +198,10 @@ pub struct ListSubscribers {
     pub include_groups: bool,
 }
 
-#[allow(clippy::trivially_copy_pass_by_ref)] // signature required by `serialize_with`
+#[expect(
+    clippy::trivially_copy_pass_by_ref,
+    reason = "signature required by `serialize_with`"
+)]
 fn include_groups<S: Serializer>(_: &bool, serializer: S) -> Result<S::Ok, S::Error> {
     serializer.serialize_str("groups")
 }
@@ -547,7 +550,6 @@ pub struct Forgotten {
 /// Progress of a subscriber import.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[non_exhaustive]
-#[allow(clippy::struct_excessive_bools)]
 pub struct ImportStatus {
     /// Import id.
     pub id: Id,

@@ -175,7 +175,7 @@ impl Response {
 
         #[derive(Deserialize)]
         struct HasData {
-            #[allow(dead_code)]
+            #[expect(dead_code, reason = "only deserialized to detect the `data` key")]
             data: IgnoredAny,
         }
 
@@ -194,7 +194,10 @@ impl Response {
 /// without opening sockets and without changing the production base URL.
 #[cfg(test)]
 pub(crate) mod mock {
-    #![allow(clippy::needless_pass_by_value)]
+    #![expect(
+        clippy::needless_pass_by_value,
+        reason = "test helpers take owned values for brevity"
+    )]
 
     use std::{
         collections::VecDeque,
@@ -514,13 +517,13 @@ mod tests {
     async fn decode_errors_name_the_failing_field() {
         #[derive(Debug, serde::Deserialize)]
         struct Shop {
-            #[allow(dead_code)]
+            #[expect(dead_code, reason = "only the decode error matters")]
             items: Vec<Item>,
         }
 
         #[derive(Debug, serde::Deserialize)]
         struct Item {
-            #[allow(dead_code)]
+            #[expect(dead_code, reason = "only the decode error matters")]
             enabled: bool,
         }
 

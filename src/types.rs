@@ -426,12 +426,18 @@ pub(crate) mod de {
                 Ok(Some(value))
             }
 
-            #[allow(clippy::cast_precision_loss)]
+            #[expect(
+                clippy::cast_precision_loss,
+                reason = "amounts and counts beyond 2^53 lose precision as f64"
+            )]
             fn visit_u64<E: de::Error>(self, value: u64) -> Result<Self::Value, E> {
                 Ok(Some(value as f64))
             }
 
-            #[allow(clippy::cast_precision_loss)]
+            #[expect(
+                clippy::cast_precision_loss,
+                reason = "amounts and counts beyond 2^53 lose precision as f64"
+            )]
             fn visit_i64<E: de::Error>(self, value: i64) -> Result<Self::Value, E> {
                 Ok(Some(value as f64))
             }
@@ -527,7 +533,7 @@ mod tests {
 
     use super::*;
 
-    #[allow(unreachable_pub)]
+    #[expect(unreachable_pub, reason = "the macro under test generates `pub` items")]
     mod colour {
         string_enum! {
             /// Test enum.

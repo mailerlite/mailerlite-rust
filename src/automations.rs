@@ -49,7 +49,10 @@ string_enum! {
 /// An automation.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[non_exhaustive]
-#[allow(clippy::struct_excessive_bools)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "mirrors the API's boolean flags"
+)]
 pub struct Automation {
     /// Automation id.
     pub id: Id,

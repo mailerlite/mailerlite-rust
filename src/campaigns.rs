@@ -164,7 +164,10 @@ string_enum! {
 /// A campaign.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[non_exhaustive]
-#[allow(clippy::struct_excessive_bools)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "mirrors the API's boolean flags"
+)]
 pub struct Campaign {
     /// Campaign id.
     pub id: Id,
@@ -274,7 +277,6 @@ pub struct Campaign {
 /// Tracking settings of a [`Campaign`].
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
-#[allow(clippy::struct_excessive_bools)]
 pub struct CampaignSettings {
     /// Whether opens are tracked.
     #[serde(default, deserialize_with = "de::null_default")]
@@ -290,7 +292,6 @@ pub struct CampaignSettings {
 /// An email of a campaign or automation.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[non_exhaustive]
-#[allow(clippy::struct_excessive_bools)]
 pub struct Email {
     /// Email id.
     pub id: Id,
