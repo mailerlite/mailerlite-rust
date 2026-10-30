@@ -12,7 +12,7 @@ and sends JSON instead of form data.
 | `Parameter::new().add("filter[status]", "active")` | Typed queries: `ListSubscribers::new().status(SubscriberStatus::Active)` |
 | `Response { status_code, content: serde_json::Value }` | The model itself (`Subscriber`, `Page<Group>`, ...) or `Error` |
 | Panics on network or JSON errors | `Err(Error::Http(..))` / `Err(Error::Decode { .. })` |
-| Error bodies replaced by the status' reason | `Error::Api(ApiError { status, message, errors, retry_after, .. })` |
+| Error bodies replaced by the status' reason | Typed variants: `Error::Validation` (422, ordered field errors), `Error::RateLimited` (429, `retry_after()`), `Error::Unauthorized`, `Error::NotFound`, `Error::Api` (others) |
 | Body sent as `application/x-www-form-urlencoded` | Body sent as JSON, so nested `fields`, `groups`, campaign `emails`, orders and batches work |
 | `tokio` with every feature pulled in by the SDK | No runtime dependency; bring your own `tokio` |
 | reqwest 0.11 + native TLS | reqwest 0.13 + rustls (switch with the `native-tls` feature) |

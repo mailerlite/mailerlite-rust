@@ -24,7 +24,7 @@ All of these run in CI (`.github/workflows/main.yaml`) and must pass before comm
 | `src/lib.rs` | Crate docs, module list, re-exports, `BASE_URL` |
 | `src/client.rs` | `MailerLite` (`Arc<Inner>`, cheap `Clone`) and `MailerLiteBuilder` |
 | `src/http.rs` | Private request pipeline (`call`, `RawRequest`, `Response::data`), public `MailerLite::request` escape hatch, `#[cfg(test)] mod mock` |
-| `src/error.rs` | `Error`, `ApiError` (status, message, validation `errors`, `retry_after`) |
+| `src/error.rs` | `Error` with typed variants (`Validation`, `RateLimited`, `Unauthorized`, `NotFound`, `Api`, ...), `ValidationError` / `FieldError` (ordered, with paths), `RateLimit`, `ApiError` |
 | `src/pagination.rs` | `Page<T, A>`, `CursorPage<T>`, `stream::{paged, cursored}` for `list_all` (with loop guards) |
 | `src/types.rs` | `Id`, `Timestamp`, `Rate`, `Sort`, `FieldValue`, `string_enum!`, lenient `de::*` deserializers |
 | `src/reports.rs` | E-commerce report types shared by subscribers/campaigns |
@@ -56,7 +56,7 @@ All of these run in CI (`.github/workflows/main.yaml`) and must pass before comm
 - **Method docs** start with `` `METHOD /path`: `` and mention surprising semantics (e.g. `PUT` replacing
   group membership, variant sync deleting variants).
 - Keep it lean: no new dependencies without a clear reason; no retries/backoff in the client (callers
-  decide using `ApiError::retry_after`).
+  decide using `RateLimit::retry_after`).
 
 ## Testing
 

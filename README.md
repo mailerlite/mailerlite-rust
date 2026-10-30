@@ -71,25 +71,45 @@ also pass your own `reqwest::Client` with `.http_client(..)`.
 
 ## Errors and rate limits
 
+The errors you handle in code have their own variant, so you can `match` on them:
+
 ```rust
-match client.subscribers().get("ann@example.com").await {
-    Ok(subscriber) => println!("{}", subscriber.status),
-    Err(err) if err.is_not_found() => println!("no such subscriber"),
-    Err(err) if err.is_rate_limited() => {
-        let wait = err.as_api().and_then(|api| api.retry_after);
-        println!("slow down, retry after {wait:?}");
-    }
-    Err(err) if err.is_validation() => {
-        for (field, messages) in &err.as_api().expect("API error").errors {
-            println!("{field}: {}", messages.join(", "));
+use mailerlite_rs::Error;
+
+match client.subscribers().create(&body).await {
+    Ok(created) => println!("subscribed {}", created.data.email),
+
+    // 422: field errors, in the order MailerLite sent them
+    Err(Error::Validation(invalid)) => {
+        for error in invalid.iter() {
+            form.set_error(error.field(), error.message()); // "email", "The email must be…"
+        }
+        if let Some(messages) = invalid.get("email") { /* … */ }
+        // "groups.1" -> the second group id you sent
+        for error in invalid.iter() {
+            if let Some(i) = error.index_after("groups") { /* body.groups[i] is invalid */ }
         }
     }
-    Err(err) => return Err(err),
+
+    // 429: MailerLite allows 120 requests/minute (5/minute for imports)
+    Err(Error::RateLimited(limit)) => {
+        tokio::time::sleep(limit.retry_after().unwrap_or(Duration::from_secs(60))).await;
+    }
+
+    Err(Error::NotFound(_)) => println!("not found"),
+    Err(other) => return Err(other), // 401, other 4xx/5xx, network, decode
 }
 ```
 
-MailerLite allows 120 requests per minute (5 per minute for imports). The SDK never retries on its
-own, so back off using `retry_after`.
+Every error also prints as one readable line, listing each field error once:
+
+```text
+MailerLite API error 422 Unprocessable Entity: email: The email field must be a valid email address.; groups.1: The selected groups.1 is invalid.
+MailerLite API error 429 Too Many Requests: Too Many Attempts. (retry after 42s)
+failed to decode MailerLite response at `data.status`: invalid type: null, expected a string
+```
+
+The SDK never retries on its own.
 
 ## Pagination
 

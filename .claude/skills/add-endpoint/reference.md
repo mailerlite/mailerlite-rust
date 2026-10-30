@@ -11,7 +11,7 @@ before modelling an endpoint; most decoding bugs come from one of these.
 - Rate limits: **120 requests/minute** globally; **5/minute** for import creation
   (`POST /subscribers/import`, `POST /groups/{id}/import-subscribers`, and batches made only of
   `POST api/subscribers`). `429` carries `Retry-After` (seconds), `X-RateLimit-Limit`,
-  `X-RateLimit-Remaining`. The SDK surfaces all three on `ApiError`; it does not retry.
+  `X-RateLimit-Remaining`. The SDK surfaces all three on `Error::RateLimited` (`RateLimit`); it does not retry.
 - `408` and `5xx` are MailerLite-side errors.
 
 ## Error bodies
@@ -21,7 +21,7 @@ before modelling an endpoint; most decoding bugs come from one of these.
 - Campaign update/schedule can answer `422` with a **bare JSON string** (`"Campaign is not with status
   draft"`).
 - Unassigning a subscriber from a group answers `404` with `{"message": ""}`.
-- All of these are handled by `ApiError::from_parts`.
+- All of these are handled by `Error::from_response` (422 → `Error::Validation`, 429 → `Error::RateLimited`, 401/404 → own variants, rest → `Error::Api`). Field errors keep the API's order.
 
 ## Status codes are inconsistent
 
