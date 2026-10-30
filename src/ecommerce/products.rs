@@ -590,11 +590,19 @@ impl<'a> Products<'a> {
             .await
     }
 
-    /// `PUT /ecommerce/shops/{shop_id}/products/{id}/change-status`: enables (`true`) or
-    /// disables (`false`) a product.
-    pub async fn change_status(self, id: impl AsRef<str>, enabled: bool) -> Result<Product> {
+    /// `PUT /ecommerce/shops/{shop_id}/products/{id}/change-status`: enables a product.
+    pub async fn enable(self, id: impl AsRef<str>) -> Result<Product> {
+        self.change_status(id.as_ref(), true).await
+    }
+
+    /// `PUT /ecommerce/shops/{shop_id}/products/{id}/change-status`: disables a product.
+    pub async fn disable(self, id: impl AsRef<str>) -> Result<Product> {
+        self.change_status(id.as_ref(), false).await
+    }
+
+    async fn change_status(self, id: &str, enabled: bool) -> Result<Product> {
         self.scope
-            .call(Method::PUT, &["products", id.as_ref(), "change-status"])
+            .call(Method::PUT, &["products", id, "change-status"])
             .json(&StatusBody { status: enabled })
             .data()
             .await
@@ -680,9 +688,9 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn get_create_update_change_status_delete() {
+    async fn get_create_update_enable_disable_delete() {
         let (client, mock) = client();
-        for _ in 0..5 {
+        for _ in 0..6 {
             mock.respond(200, fixture("ecommerce_product"));
         }
         let shop = client.ecommerce().shop("9");
@@ -710,7 +718,8 @@ mod tests {
             )
             .await
             .unwrap();
-        products.change_status("4", false).await.unwrap();
+        products.disable("4").await.unwrap();
+        products.enable("4").await.unwrap();
         let deleted = products.delete("4").await.unwrap();
 
         assert_eq!(fetched, deleted);
@@ -736,6 +745,9 @@ mod tests {
             .assert(Method::PUT, "ecommerce/shops/9/products/4/change-status")
             .body(&json!({"status": false}));
         requests[4]
+            .assert(Method::PUT, "ecommerce/shops/9/products/4/change-status")
+            .body(&json!({"status": true}));
+        requests[5]
             .assert(Method::DELETE, "ecommerce/shops/9/products/4")
             .no_body();
     }

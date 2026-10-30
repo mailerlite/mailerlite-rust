@@ -51,7 +51,7 @@ Handle methods are plural now, and e-commerce lives under one scoped handle:
 | `automation().subscribers_activity(id, ..)` | `automations().activity(id, &ListAutomationActivity::new(status))` |
 | `campaign().languages()` | `campaigns().languages()` |
 | `form().get(form_type, ..)` | `forms().list(&FormType::Popup, &ListForms)` |
-| `ecommerce_product().change_status(shop, id, Data)` | `.shop(shop).products().change_status(id, true)` |
+| `ecommerce_product().change_status(shop, id, Data)` | `.shop(shop).products().enable(id)` / `.disable(id)` |
 | `ecommerce_product().assign_categories(..)` | `.shop(shop).products().assign_categories(id, &AssignCategories)` |
 | `ecommerce_product_variant().sync(..)` | `.shop(shop).variants(product).create(&[CreateVariant])` (still a sync, see its docs) |
 | `automation().ecommerce_stats(id, Parameter)` / `ecommerce_orders(id, Parameter)` | `automations().ecommerce_stats(id, &AutomationEcommerceStatsQuery)` / `ecommerce_orders(id, &ListAutomationOrders::new(TimeFrame::Month))` |
