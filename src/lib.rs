@@ -1,153 +1,112 @@
-use automation::Automation;
-use batch::Batch;
-use campaign::Campaign;
-use client::Client;
-use ecommerce_cart::EcommerceCart;
-use ecommerce_cart_item::EcommerceCartItem;
-use ecommerce_category::EcommerceCategory;
-use ecommerce_customer::EcommerceCustomer;
-use ecommerce_import::EcommerceImport;
-use ecommerce_order::EcommerceOrder;
-use ecommerce_product::EcommerceProduct;
-use ecommerce_product_variant::EcommerceProductVariant;
-use ecommerce_setting::EcommerceSetting;
-use ecommerce_shop::EcommerceShop;
-use field::Field;
-use form::Form;
-use group::Group;
-use segment::Segment;
-use subscriber::Subscriber;
-use timezone::Timezone;
-use webhook::Webhook;
+//! Typed, async Rust SDK for the [MailerLite API](https://developers.mailerlite.com/).
+//!
+//! # Quick start
+//!
+//! ```no_run
+//! use mailerlite_rs::{MailerLite, subscribers::CreateSubscriber};
+//!
+//! #[tokio::main]
+//! async fn main() -> mailerlite_rs::Result<()> {
+//!     let client = MailerLite::new(std::env::var("MAILERLITE_API_KEY").unwrap_or_default())?;
+//!
+//!     let upserted = client
+//!         .subscribers()
+//!         .create(&CreateSubscriber::new("ann@example.com").field("name", "Ann"))
+//!         .await?;
+//!     println!("{} (new: {})", upserted.data.id, upserted.created);
+//!
+//!     Ok(())
+//! }
+//! ```
+//!
+//! # Resources
+//!
+//! Every API area has a handle on [`MailerLite`]:
+//! [`subscribers`](MailerLite::subscribers), [`groups`](MailerLite::groups),
+//! [`segments`](MailerLite::segments), [`fields`](MailerLite::fields),
+//! [`forms`](MailerLite::forms), [`automations`](MailerLite::automations),
+//! [`campaigns`](MailerLite::campaigns), [`webhooks`](MailerLite::webhooks),
+//! [`batch`](MailerLite::batch), [`timezones`](MailerLite::timezones) and
+//! [`ecommerce`](MailerLite::ecommerce). Endpoints the SDK does not model yet are reachable
+//! through [`MailerLite::request`].
+//!
+//! # Errors and rate limits
+//!
+//! Every call returns [`Result`]. A non-2xx response becomes [`Error::Api`] carrying the
+//! status, MailerLite's message, per-field validation errors and, on `429 Too Many Requests`,
+//! [`ApiError::retry_after`]. The SDK never retries on its own; MailerLite allows 120 requests
+//! per minute (5 per minute for imports), so back off using `retry_after` when you hit it.
+//!
+//! ```no_run
+//! # async fn run(client: mailerlite_rs::MailerLite) -> mailerlite_rs::Result<()> {
+//! match client.subscribers().get("ann@example.com").await {
+//!     Ok(subscriber) => println!("{:?}", subscriber.status),
+//!     Err(err) if err.is_not_found() => println!("no such subscriber"),
+//!     Err(err) => return Err(err),
+//! }
+//! # Ok(()) }
+//! ```
+//!
+//! # Pagination
+//!
+//! List calls return one [`Page`] or [`CursorPage`]. With the `stream` feature (default),
+//! `list_all` walks every page lazily:
+//!
+//! ```no_run
+//! # #[cfg(feature = "stream")]
+//! # async fn run(client: mailerlite_rs::MailerLite) -> mailerlite_rs::Result<()> {
+//! use futures_util::TryStreamExt;
+//!
+//! let subscribers = client.subscribers();
+//! let mut all = std::pin::pin!(subscribers.list_all(Default::default()));
+//! while let Some(subscriber) = all.try_next().await? {
+//!     println!("{}", subscriber.email);
+//! }
+//! # Ok(()) }
+//! ```
+//!
+//! # Features
+//!
+//! | Feature             | Default | Description                                              |
+//! |---------------------|---------|----------------------------------------------------------|
+//! | `rustls`            | yes     | TLS via rustls.                                          |
+//! | `native-tls`        |         | TLS via the platform's native stack.                     |
+//! | `stream`            | yes     | `list_all` helpers returning a `futures` `Stream`.       |
+//! | `webhook-signature` |         | [`webhook_signature::verify`] for incoming webhooks.     |
+//!
+//! Enable exactly one TLS feature; without one, requests fail because MailerLite is HTTPS-only.
 
-pub mod automation;
+#![cfg_attr(docsrs, feature(doc_cfg))]
+
+mod client;
+mod error;
+mod http;
+pub mod pagination;
+pub mod types;
+
+pub mod automations;
 pub mod batch;
-pub mod campaign;
-pub mod client;
-pub mod data;
-pub mod ecommerce_cart;
-pub mod ecommerce_cart_item;
-pub mod ecommerce_category;
-pub mod ecommerce_customer;
-pub mod ecommerce_import;
-pub mod ecommerce_order;
-pub mod ecommerce_product;
-pub mod ecommerce_product_variant;
-pub mod ecommerce_setting;
-pub mod ecommerce_shop;
-pub mod field;
-pub mod form;
-pub mod group;
-pub mod parameter;
-pub mod response;
-pub mod segment;
-pub mod subscriber;
-pub mod timezone;
-pub mod webhook;
+pub mod campaigns;
+pub mod ecommerce;
+pub mod fields;
+pub mod forms;
+pub mod groups;
+pub mod reports;
+pub mod segments;
+pub mod subscribers;
+pub mod timezones;
+pub mod webhooks;
 
-const BASE_PATH: &str = "https://connect.mailerlite.com/api/";
+#[cfg(feature = "webhook-signature")]
+pub mod webhook_signature;
 
-#[derive(Debug, Clone)]
-pub struct MailerLite {
-    client: Client,
-}
+pub use client::{MailerLite, MailerLiteBuilder};
+pub use error::{ApiError, Error, Result};
+pub use http::RawRequest;
+pub use pagination::{CursorPage, Page};
+pub use reqwest::Method;
+pub use types::{FieldValue, Id, Rate, Sort, Timestamp};
 
-impl MailerLite {
-    pub fn new(api_key: String) -> Self {
-        Self {
-            client: Client::new(api_key),
-        }
-    }
-
-    pub fn subscriber(&self) -> Subscriber {
-        Subscriber::new(self.clone())
-    }
-
-    pub fn campaign(&self) -> Campaign {
-        Campaign::new(self.clone())
-    }
-
-    pub fn group(&self) -> Group {
-        Group::new(self.clone())
-    }
-
-    pub fn segment(&self) -> Segment {
-        Segment::new(self.clone())
-    }
-
-    pub fn field(&self) -> Field {
-        Field::new(self.clone())
-    }
-
-    pub fn form(&self) -> Form {
-        Form::new(self.clone())
-    }
-
-    pub fn automation(&self) -> Automation {
-        Automation::new(self.clone())
-    }
-
-    pub fn webhook(&self) -> Webhook {
-        Webhook::new(self.clone())
-    }
-
-    pub fn batch(&self) -> Batch {
-        Batch::new(self.clone())
-    }
-
-    pub fn timezone(&self) -> Timezone {
-        Timezone::new(self.clone())
-    }
-
-    pub fn ecommerce_shop(&self) -> EcommerceShop {
-        EcommerceShop::new(self.clone())
-    }
-
-    pub fn ecommerce_product(&self) -> EcommerceProduct {
-        EcommerceProduct::new(self.clone())
-    }
-
-    pub fn ecommerce_product_variant(&self) -> EcommerceProductVariant {
-        EcommerceProductVariant::new(self.clone())
-    }
-
-    pub fn ecommerce_category(&self) -> EcommerceCategory {
-        EcommerceCategory::new(self.clone())
-    }
-
-    pub fn ecommerce_customer(&self) -> EcommerceCustomer {
-        EcommerceCustomer::new(self.clone())
-    }
-
-    pub fn ecommerce_order(&self) -> EcommerceOrder {
-        EcommerceOrder::new(self.clone())
-    }
-
-    pub fn ecommerce_cart(&self) -> EcommerceCart {
-        EcommerceCart::new(self.clone())
-    }
-
-    pub fn ecommerce_cart_item(&self) -> EcommerceCartItem {
-        EcommerceCartItem::new(self.clone())
-    }
-
-    pub fn ecommerce_import(&self) -> EcommerceImport {
-        EcommerceImport::new(self.clone())
-    }
-
-    pub fn ecommerce_setting(&self) -> EcommerceSetting {
-        EcommerceSetting::new(self.clone())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn debug_output_hides_api_key() {
-        let mailerlite: MailerLite = MailerLite::new("secret_api_key".to_string());
-
-        assert!(!format!("{mailerlite:?}").contains("secret_api_key"));
-    }
-}
+/// Every request goes to production. For a one-off local run, edit this constant and
+/// revert it before committing.
+const BASE_URL: &str = "https://connect.mailerlite.com/api";

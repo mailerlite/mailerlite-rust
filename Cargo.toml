@@ -2,20 +2,65 @@
 name = "mailerlite-rs"
 version = "1.1.0"
 authors = ["Shuvro Roy <shuvro@mailerlite.com>"]
-edition = "2021"
-description = "MailerLite Rust SDK"
+edition = "2024"
+rust-version = "1.85"
+description = "Typed, async Rust SDK for the MailerLite API"
+documentation = "https://docs.rs/mailerlite-rs"
 readme = "README.md"
 repository = "https://github.com/mailerlite/mailerlite-rust"
 license = "MIT"
-keywords = ["MailerLite", "mailerlite", "sdk", "email", "marketing"]
+keywords = ["mailerlite", "sdk", "email", "marketing", "api"]
+categories = ["api-bindings", "asynchronous", "email", "web-programming::http-client"]
+include = ["src/**/*", "examples/**/*", "README.md", "MIGRATION.md", "CHANGELOG.md", "LICENSE"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+default = ["rustls", "stream"]
+## TLS through rustls (default).
+rustls = ["reqwest/rustls"]
+## TLS through the platform's native stack (OpenSSL / Secure Transport / SChannel).
+native-tls = ["reqwest/native-tls"]
+## `list_all` helpers that walk every page as a `futures::Stream`.
+stream = ["dep:futures-util"]
+## `webhook_signature::verify` for checking the `Signature` header on incoming webhooks.
+webhook-signature = ["dep:hmac", "dep:sha2"]
 
 [dependencies]
-reqwest = { version = "0.11", features = ["json"] }
-tokio = { version = "1", features = ["full"] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
+bytes = "1.12.1"
+futures-util = { version = "0.3.34", optional = true, default-features = false, features = ["std"] }
+hmac = { version = "0.13.0", optional = true }
+reqwest = { version = "0.13.5", default-features = false, features = ["gzip", "http2", "json", "query"] }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+sha2 = { version = "0.11.1", optional = true }
+thiserror = "2.0.21"
 
 [dev-dependencies]
-mockito = "1.0.2"
+http = "1.5.0"
+tokio = { version = "1.54.1", features = ["macros", "rt-multi-thread"] }
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+missing_debug_implementations = "warn"
+unreachable_pub = "warn"
+unused_qualifications = "warn"
+rust_2018_idioms = { level = "warn", priority = -1 }
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(docsrs)"] }
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+# Errors are documented once on `Error`; repeating `# Errors` on ~150 methods adds noise.
+missing_errors_doc = "allow"
+module_name_repetitions = "allow"
+# Handles keep an explicit `'a` so `list_all` streams can outlive the `&self` borrow; with
+# the `stream` feature off the name looks elidable.
+elidable_lifetime_names = "allow"
+dbg_macro = "warn"
+expect_used = "warn"
+panic = "warn"
+todo = "warn"
+unwrap_used = "warn"

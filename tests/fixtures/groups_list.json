@@ -1,0 +1,57 @@
+{
+  "data": [
+    {
+      "id": "1",
+      "name": "dummy group",
+      "active_count": 0,
+      "sent_count": 0,
+      "opens_count": 0,
+      "open_rate": {
+        "float": 0,
+        "string": "0%"
+      },
+      "clicks_count": 0,
+      "click_rate": {
+        "float": 0,
+        "string": "0%"
+      },
+      "unsubscribed_count": 0,
+      "unconfirmed_count": 0,
+      "bounced_count": 0,
+      "junk_count": 0,
+      "created_at": "2022-05-24 11:52:55"
+    }
+  ],
+  "links": {
+    "first": "https://connect.mailerlite.com/api/groups?page=1",
+    "last": "https://connect.mailerlite.com/api/groups?page=1",
+    "prev": null,
+    "next": null
+  },
+  "meta": {
+    "current_page": 1,
+    "from": 1,
+    "last_page": 1,
+    "links": [
+      {
+        "url": null,
+        "label": "&laquo; Previous",
+        "active": false
+      },
+      {
+        "url": "https://connect.mailerlite.com/api/groups?page=1",
+        "label": "1",
+        "active": true
+      },
+      {
+        "url": null,
+        "label": "Next &raquo;",
+        "active": false
+      }
+    ],
+    "path": "https://connect.mailerlite.com/api/groups",
+    "per_page": 100,
+    "to": 1,
+    "total": 1
+  }
+}

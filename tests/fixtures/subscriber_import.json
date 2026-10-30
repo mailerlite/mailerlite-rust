@@ -1,0 +1,46 @@
+{
+  "data": {
+    "id": "47366063630845932",
+    "total": 3,
+    "processed": 3,
+    "imported": 0,
+    "updated": 0,
+    "errored": 3,
+    "percent": 100,
+    "done": true,
+    "file_path": "",
+    "invalid": [],
+    "invalid_count": 0,
+    "mistyped": [],
+    "mistyped_count": 0,
+    "changed": [],
+    "changed_count": 0,
+    "unchanged": [
+      {
+        "id": "47366064023013357",
+        "email": "dummy_one@import.com"
+      },
+      {
+        "id": "47366064023013358",
+        "email": "dummy_two+two@import.com"
+      },
+      {
+        "id": "47366064023013359",
+        "email": "dummy_three@new.com"
+      }
+    ],
+    "unchanged_count": 3,
+    "unsubscribed": [],
+    "unsubscribed_count": 0,
+    "role_based": [],
+    "role_based_count": 0,
+    "banned_import_emails_count": 0,
+    "match_route": "",
+    "source_label": "",
+    "updated_at": "2022-02-18T08:09:58.000000Z",
+    "undone_at": null,
+    "stopped_at": null,
+    "undo_started_at": null,
+    "finished_at": "2022-02-18T08:09:58.000000Z"
+  }
+}

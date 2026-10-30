@@ -1,0 +1,39 @@
+{
+  "data": [
+    {
+      "id": "1235",
+      "log_name": "added_to_group",
+      "subject_id": "1000000000000000",
+      "subject_type": "subscribers",
+      "properties": {
+        "group_name": "test group",
+        "group_id": "1"
+      },
+      "created_at": "2024-05-01 12:43:29",
+      "updated_at": "2024-05-01 12:43:29"
+    },
+    {
+      "id": "1234",
+      "log_name": "activated",
+      "subject_id": "1000000000000000",
+      "subject_type": "subscribers",
+      "properties": [],
+      "created_at": "2024-05-01 12:43:29",
+      "updated_at": "2024-05-01 12:43:29"
+    },
+    {
+      "id": "123456",
+      "log_name": "email_open",
+      "subject_id": "123456",
+      "subject_type": "opens",
+      "properties": {
+        "type": "campaigns",
+        "campaign_id": "123456",
+        "campaign_name": "Example name",
+        "preview_url": "https://example_preview.url"
+      },
+      "created_at": "2024-09-01 00:00:00",
+      "updated_at": "2024-09-01 00:00:00"
+    }
+  ]
+}

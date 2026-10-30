@@ -1,0 +1,34 @@
+{
+  "data": [
+    {
+      "subscriber": {
+        "email": "dummy@mailerlite.com",
+        "id": "56152210168350162"
+      },
+      "total": 20,
+      "updated_at": "2026-09-14 05:44:16",
+      "order": "2 X T-shirt, 1 X Mug",
+      "email": {
+        "id": "66200823885989564",
+        "emailable_type": "campaigns",
+        "subject": "Summer sale",
+        "...": "..."
+      }
+    }
+  ],
+  "links": {
+    "first": "https://connect.mailerlite.com/api/subscribers/56152210168350162/reports/ecommerce/orders?page=1",
+    "last": "https://connect.mailerlite.com/api/subscribers/56152210168350162/reports/ecommerce/orders?page=1",
+    "prev": null,
+    "next": null
+  },
+  "meta": {
+    "current_page": 1,
+    "from": 1,
+    "last_page": 1,
+    "path": "https://connect.mailerlite.com/api/subscribers/56152210168350162/reports/ecommerce/orders",
+    "per_page": 10,
+    "to": 1,
+    "total": 1
+  }
+}

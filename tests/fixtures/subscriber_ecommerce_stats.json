@@ -1,0 +1,10 @@
+{
+  "data": {
+    "ecommerce": {
+      "orders_count": 2,
+      "revenue": 40,
+      "average_order_value": 20,
+      "conversion_rate": "0%"
+    }
+  }
+}
