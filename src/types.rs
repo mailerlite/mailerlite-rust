@@ -60,6 +60,15 @@ macro_rules! string_enum {
             }
         }
 
+        impl ::std::str::FromStr for $name {
+            type Err = ::std::convert::Infallible;
+
+            /// Never fails: unknown values become `Other`.
+            fn from_str(value: &str) -> Result<Self, Self::Err> {
+                Ok(Self::from(value))
+            }
+        }
+
         impl ::serde::Serialize for $name {
             fn serialize<S: ::serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
                 serializer.serialize_str(self.as_str())
@@ -577,6 +586,8 @@ mod tests {
             json!(["red", "dark_blue", "neon"])
         );
         assert_eq!(Colour::DarkBlue.to_string(), "dark_blue");
+        assert_eq!("dark_blue".parse::<Colour>(), Ok(Colour::DarkBlue));
+        assert_eq!("neon".parse::<Colour>(), Ok(Colour::Other("neon".into())));
     }
 
     #[test]
