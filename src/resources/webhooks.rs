@@ -21,12 +21,55 @@ impl<'a> Webhooks<'a> {
     ///
     /// The reference does not document list query parameters; no automatic
     /// traversal is inferred from the example metadata.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.webhooks().list().await?;
+    ///
+    /// for webhook in response.data.data {
+    ///     println!("Subscription ID: {}", webhook.id);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Server rejection returns [`crate::Error::Api`]. HTTP execution may also return
+    /// [`crate::Error::Transport`], [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn list(&self) -> Result<Response<NumberedPage<Webhook>>> {
         self.client
             .request(Method::GET, &["webhooks"], &[], None, OperationPolicy::READ)
             .await
     }
     /// Fetch one subscription.
+    ///
+    /// Signing secrets in the returned model are redacted in debug output. Expose a
+    /// secret only when configuring a trusted receiver; do not print it.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.webhooks().get("123456789").await?;
+    ///
+    /// println!("Subscription ID: {}", response.data.id);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// An empty or dot (`.` or `..`) identifier returns [`crate::Error::Config`]
+    /// before dispatch. Server rejection returns [`crate::Error::Api`]. HTTP execution
+    /// may also return
+    /// [`crate::Error::Transport`], [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn get(&self, id: impl AsRef<str>) -> Result<Response<Webhook>> {
         self.client
             .data(
@@ -39,6 +82,38 @@ impl<'a> Webhooks<'a> {
             .await
     }
     /// Create a subscription without automatic write retries.
+    ///
+    /// Deliveries go to your callback URL; this does not install an HTTP handler.
+    /// Use [`crate::webhooks`] for incoming payload types and optional verification.
+    /// Writes are never automatically replayed. A timeout or transport failure does
+    /// not prove that the server left the resource unchanged.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::{models::webhooks::WebhookEvent, resources::webhooks::CreateWebhook};
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let params = CreateWebhook::new(
+    ///     "https://example.com/webhooks/mailerlite",
+    ///     [WebhookEvent::SubscriberCreated],
+    /// );
+    ///
+    /// let response = mailerlite.webhooks().create(params).await?;
+    ///
+    /// println!("Subscription ID: {}", response.data.id);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Config`] for no events, unknown event values, or batched-only
+    /// events without `batchable(true)`. URL and account rules are server-validated.
+    /// Serialization failures return [`Error::Serialize`]. Server rejection returns
+    /// [`crate::Error::Api`]. HTTP execution may also return
+    /// [`crate::Error::Transport`], [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn create(&self, params: CreateWebhook) -> Result<Response<Webhook>> {
         validate_events(&params.events, params.batchable)?;
         self.client
@@ -52,6 +127,38 @@ impl<'a> Webhooks<'a> {
             .await
     }
     /// Update selected subscription properties.
+    ///
+    /// Omitted properties are unchanged. Supplying events replaces the subscription's
+    /// event selection. This does not verify incoming deliveries. Writes are never
+    /// automatically replayed. A timeout or transport failure does
+    /// not prove that the server left the resource unchanged.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::webhooks::UpdateWebhook;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let params = UpdateWebhook::new().name("Order notifications").enabled(false);
+    ///
+    /// let response = mailerlite.webhooks().update("123456789", params).await?;
+    ///
+    /// println!("Updated {}", response.data.id);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// An empty or dot (`.` or `..`) identifier returns [`crate::Error::Config`]
+    /// before dispatch. When events are supplied, an empty/unknown event list or
+    /// batched-only events
+    /// without `batchable(true)` returns [`Error::Config`]. Omitted events are not fetched
+    /// for local validation; the server checks changes against the existing subscription.
+    /// Serialization failures return [`Error::Serialize`]. Server rejection returns
+    /// [`crate::Error::Api`]. HTTP execution may also return
+    /// [`crate::Error::Transport`], [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn update(
         &self,
         id: impl AsRef<str>,
@@ -71,6 +178,30 @@ impl<'a> Webhooks<'a> {
             .await
     }
     /// Delete a subscription.
+    ///
+    /// Removes the subscription. Handling deliveries already in flight remains the
+    /// receiver's responsibility. Writes are never automatically replayed. A timeout or
+    /// transport failure does
+    /// not prove that the server left the resource unchanged.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// mailerlite.webhooks().delete("123456789").await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// An empty or dot (`.` or `..`) identifier returns [`crate::Error::Config`]
+    /// before dispatch. An unexpected success status or a nonempty success body returns
+    /// [`Error::Decode`]. Server rejection returns [`crate::Error::Api`]. HTTP
+    /// execution may also return
+    /// [`crate::Error::Transport`], [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn delete(&self, id: impl AsRef<str>) -> Result<Response<()>> {
         self.client
             .empty(

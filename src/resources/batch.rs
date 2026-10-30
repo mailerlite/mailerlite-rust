@@ -37,6 +37,27 @@ impl BatchRequest {
     ///
     /// Absolute URLs, traversal, encoded separators, fragments, and webhooks
     /// are rejected. Percent-encoding in the query is allowed.
+    ///
+    /// This validates an API-relative path without sending a request. Endpoint-specific
+    /// permissions and payload validation are still the server's responsibility.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mailerlite_rs::resources::batch::{BatchMethod, BatchRequest};
+    ///
+    /// # fn main() -> mailerlite_rs::Result<()> {
+    /// let request = BatchRequest::new(BatchMethod::Get, "api/groups?limit=25")?;
+    /// # let _ = request;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Config`] for paths without the `api/` prefix, empty or dot
+    /// segments, route percent encoding/backslashes/colons, fragments, control
+    /// characters, or webhook-management routes. Percent encoding in queries is allowed.
     pub fn new(method: BatchMethod, path: impl Into<String>) -> Result<Self> {
         let path = path.into();
         let route = path.split('?').next().unwrap_or_default();
@@ -61,6 +82,26 @@ impl BatchRequest {
         })
     }
     /// Add an object body; arrays and scalar bodies are not valid batch bodies.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mailerlite_rs::resources::batch::{BatchMethod, BatchRequest};
+    /// use serde_json::json;
+    ///
+    /// # fn main() -> mailerlite_rs::Result<()> {
+    /// let request = BatchRequest::new(BatchMethod::Post, "api/groups")?
+    ///     .body(json!({"name": "Newsletter readers"}))?;
+    /// # let _ = request;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Serialize`] when the supplied value cannot be serialized, or
+    /// [`Error::Config`] when it serializes to an array, scalar, or null rather than an
+    /// object. This validates only the outer shape, not endpoint-specific fields.
     pub fn body(mut self, value: impl Serialize) -> Result<Self> {
         let value = body(&value)?;
         if !value.is_object() {
@@ -91,6 +132,48 @@ impl<'a> Batch<'a> {
     /// Batches containing only subscriber upserts share the subscriber-import
     /// pacing budget with group imports. Other batches use the global budget.
     /// No batch is automatically replayed, including a batch of read operations.
+    ///
+    /// Outer HTTP success does not imply that every operation succeeded. Inspect each
+    /// item's status before decoding its body. Do not assume that failed items roll
+    /// back successful ones.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::{
+    ///     models::groups::Group,
+    ///     pagination::NumberedPage,
+    ///     resources::batch::{BatchMethod, BatchRequest},
+    /// };
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.batch().send(vec![
+    ///     BatchRequest::new(BatchMethod::Get, "api/groups?limit=25")?,
+    /// ]).await?;
+    ///
+    /// for item in response.data.responses {
+    ///     if item.is_success() {
+    ///         let page: NumberedPage<Group> = item.decode()?;
+    ///
+    ///         println!("{} groups", page.data.len());
+    ///     } else {
+    ///         eprintln!("Batch operation failed: HTTP {}", item.code);
+    ///     }
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Config`] unless there are 1..=50 operations, and
+    /// [`Error::Serialize`] if the batch cannot be serialized. Server rejection returns
+    /// [`crate::Error::Api`]. HTTP execution may also return
+    /// [`crate::Error::Transport`], [`crate::Error::Decode`], or [`crate::Error::Timeout`].
+    /// Individual failed items remain in an otherwise successful [`BatchResult`];
+    /// they are not automatically converted into a top-level `Error::Api`. A timeout
+    /// can leave some operations applied, so inspect outcomes before resubmitting.
     pub async fn send(&self, requests: Vec<BatchRequest>) -> Result<Response<BatchResult>> {
         if requests.is_empty() || requests.len() > 50 {
             return Err(Error::Config(

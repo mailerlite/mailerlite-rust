@@ -71,6 +71,41 @@ impl<'a> Imports<'a> {
         Self { client }
     }
     /// Start a group import; this write is never automatically retried.
+    ///
+    /// Success returns an acceptance receipt, not a completed import. Use
+    /// [`Self::progress`] for one status check or [`Self::wait`] for explicit
+    /// polling. Inspect the final report's outcome counts as well as `done`.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::{MailerLite, resources::imports::ImportSubscriber};
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let receipt = mailerlite.imports().import_to_group(
+    ///     "123456789",
+    ///     vec![ImportSubscriber::new("jane@example.com").field("name", "Jane")],
+    /// ).await?;
+    ///
+    /// let report = mailerlite.imports().progress(&receipt.data).await?;
+    ///
+    /// println!("Completed: {}", report.data.done);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Config`] before dispatch for an empty subscriber list or
+    /// an empty/dot group path segment. Serialization failures return
+    /// [`Error::Serialize`]; API rejection, transport failure, malformed responses,
+    /// and execution deadlines return [`Error::Api`], [`Error::Transport`],
+    /// [`Error::Decode`], or [`Error::Timeout`].
+    ///
+    /// A returned receipt with an invalid progress URL also produces
+    /// [`Error::Config`], but the server may already have accepted the import.
+    /// Likewise, a timeout does not cancel server work; check the outcome before
+    /// submitting the import again.
     pub async fn import_to_group(
         &self,
         group: impl AsRef<str>,
@@ -99,6 +134,29 @@ impl<'a> Imports<'a> {
         Ok(response)
     }
     /// Fetch a report by import identifier.
+    ///
+    /// This performs one status lookup rather than polling. Opt-in read retries
+    /// may make multiple HTTP attempts. It does not wait for `done` to become true.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let report = mailerlite.imports().get("123456789").await?;
+    ///
+    /// println!("Processed {} of {}", report.data.processed, report.data.total);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Config`] for an empty or dot path segment. Rejected
+    /// requests return [`Error::Api`]; HTTP execution may also return
+    /// [`Error::Transport`], [`Error::Decode`], or [`Error::Timeout`]. An unfinished
+    /// report is a successful result, not an error.
     pub async fn get(&self, id: impl AsRef<str>) -> Result<Response<ImportReport>> {
         self.client
             .data(
@@ -111,6 +169,31 @@ impl<'a> Imports<'a> {
             .await
     }
     /// Validate a receipt's origin and exact endpoint, then fetch its report.
+    ///
+    /// The URL must identify the subscriber-import endpoint under the configured
+    /// base URL. The SDK extracts its ID and builds its own request instead of
+    /// following the URL directly.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::{MailerLite, models::imports::ImportReceipt};
+    ///
+    /// # async fn example(mailerlite: &MailerLite, receipt: &ImportReceipt)
+    /// #     -> mailerlite_rs::Result<()> {
+    /// let report = mailerlite.imports().progress(receipt).await?;
+    ///
+    /// println!("Completed: {}", report.data.done);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Config`] without a request if the URL is malformed,
+    /// references another origin or endpoint, contains userinfo, a query, or a
+    /// fragment, or lacks a nonempty digit-only import ID. After validation,
+    /// returns the same HTTP errors as [`Self::get`].
     pub async fn progress(&self, receipt: &ImportReceipt) -> Result<Response<ImportReport>> {
         self.get(self.receipt_id(receipt)?).await
     }
@@ -119,6 +202,37 @@ impl<'a> Imports<'a> {
     /// Fetches sequentially and observes the shared client rate limiter. Dropping
     /// this future cancels further polling. A stopped import without `done=true`
     /// continues until the supplied deadline; inspect reports manually if needed.
+    /// Canceling polling does not cancel the server-side import. Completion means
+    /// `done` is true, not that every subscriber was imported successfully.
+    /// A failed status request ends polling; this method does not restart it.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::{MailerLite, models::imports::ImportReceipt};
+    /// use std::time::Duration;
+    ///
+    /// # async fn example(mailerlite: &MailerLite, receipt: &ImportReceipt)
+    /// #     -> mailerlite_rs::Result<()> {
+    /// let report = mailerlite.imports().wait(
+    ///     receipt,
+    ///     Duration::from_secs(5),
+    ///     Duration::from_secs(300),
+    /// ).await?;
+    ///
+    /// println!("Imported: {}; rejected: {}", report.data.imported, report.data.errored);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Config`] for a zero interval or timeout, a duration beyond
+    /// the supported clock range, or an invalid receipt as described by
+    /// [`Self::progress`]. Returns [`Error::Timeout`] if polling reaches its
+    /// deadline. Errors from individual [`Self::get`] calls also propagate,
+    /// including their own execution timeouts. Retain the receipt to check the
+    /// import later after any polling failure.
     pub async fn wait(
         &self,
         receipt: &ImportReceipt,

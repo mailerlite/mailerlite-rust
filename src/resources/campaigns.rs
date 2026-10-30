@@ -106,10 +106,47 @@ impl<'a> Campaigns<'a> {
         Self { client }
     }
     /// List campaigns. MailerLite defaults its status filter to ready.
+    ///
+    /// This only constructs a request. Choose a status explicitly to list drafts.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::campaigns::CampaignStatus;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let page = mailerlite.campaigns().list()
+    ///     .status(CampaignStatus::Draft).limit(25).send().await?;
+    ///
+    /// println!("{} drafts", page.data.data.len());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn list(&self) -> ListCampaigns<'a> {
         ListCampaigns::new(self.client, vec!["campaigns".into()])
     }
     /// Fetch campaign details.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.campaigns().get("123456789").await?;
+    ///
+    /// println!("{}", response.data.name);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// An empty or dot (`.` or `..`) identifier returns [`crate::Error::Config`]
+    /// before dispatch. Server rejection returns [`crate::Error::Api`]. HTTP execution
+    /// may also return
+    /// [`crate::Error::Transport`], [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn get(&self, id: impl AsRef<str>) -> Result<Response<Campaign>> {
         self.client
             .data(
@@ -122,6 +159,37 @@ impl<'a> Campaigns<'a> {
             .await
     }
     /// Create a draft campaign; sending is a separate operation.
+    ///
+    /// Creating a draft does not send it. Use [`Self::schedule`] to initiate delivery.
+    /// Writes are never automatically replayed. A timeout or transport failure does
+    /// not prove that the server left the resource unchanged.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::campaigns::{CreateCampaign, Email};
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let email = Email::new("Monthly news", "Example team", "sender@example.com");
+    /// let params = CreateCampaign::new("Monthly newsletter", email).groups(["987654321"]);
+    ///
+    /// let response = mailerlite.campaigns().create(params).await?;
+    ///
+    /// println!("Created draft {}", response.data.id);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Config`] for a name outside 1..=255 characters, no emails,
+    /// an invalid A/B test split, a multivariate combination count outside 1..=8,
+    /// or an email count inconsistent with the configured content variations.
+    /// Sender verification, account limits, and other field rules are checked by the
+    /// server. Request serialization can return [`Error::Serialize`]. Server rejection
+    /// returns [`crate::Error::Api`]. HTTP execution may also return
+    /// [`crate::Error::Transport`], [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn create(&self, params: CreateCampaign) -> Result<Response<Campaign>> {
         params.validate()?;
         self.client
@@ -135,6 +203,36 @@ impl<'a> Campaigns<'a> {
             .await
     }
     /// Update an existing draft campaign.
+    ///
+    /// Writes are never automatically replayed. A timeout or transport failure does
+    /// not prove that the server left the resource unchanged.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::campaigns::{Email, UpdateCampaign};
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let email = Email::new("Updated subject", "Example team", "sender@example.com");
+    /// let params = UpdateCampaign::new("Updated newsletter", email);
+    ///
+    /// let response = mailerlite.campaigns().update("123456789", params).await?;
+    ///
+    /// println!("Updated {}", response.data.id);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// An empty or dot (`.` or `..`) identifier returns [`crate::Error::Config`]
+    /// before dispatch. Draft state, sender eligibility, and field validity are checked
+    /// by the server;
+    /// this method does not apply the creation-only local validation rules.
+    /// Serialization failures return [`Error::Serialize`]. Server rejection returns
+    /// [`crate::Error::Api`]. HTTP execution may also return
+    /// [`crate::Error::Transport`], [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn update(
         &self,
         id: impl AsRef<str>,
@@ -151,6 +249,35 @@ impl<'a> Campaigns<'a> {
             .await
     }
     /// Schedule a campaign or send it immediately. This write is never automatically retried.
+    ///
+    /// This can send email to the campaign's recipients. Use a future date for a
+    /// scheduled delivery; success does not mean all messages have been delivered.
+    /// Writes are never automatically replayed. A timeout or transport failure does
+    /// not prove that the server left the resource unchanged.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::campaigns::ScheduleCampaign;
+    ///
+    /// # async fn example(mailerlite: &MailerLite, send_date: &str) -> mailerlite_rs::Result<()> {
+    /// let params = ScheduleCampaign::scheduled(send_date, "10", "00");
+    ///
+    /// let response = mailerlite.campaigns().schedule("123456789", params).await?;
+    ///
+    /// println!("Campaign state: {}", response.data.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// An empty or dot (`.` or `..`) identifier returns [`crate::Error::Config`]
+    /// before dispatch. The server validates dates, delivery mode, campaign readiness, and account
+    /// permissions. Serialization failures return [`Error::Serialize`]. Server
+    /// rejection returns [`crate::Error::Api`]. HTTP execution may also return
+    /// [`crate::Error::Transport`], [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn schedule(
         &self,
         id: impl AsRef<str>,
@@ -167,6 +294,31 @@ impl<'a> Campaigns<'a> {
             .await
     }
     /// Cancel a campaign in the ready state.
+    ///
+    /// The server decides whether the campaign is still cancellable. Cancellation
+    /// does not recall messages already delivered. Writes are never automatically
+    /// replayed. A timeout or transport failure does
+    /// not prove that the server left the resource unchanged.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.campaigns().cancel("123456789").await?;
+    ///
+    /// println!("Campaign state: {}", response.data.status);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// An empty or dot (`.` or `..`) identifier returns [`crate::Error::Config`]
+    /// before dispatch. Server rejection returns [`crate::Error::Api`]. HTTP execution
+    /// may also return
+    /// [`crate::Error::Transport`], [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn cancel(&self, id: impl AsRef<str>) -> Result<Response<Campaign>> {
         self.client
             .data(
@@ -179,6 +331,28 @@ impl<'a> Campaigns<'a> {
             .await
     }
     /// Delete a campaign.
+    ///
+    /// Writes are never automatically replayed. A timeout or transport failure does
+    /// not prove that the server left the resource unchanged.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// mailerlite.campaigns().delete("123456789").await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// An empty or dot (`.` or `..`) identifier returns [`crate::Error::Config`]
+    /// before dispatch. Unexpected success statuses or a nonempty success body return
+    /// [`Error::Decode`]. Server rejection returns [`crate::Error::Api`]. HTTP
+    /// execution may also return
+    /// [`crate::Error::Transport`], [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn delete(&self, id: impl AsRef<str>) -> Result<Response<()>> {
         self.client
             .empty(
@@ -191,6 +365,24 @@ impl<'a> Campaigns<'a> {
             .await
     }
     /// List subscriber activity for a sent campaign.
+    ///
+    /// This constructs a numbered-page request; nothing is fetched until `.send()`
+    /// or stream consumption. See [`ListCampaignActivity::send`] for validation.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::campaigns::ActivityType;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let page = mailerlite.campaigns().activity("123456789")
+    ///     .kind(ActivityType::Opened).limit(25).send().await?;
+    ///
+    /// println!("{} activity records", page.data.data.len());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn activity(&self, id: impl AsRef<str>) -> ListCampaignActivity<'a> {
         ListCampaignActivity::new(
             self.client,
@@ -245,6 +437,27 @@ impl<'a> ListCampaigns<'a> {
         self
     }
     /// Fetch one page.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::campaigns::CampaignStatus;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let page = mailerlite.campaigns().list()
+    ///     .status(CampaignStatus::Sent).page(1).limit(25).send().await?;
+    ///
+    /// println!("Next page: {:?}", page.data.next_page());
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// A zero page or limit returns [`Error::Config`] before any request. Server
+    /// rejection returns [`crate::Error::Api`]. HTTP execution may also return
+    /// [`crate::Error::Transport`], [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn send(self) -> Result<Response<NumberedPage<Campaign>>> {
         validate_query(&self.query)?;
         let path: Vec<&str> = self.path.iter().map(String::as_str).collect();
@@ -253,6 +466,36 @@ impl<'a> ListCampaigns<'a> {
             .await
     }
     /// Fetch subsequent pages lazily while preserving request filters.
+    ///
+    /// Requires the `stream` feature; this example also uses `futures-util`.
+    /// Each page is fetched on demand from the configured endpoint. Dropping the stream
+    /// stops further requests. The operation deadline applies per page, not per stream.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use futures_util::TryStreamExt;
+    /// use mailerlite_rs::resources::campaigns::CampaignStatus;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let campaigns = mailerlite.campaigns();
+    /// let stream = campaigns.list().status(CampaignStatus::Sent).limit(25).into_stream();
+    /// tokio::pin!(stream);
+    ///
+    /// while let Some(campaign) = stream.try_next().await? {
+    ///     let _ = campaign; // Process one record at a time.
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Errors are yielded as items. Invalid parameters (a zero page or limit)
+    /// yield [`Error::Config`] before dispatch. Page fetches yield the errors described
+    /// by [`Self::send`]; an unexpected server page number yields [`Error::Pagination`].
+    /// The stream stops after an error; already yielded items are not rolled back.
     #[cfg(feature = "stream")]
     pub fn into_stream(self) -> impl futures_core::Stream<Item = Result<Campaign>> + 'a {
         crate::pagination::validated_stream(
@@ -314,6 +557,28 @@ impl<'a> ListCampaignActivity<'a> {
         self
     }
     /// Fetch one page.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::campaigns::ActivityType;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let page = mailerlite.campaigns().activity("123456789")
+    ///     .kind(ActivityType::Clicked).page(1).limit(25).send().await?;
+    ///
+    /// println!("{} activity records", page.data.data.len());
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Config`] before dispatch for a zero page, a limit other than
+    /// 10, 25, 50, or 100, or an empty/dot campaign ID. The server validates other
+    /// filters. Server rejection returns [`crate::Error::Api`]. HTTP execution may also return
+    /// [`crate::Error::Transport`], [`crate::Error::Decode`], or [`crate::Error::Timeout`].
     pub async fn send(self) -> Result<Response<NumberedPage<CampaignActivity>>> {
         validate_activity_query(&self.query)?;
         let path: Vec<&str> = self.path.iter().map(String::as_str).collect();
@@ -322,6 +587,37 @@ impl<'a> ListCampaignActivity<'a> {
             .await
     }
     /// Fetch subsequent pages lazily while preserving request filters.
+    ///
+    /// Requires the `stream` feature; this example also uses `futures-util`.
+    /// Each page is fetched on demand from the configured endpoint. Dropping the stream
+    /// stops further requests. The operation deadline applies per page, not per stream.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use futures_util::TryStreamExt;
+    /// use mailerlite_rs::resources::campaigns::ActivityType;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let campaigns = mailerlite.campaigns();
+    /// let stream = campaigns.activity("123456789").kind(ActivityType::Opened).limit(25).into_stream();
+    /// tokio::pin!(stream);
+    ///
+    /// while let Some(activity) = stream.try_next().await? {
+    ///     let _ = activity; // Process one record at a time.
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Errors are yielded as items. Invalid parameters (an invalid campaign ID, zero
+    /// page, or a limit outside 10/25/50/100)
+    /// yield [`Error::Config`] before dispatch. Page fetches yield the errors described
+    /// by [`Self::send`]; an unexpected server page number yields [`Error::Pagination`].
+    /// The stream stops after an error; already yielded items are not rolled back.
     #[cfg(feature = "stream")]
     pub fn into_stream(self) -> impl futures_core::Stream<Item = Result<CampaignActivity>> + 'a {
         crate::pagination::validated_stream(
