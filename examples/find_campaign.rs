@@ -1,14 +1,16 @@
-use mailerlite_rs::{response::Response, MailerLite};
+//! Fetch an existing campaign by ID.
+//!
+//! Required environment variables: `MAILERLITE_API_TOKEN`, `MAILERLITE_CAMPAIGN_ID`.
+use mailerlite_rs::MailerLite;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Campaign ID");
-
-    let response: Response = mailerlite.campaign().find(id).await;
-
-    println!("{:#?}", response);
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let id = std::env::var("MAILERLITE_CAMPAIGN_ID")?;
+    let response = mailerlite.campaigns().get(id).await?;
+    println!(
+        "{}: {} ({})",
+        response.data.id, response.data.name, response.data.status
+    );
+    Ok(())
 }
