@@ -214,19 +214,19 @@ impl BatchResult {
     /// key next to other fields (e.g. paginated lists or a forgotten subscriber).
     pub fn decode<T: DeserializeOwned>(&self) -> Result<T> {
         match self.body.get("data") {
-            Some(data) => T::deserialize(data).map_err(|err| self.decode_error(err)),
+            Some(data) => T::deserialize(data).map_err(|err| decode_error::<T>(err, data)),
             None => self.decode_body(),
         }
     }
 
     /// Decodes the whole body into `T` without unwrapping `data`.
     pub fn decode_body<T: DeserializeOwned>(&self) -> Result<T> {
-        T::deserialize(&self.body).map_err(|err| self.decode_error(err))
+        T::deserialize(&self.body).map_err(|err| decode_error::<T>(err, &self.body))
     }
+}
 
-    fn decode_error(&self, err: serde_json::Error) -> Error {
-        Error::decode(err, &serde_json::to_vec(&self.body).unwrap_or_default())
-    }
+fn decode_error<T: DeserializeOwned>(err: serde_json::Error, value: &Value) -> Error {
+    Error::decode::<T>(err, &serde_json::to_vec(value).unwrap_or_default())
 }
 
 /// The batch endpoint. Obtained with [`MailerLite::batch`].
@@ -246,7 +246,7 @@ impl MailerLite {
 impl Batch<'_> {
     /// `POST /batch`: runs every call in `request` in order.
     ///
-    /// The request as a whole fails with [`Error::Api`] when MailerLite
+    /// The request as a whole fails (usually [`Error::Validation`]) when MailerLite
     /// rejects the envelope (e.g. more than [`MAX_REQUESTS`] items or a path not starting with
     /// `api/`; the docs state these rules but not the status code). Failures of individual
     /// calls are reported in [`BatchResponse::responses`] instead.

@@ -32,17 +32,27 @@
 //!
 //! # Errors and rate limits
 //!
-//! Every call returns [`Result`]. A non-2xx response becomes [`Error::Api`] carrying the
-//! status, MailerLite's message, per-field validation errors and, on `429 Too Many Requests`,
-//! [`ApiError::retry_after`]. The SDK never retries on its own; MailerLite allows 120 requests
-//! per minute (5 per minute for imports), so back off using `retry_after` when you hit it.
+//! Every call returns [`Result`]. The errors you handle in code have their own [`Error`] variant:
+//! [`Error::Validation`] (`422`, with per-field errors in the order the API sent them),
+//! [`Error::RateLimited`] (`429`, with [`RateLimit::retry_after`]), [`Error::Unauthorized`]
+//! (`401`), [`Error::NotFound`] (`404`) and [`Error::Api`] for any other non-2xx response.
+//! The SDK never retries on its own; MailerLite allows 120 requests per minute (5 per minute
+//! for imports).
 //!
 //! ```no_run
 //! # async fn run(client: mailerlite_rs::MailerLite) -> mailerlite_rs::Result<()> {
-//! match client.subscribers().get("ann@example.com").await {
-//!     Ok(subscriber) => println!("{:?}", subscriber.status),
-//!     Err(err) if err.is_not_found() => println!("no such subscriber"),
-//!     Err(err) => return Err(err),
+//! use mailerlite_rs::{Error, subscribers::CreateSubscriber};
+//!
+//! match client.subscribers().create(&CreateSubscriber::new("ann@example")).await {
+//!     Ok(created) => println!("subscribed {}", created.data.email),
+//!     Err(Error::Validation(invalid)) => {
+//!         for error in invalid.iter() {
+//!             eprintln!("{}: {}", error.field(), error.message());
+//!         }
+//!     }
+//!     Err(Error::RateLimited(limit)) => eprintln!("retry in {:?}", limit.retry_after()),
+//!     Err(Error::NotFound(_)) => eprintln!("no such subscriber"),
+//!     Err(other) => return Err(other),
 //! }
 //! # Ok(()) }
 //! ```
@@ -101,7 +111,7 @@ pub mod webhooks;
 pub mod webhook_signature;
 
 pub use client::{MailerLite, MailerLiteBuilder};
-pub use error::{ApiError, Error, Result};
+pub use error::{ApiError, Error, FieldError, PathSegment, RateLimit, Result, ValidationError};
 pub use http::RawRequest;
 pub use pagination::{CursorPage, Page};
 pub use reqwest::Method;

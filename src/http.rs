@@ -7,7 +7,7 @@ use serde::{
     de::{DeserializeOwned, IgnoredAny},
 };
 
-use crate::{ApiError, Error, MailerLite, Result};
+use crate::{Error, MailerLite, Result};
 
 /// A request to any MailerLite endpoint, including ones this SDK does not model yet.
 ///
@@ -146,7 +146,7 @@ async fn finish(response: reqwest::Response) -> Result<Response> {
     } else {
         let headers = response.headers().clone();
         let body = response.bytes().await?;
-        Err(ApiError::from_parts(status, &headers, &body).into())
+        Err(Error::from_response(status, &headers, &body))
     }
 }
 
@@ -158,7 +158,7 @@ impl Response {
         } else {
             &self.body
         };
-        serde_json::from_slice(body).map_err(|err| Error::decode(err, &self.body))
+        serde_json::from_slice(body).map_err(|err| Error::decode::<T>(err, body))
     }
 
     /// Decodes `{"data": T}`. Also accepts a bare `T`, which a few e-commerce delete
@@ -182,10 +182,10 @@ impl Response {
         match serde_json::from_slice::<Envelope<T>>(&self.body) {
             Ok(envelope) => Ok(envelope.data),
             Err(err) if serde_json::from_slice::<HasData>(&self.body).is_ok() => {
-                Err(Error::decode(err, &self.body))
+                Err(Error::decode::<Envelope<T>>(err, &self.body))
             }
             Err(_) => serde_json::from_slice::<T>(&self.body)
-                .map_err(|err| Error::decode(err, &self.body)),
+                .map_err(|err| Error::decode::<T>(err, &self.body)),
         }
     }
 }
@@ -429,10 +429,12 @@ mod tests {
             .send_empty()
             .await
             .unwrap_err();
-        let api = err.as_api().unwrap();
-        assert!(err.is_rate_limited());
-        assert_eq!(api.message, "Too Many Attempts.");
-        assert_eq!(api.retry_after, Some(Duration::from_secs(30)));
+        let crate::Error::RateLimited(limit) = &err else {
+            panic!("expected Error::RateLimited, got {err:?}");
+        };
+        assert_eq!(limit.message(), "Too Many Attempts.");
+        assert_eq!(limit.retry_after(), Some(Duration::from_secs(30)));
+        assert_eq!(limit.remaining(), Some(0));
 
         mock.respond(401, json!({"message": "Unauthenticated."}));
         let err = client
@@ -440,7 +442,7 @@ mod tests {
             .send_empty()
             .await
             .unwrap_err();
-        assert!(err.as_api().unwrap().is_unauthorized());
+        assert!(matches!(err, crate::Error::Unauthorized(_)), "{err:?}");
     }
 
     #[tokio::test]
@@ -506,5 +508,41 @@ mod tests {
             .iter()
             .collect();
         assert_eq!(content_types, ["application/json"]);
+    }
+
+    #[tokio::test]
+    async fn decode_errors_name_the_failing_field() {
+        #[derive(Debug, serde::Deserialize)]
+        struct Shop {
+            #[allow(dead_code)]
+            items: Vec<Item>,
+        }
+
+        #[derive(Debug, serde::Deserialize)]
+        struct Item {
+            #[allow(dead_code)]
+            enabled: bool,
+        }
+
+        let (client, mock) = mock::client();
+        mock.respond(
+            200,
+            json!({"data": {"items": [{"enabled": true}, {"enabled": null}]}}),
+        );
+
+        let err = client
+            .call(Method::GET, &["x"])
+            .data::<Shop>()
+            .await
+            .unwrap_err();
+
+        assert!(
+            matches!(&err, crate::Error::Decode { path: Some(path), .. } if path == "data.items[1].enabled"),
+            "{err:?}"
+        );
+        assert!(
+            err.to_string().contains("at `data.items[1].enabled`"),
+            "{err}"
+        );
     }
 }

@@ -1908,10 +1908,9 @@ mod tests {
             .await
             .unwrap_err();
 
-        assert_eq!(
-            err.as_api().unwrap().message,
-            "Campaign is not with status draft"
-        );
+        let invalid = err.validation().expect("422 is a validation error");
+        assert_eq!(invalid.message(), "Campaign is not with status draft");
+        assert!(invalid.is_empty());
     }
 
     #[tokio::test]
