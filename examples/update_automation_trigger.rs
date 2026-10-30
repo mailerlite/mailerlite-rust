@@ -10,6 +10,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let automation_id = std::env::var("MAILERLITE_AUTOMATION_ID")?;
     let trigger_id = std::env::var("MAILERLITE_TRIGGER_ID")?;
     let group_id = std::env::var("MAILERLITE_GROUP_ID")?;
+
     let response = mailerlite
         .automation_triggers()
         .update(
@@ -18,6 +19,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             UpdateAutomationTrigger::new().group_ids([group_id]),
         )
         .await?;
+
     println!("HTTP {}", response.metadata.status);
+
     Ok(())
 }

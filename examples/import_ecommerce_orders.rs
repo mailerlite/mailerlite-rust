@@ -23,12 +23,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ]),
     )
     .total_price(Decimal::new(1999, 2));
+
     let response = mailerlite
         .ecommerce()
         .shop(shop_id)
         .orders()
         .import(vec![entry])
         .await?;
+
     println!("Returned {} entries", response.data.len());
+
     Ok(())
 }

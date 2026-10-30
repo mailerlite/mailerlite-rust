@@ -21,6 +21,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     )
     .price_type(PriceType::Fixed)
     .price(Decimal::new(1999, 2));
+
     let response = mailerlite
         .ecommerce()
         .shop(shop_id)
@@ -28,6 +29,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .variants(product_id)
         .create(vec![variant])
         .await?;
+
     println!("{}", response.data.id);
+
     Ok(())
 }

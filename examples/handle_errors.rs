@@ -7,10 +7,12 @@ use mailerlite_rs::{Error, MailerLite};
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
     let id = std::env::var("MAILERLITE_SUBSCRIBER_ID")?;
+
     match mailerlite.subscribers().get(id).await {
         Ok(response) => println!("{}", response.data.id),
         Err(Error::Api(error)) => {
             eprintln!("HTTP {}", error.status());
+
             if error.is_validation() {
                 for field in error.validation_errors().keys() {
                     eprintln!("Invalid field: {field}");
@@ -26,5 +28,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Err(Error::Decode(error)) => eprintln!("Unexpected response at HTTP {}", error.status()),
         Err(error) => return Err(error.into()),
     }
+
     Ok(())
 }

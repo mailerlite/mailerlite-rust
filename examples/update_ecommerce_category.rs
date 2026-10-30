@@ -11,12 +11,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let category_id = std::env::var("MAILERLITE_CATEGORY_ID")?;
 
     let params = SaveCategory::new("Example category");
+
     let response = mailerlite
         .ecommerce()
         .shop(shop_id)
         .categories()
         .update(category_id, params)
         .await?;
+
     println!("{}", response.data.id);
+
     Ok(())
 }

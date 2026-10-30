@@ -6,6 +6,7 @@ use mailerlite_rs::MailerLite;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+
     let response = mailerlite
         .automation_templates()
         .list()
@@ -13,6 +14,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .limit(10)
         .send()
         .await?;
+
     println!("HTTP {}", response.metadata.status);
+
     Ok(())
 }

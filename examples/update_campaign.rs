@@ -12,14 +12,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let id = std::env::var("MAILERLITE_CAMPAIGN_ID")?;
     let sender = std::env::var("MAILERLITE_SENDER_EMAIL")?;
     let sender_name = std::env::var("MAILERLITE_SENDER_NAME")?;
+
     let email = Email::new("Updated newsletter subject", sender_name, sender);
+
     let response = mailerlite
         .campaigns()
         .update(id, UpdateCampaign::new("Updated newsletter", email))
         .await?;
+
     println!(
         "Updated campaign {}: {}",
         response.data.id, response.data.name
     );
+
     Ok(())
 }

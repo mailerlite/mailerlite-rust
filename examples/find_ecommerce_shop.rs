@@ -9,6 +9,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let shop_id = std::env::var("MAILERLITE_SHOP_ID")?;
 
     let response = mailerlite.ecommerce().get(shop_id).await?;
+
     println!("{}", response.data.id);
+
     Ok(())
 }

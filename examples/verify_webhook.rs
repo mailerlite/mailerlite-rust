@@ -35,6 +35,7 @@ fn receive(
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let payload = receive(SECRET, SIGNATURE, BODY)?;
+
     match payload {
         WebhookPayload::Single(WebhookEvent::SubscriberCreated(event)) => {
             println!(
@@ -49,6 +50,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Always verify the original request bytes before decoding or reformatting them.
     let mut tampered = BODY.to_vec();
     tampered.push(b' ');
+
     match receive(SECRET, SIGNATURE, &tampered) {
         Err(error)
             if matches!(
@@ -61,5 +63,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Err(error) => return Err(error),
         Ok(_) => return Err("modified body was unexpectedly accepted".into()),
     }
+
     Ok(())
 }

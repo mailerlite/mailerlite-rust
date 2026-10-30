@@ -8,14 +8,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
     let automation_id = std::env::var("MAILERLITE_AUTOMATION_ID")?;
     let step_id = std::env::var("MAILERLITE_STEP_ID")?;
+
     let response = mailerlite
         .automation_steps()
         .ab_stat(automation_id, step_id)
         .await?;
+
     println!(
         "Step {} has {} active paths",
         response.data.step_id,
         response.data.stats.len()
     );
+
     Ok(())
 }

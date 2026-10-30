@@ -15,6 +15,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let params = SaveCartItem::new(product_id)
         .quantity(1)
         .price(Decimal::new(1999, 2));
+
     let response = mailerlite
         .ecommerce()
         .shop(shop_id)
@@ -22,6 +23,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .items(cart_id)
         .create(params)
         .await?;
+
     println!("{}", response.data.id);
+
     Ok(())
 }

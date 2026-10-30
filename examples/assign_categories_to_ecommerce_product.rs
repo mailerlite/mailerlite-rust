@@ -16,6 +16,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .products()
         .assign_categories(product_id, vec![category_id], false)
         .await?;
+
     println!("{}", response.data.id);
+
     Ok(())
 }

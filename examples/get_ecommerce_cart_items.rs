@@ -18,8 +18,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .limit(25)
         .send()
         .await?;
+
     for item in response.data.data {
         println!("{}", item.id);
     }
+
     Ok(())
 }

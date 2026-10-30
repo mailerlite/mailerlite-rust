@@ -11,12 +11,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let customer_email = std::env::var("MAILERLITE_CUSTOMER_EMAIL")?;
 
     let params = SaveCustomer::new(customer_email);
+
     let response = mailerlite
         .ecommerce()
         .shop(shop_id)
         .customers()
         .create(params)
         .await?;
+
     println!("{}", response.data.id);
+
     Ok(())
 }

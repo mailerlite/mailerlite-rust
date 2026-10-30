@@ -12,12 +12,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let product_id = std::env::var("MAILERLITE_PRODUCT_ID")?;
 
     let params = SaveProduct::new("Example product").price(Decimal::new(1999, 2));
+
     let response = mailerlite
         .ecommerce()
         .shop(shop_id)
         .products()
         .update(product_id, params)
         .await?;
+
     println!("{}", response.data.id);
+
     Ok(())
 }

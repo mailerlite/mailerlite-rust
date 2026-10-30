@@ -15,8 +15,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .limit(25)
         .send()
         .await?;
+
     for order in response.data.data {
         println!("{}: {}", order.updated_at, order.total);
     }
+
     Ok(())
 }

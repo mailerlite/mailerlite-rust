@@ -10,10 +10,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
     let id = std::env::var("MAILERLITE_GROUP_ID")?;
     let name = std::env::var("MAILERLITE_GROUP_NAME")?;
+
     let group = mailerlite
         .groups()
         .update(id, UpdateGroup::new(name))
         .await?;
+
     println!("Updated group: {} ({})", group.data.id, group.data.name);
+
     Ok(())
 }

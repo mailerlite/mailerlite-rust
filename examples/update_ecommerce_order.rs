@@ -11,12 +11,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let order_id = std::env::var("MAILERLITE_ORDER_ID")?;
 
     let params = UpdateOrder::new().status(OrderStatus::Complete);
+
     let response = mailerlite
         .ecommerce()
         .shop(shop_id)
         .orders()
         .update(order_id, params)
         .await?;
+
     println!("{}", response.data.id);
+
     Ok(())
 }

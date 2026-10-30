@@ -7,6 +7,7 @@ use mailerlite_rs::{
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+
     let response = mailerlite
         .batch()
         .send(vec![
@@ -14,6 +15,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             BatchRequest::new(BatchMethod::Get, "api/fields?limit=25")?,
         ])
         .await?;
+
     for (index, item) in response.data.responses.iter().enumerate() {
         println!(
             "Operation {index}: HTTP {}, success={}",
@@ -21,5 +23,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             item.is_success()
         );
     }
+
     Ok(())
 }

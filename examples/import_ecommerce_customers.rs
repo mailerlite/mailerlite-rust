@@ -11,12 +11,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let customer_email = std::env::var("MAILERLITE_CUSTOMER_EMAIL")?;
 
     let entry = ImportCustomer::new(SaveCustomer::new(customer_email));
+
     let response = mailerlite
         .ecommerce()
         .shop(shop_id)
         .customers()
         .import(vec![entry])
         .await?;
+
     println!("Returned {} entries", response.data.len());
+
     Ok(())
 }

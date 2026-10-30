@@ -10,12 +10,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let shop_id = std::env::var("MAILERLITE_SHOP_ID")?;
 
     let entry = SaveCategory::new("Example category");
+
     let response = mailerlite
         .ecommerce()
         .shop(shop_id)
         .categories()
         .import(vec![entry])
         .await?;
+
     println!("Returned {} entries", response.data.len());
+
     Ok(())
 }

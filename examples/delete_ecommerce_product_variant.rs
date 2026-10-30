@@ -17,6 +17,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .variants(product_id)
         .delete(variant_id)
         .await?;
+
     println!("{}", response.data.id);
+
     Ok(())
 }

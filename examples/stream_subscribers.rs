@@ -7,6 +7,7 @@ use mailerlite_rs::{MailerLite, models::subscribers::SubscriberStatus};
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+
     let subscribers = mailerlite.subscribers();
     let stream = subscribers
         .list()
@@ -14,8 +15,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .limit(100)
         .into_stream();
     tokio::pin!(stream);
+
     while let Some(subscriber) = stream.try_next().await? {
         println!("{}", subscriber.id);
     }
+
     Ok(())
 }

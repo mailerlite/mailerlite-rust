@@ -8,6 +8,7 @@ use mailerlite_rs::{MailerLite, models::subscribers::ActivityProperties};
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
     let id = std::env::var("MAILERLITE_SUBSCRIBER_ID")?;
+
     let activity = mailerlite
         .subscribers()
         .activity(id)
@@ -15,8 +16,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .limit(25)
         .send()
         .await?;
+
     for entry in activity.data {
         println!("{}: {}", entry.id, entry.log_name);
+
         match entry.properties {
             ActivityProperties::CampaignEmail(email) => {
                 println!("  Campaign: {}", email.campaign_id);
@@ -31,5 +34,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             _ => {}
         }
     }
+
     Ok(())
 }

@@ -11,7 +11,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let shop_url = std::env::var("MAILERLITE_SHOP_URL")?;
 
     let params = SaveShop::new("Example store", shop_url, "USD");
+
     let response = mailerlite.ecommerce().update(shop_id, params).await?;
+
     println!("{}", response.data.id);
+
     Ok(())
 }

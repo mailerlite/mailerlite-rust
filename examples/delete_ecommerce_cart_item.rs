@@ -17,6 +17,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .items(cart_id)
         .delete(cart_item_id)
         .await?;
+
     println!("{}", response.data.id);
+
     Ok(())
 }

@@ -12,12 +12,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let checkout_url = std::env::var("MAILERLITE_CHECKOUT_URL")?;
 
     let params = UpdateCart::new().checkout_url(checkout_url);
+
     let response = mailerlite
         .ecommerce()
         .shop(shop_id)
         .carts()
         .update(cart_id, params)
         .await?;
+
     println!("{}", response.data.id);
+
     Ok(())
 }

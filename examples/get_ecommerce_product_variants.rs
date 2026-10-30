@@ -16,8 +16,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .variants(product_id)
         .list()
         .await?;
+
     for variant in response.data {
         println!("{}", variant.id);
     }
+
     Ok(())
 }

@@ -8,11 +8,15 @@ use mailerlite_rs::resources::automation_actions::AddAutomationSubscribers;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
     let id = std::env::var("MAILERLITE_AUTOMATION_ID")?;
+
     let params = AddAutomationSubscribers::new()
         .email(std::env::var("MAILERLITE_SUBSCRIBER_EMAIL")?)
         .group(std::env::var("MAILERLITE_GROUP_ID")?)
         .step_id(std::env::var("MAILERLITE_STEP_ID")?);
+
     let response = mailerlite.automations().add_subscribers(id, params).await?;
+
     println!("HTTP {}", response.metadata.status);
+
     Ok(())
 }

@@ -13,9 +13,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .ecommerce()
         .campaign_stats(campaign_id, shop_id)
         .await?;
+
     println!(
         "Orders: {}; revenue: {}",
         response.data.ecommerce.orders_count, response.data.ecommerce.revenue
     );
+
     Ok(())
 }

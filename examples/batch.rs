@@ -11,6 +11,7 @@ use mailerlite_rs::{
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+
     let result = mailerlite
         .batch()
         .send(vec![
@@ -18,12 +19,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             BatchRequest::new(BatchMethod::Get, "api/fields?limit=25")?,
         ])
         .await?;
+
     for (index, item) in result.data.responses.iter().enumerate() {
         println!(
             "Operation {index}: HTTP {}, success={}",
             item.code,
             item.is_success()
         );
+
         if item.is_success() {
             // Batch results retain request order. Decode each body using the
             // endpoint's envelope, rather than assuming one universal schema.
@@ -42,5 +45,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Failed bodies remain available for explicit validation-error decoding.
         // Do not log arbitrary bodies: they may contain submitted sensitive data.
     }
+
     Ok(())
 }

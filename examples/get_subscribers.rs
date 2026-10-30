@@ -8,6 +8,7 @@ use mailerlite_rs::models::subscribers::SubscriberStatus;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+
     let page = mailerlite
         .subscribers()
         .list()
@@ -15,9 +16,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .limit(25)
         .send()
         .await?;
+
     for subscriber in &page.data.data {
         println!("{}: {}", subscriber.id, subscriber.email);
     }
+
     println!("Next cursor: {:?}", page.data.next_cursor());
+
     Ok(())
 }

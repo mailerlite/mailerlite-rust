@@ -8,15 +8,19 @@ use mailerlite_rs::MailerLite;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
     let id = std::env::var("MAILERLITE_SEGMENT_ID")?;
+
     let page = mailerlite
         .segments()
         .subscribers(id)
         .limit(25)
         .send()
         .await?;
+
     for subscriber in &page.data.data {
         println!("{}: {}", subscriber.id, subscriber.email);
     }
+
     println!("Next cursor: {:?}", page.data.next_cursor());
+
     Ok(())
 }

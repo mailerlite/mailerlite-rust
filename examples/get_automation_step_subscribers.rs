@@ -10,6 +10,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let automation_id = std::env::var("MAILERLITE_AUTOMATION_ID")?;
     let step_id = std::env::var("MAILERLITE_STEP_ID")?;
     let subscriber_email = std::env::var("MAILERLITE_SUBSCRIBER_EMAIL")?;
+
     let response = mailerlite
         .automation_steps()
         .subscribers(
@@ -20,10 +21,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .limit(25),
         )
         .await?;
+
     println!(
         "{} subscriber executions; next page: {:?}",
         response.data.data.len(),
         response.data.next_page()
     );
+
     Ok(())
 }

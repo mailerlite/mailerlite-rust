@@ -24,12 +24,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     )
     .status(OrderStatus::Pending)
     .total_price(Decimal::new(1999, 2));
+
     let response = mailerlite
         .ecommerce()
         .shop(shop_id)
         .orders()
         .create(params)
         .await?;
+
     println!("{}", response.data.id);
+
     Ok(())
 }

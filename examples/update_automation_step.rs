@@ -12,6 +12,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
     let automation_id = std::env::var("MAILERLITE_AUTOMATION_ID")?;
     let step_id = std::env::var("MAILERLITE_STEP_ID")?;
+
     let response = mailerlite
         .automation_steps()
         .update(
@@ -25,6 +26,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .reschedule_waiting_subscribers(true),
         )
         .await?;
+
     println!("Updated step {}", response.data.id);
+
     Ok(())
 }

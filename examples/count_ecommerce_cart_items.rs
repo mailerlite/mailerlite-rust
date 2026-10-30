@@ -16,6 +16,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .items(cart_id)
         .count()
         .await?;
+
     println!("{}", response.data.total);
+
     Ok(())
 }

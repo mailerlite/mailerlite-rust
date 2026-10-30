@@ -15,6 +15,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .products()
         .set_enabled(product_id, true)
         .await?;
+
     println!("{}", response.data.id);
+
     Ok(())
 }

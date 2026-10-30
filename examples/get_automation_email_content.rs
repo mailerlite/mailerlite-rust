@@ -8,7 +8,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
     let id = std::env::var("MAILERLITE_AUTOMATION_ID")?;
     let email_id = std::env::var("MAILERLITE_EMAIL_ID")?;
+
     let response = mailerlite.automations().email_content(id, email_id).await?;
+
     println!("Email HTML contains {} bytes", response.data.html.len());
+
     Ok(())
 }

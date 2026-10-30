@@ -9,6 +9,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let shop_id = std::env::var("MAILERLITE_SHOP_ID")?;
 
     let response = mailerlite.ecommerce().shop(shop_id).carts().count().await?;
+
     println!("{}", response.data.total);
+
     Ok(())
 }
