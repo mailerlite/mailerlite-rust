@@ -204,6 +204,25 @@ in their respective files. Template workflow tests belong with the template
 models. Prefer this over a shared `tests.rs` collecting unrelated model tests.
 Keep tests of complete public workflows in the integration suite.
 
+`tests/thread_safety.rs` checks concurrency contracts at compile time: clients,
+configuration, and error types are `Send + Sync`; representative request futures,
+their outputs, and pagination streams are `Send`. It covers every stream
+constructor and checks owned tasks against Tokio's `Send + 'static` bounds.
+These tests construct values but never poll futures or streams, so they need no
+runtime, HTTP server, or API token. Run them with and without `stream`:
+
+```sh
+cargo test --test thread_safety
+cargo test --test thread_safety --all-features
+```
+
+Extend these assertions when adding a new request execution path or stream.
+Test futures using SDK request models and thread-safe arguments; generic methods
+can also accept caller-defined values that are not `Send`. Do not require `Sync`
+or `Unpin` for futures and streams merely to support task execution. A borrowed
+request need not be `'static`; test spawn compatibility by moving a client clone
+into an `async move` block.
+
 When reorganizing tests, preserve assertions and fixture provenance, update
 relative `include_str!` paths, and remove obsolete module declarations and test
 commands. Split mixed scenarios into independently named tests where useful;

@@ -10,6 +10,30 @@ use serde::de::DeserializeOwned;
 use std::{fmt, sync::Arc, time::Duration};
 
 /// Reusable, cheaply cloneable asynchronous MailerLite API client.
+///
+/// The client is `Send + Sync`; clones share the connection pool and rate-limit
+/// state. Request futures using SDK parameter models and thread-safe arguments
+/// can move between threads. Borrowed futures are not necessarily `'static`:
+/// move a client clone into an `async move` block when using `tokio::spawn`.
+///
+/// # Examples
+///
+/// ```
+/// use mailerlite_rs::MailerLite;
+///
+/// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+/// let client = MailerLite::new("api-token")?;
+/// let task_client = client.clone();
+/// let task = tokio::spawn(async move {
+///     task_client.subscribers().get("123").await
+/// });
+///
+/// let response = task.await??;
+///
+/// println!("{}", response.data.id);
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Clone)]
 pub struct MailerLite {
     pub(crate) inner: Arc<Inner>,
