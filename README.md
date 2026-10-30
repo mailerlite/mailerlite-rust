@@ -134,26 +134,31 @@ while let Some(group) = all.try_next().await? {
 
 ## Resources
 
-| Area | Handle | Example |
+| Area | Handle | Examples |
 |---|---|---|
-| Subscribers | `client.subscribers()` | [`examples/subscribers.rs`](examples/subscribers.rs) |
-| Groups | `client.groups()` | [`examples/groups.rs`](examples/groups.rs) |
-| Segments | `client.segments()` | [`examples/segments.rs`](examples/segments.rs) |
-| Fields | `client.fields()` | [`examples/fields.rs`](examples/fields.rs) |
-| Forms | `client.forms()` | [`examples/forms.rs`](examples/forms.rs) |
-| Automations | `client.automations()` | [`examples/automations.rs`](examples/automations.rs) |
-| Campaigns & languages | `client.campaigns()` | [`examples/campaigns.rs`](examples/campaigns.rs) |
-| Webhooks | `client.webhooks()` | [`examples/webhooks.rs`](examples/webhooks.rs) |
-| Batch | `client.batch()` | [`examples/batch.rs`](examples/batch.rs) |
-| Timezones | `client.timezones()` | [`examples/timezones.rs`](examples/timezones.rs) |
-| E-commerce (shops, products, variants, categories, customers, orders, carts, imports, settings) | `client.ecommerce()` | [`examples/ecommerce.rs`](examples/ecommerce.rs), [`examples/ecommerce_resource_ids.rs`](examples/ecommerce_resource_ids.rs) |
+| Subscribers | `client.subscribers()` | [`get_subscribers`](examples/get_subscribers.rs), [`find_subscriber`](examples/find_subscriber.rs), [`create_subscriber`](examples/create_subscriber.rs), … |
+| Groups | `client.groups()` | [`get_groups`](examples/get_groups.rs), [`assign_subscriber_to_group`](examples/assign_subscriber_to_group.rs), [`import_subscribers_to_group`](examples/import_subscribers_to_group.rs), … |
+| Segments | `client.segments()` | [`get_segments`](examples/get_segments.rs), [`get_segment_subscribers`](examples/get_segment_subscribers.rs), … |
+| Fields | `client.fields()` | [`get_fields`](examples/get_fields.rs), [`create_field`](examples/create_field.rs), … |
+| Forms | `client.forms()` | [`get_forms`](examples/get_forms.rs), [`get_form_subscribers`](examples/get_form_subscribers.rs), … |
+| Automations | `client.automations()` | [`get_automations`](examples/get_automations.rs), [`get_subscribers_activity_for_automation`](examples/get_subscribers_activity_for_automation.rs), … |
+| Campaigns & languages | `client.campaigns()` | [`create_campaign`](examples/create_campaign.rs), [`schedule_campaign`](examples/schedule_campaign.rs), [`get_campaign_languages`](examples/get_campaign_languages.rs), … |
+| Webhooks | `client.webhooks()` | [`create_webhook`](examples/create_webhook.rs), [`verify_webhook_signature`](examples/verify_webhook_signature.rs), … |
+| Batch | `client.batch()` | [`create_batch`](examples/create_batch.rs) |
+| Timezones | `client.timezones()` | [`get_timezones`](examples/get_timezones.rs) |
+| E-commerce (shops, products, variants, categories, customers, orders, carts, imports, settings) | `client.ecommerce()` | [`create_ecommerce_shop`](examples/create_ecommerce_shop.rs), [`create_ecommerce_order`](examples/create_ecommerce_order.rs), [`import_ecommerce_products`](examples/import_ecommerce_products.rs), … |
 
-Every method, request builder and model is documented on [docs.rs](https://docs.rs/mailerlite-rs).
-The examples run against your real account (they clean up after themselves):
+There is one small example per endpoint in [`examples/`](examples), named after the call
+(`get_*` lists, `find_*` fetches one, then `create_*`, `update_*`, `delete_*` and so on), plus
+[`stream_subscribers`](examples/stream_subscribers.rs), [`handle_errors`](examples/handle_errors.rs)
+and [`send_raw_request`](examples/send_raw_request.rs). Replace the `"Your … ID"` placeholders and
+run one against your account:
 
 ```sh
-MAILERLITE_API_KEY=... cargo run --example subscribers
+MAILERLITE_API_KEY=... cargo run --example get_subscribers
 ```
+
+Every method, request builder and model is documented on [docs.rs](https://docs.rs/mailerlite-rs).
 
 Endpoints the SDK doesn't model yet are reachable with the same auth and error handling:
 

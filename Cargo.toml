@@ -36,8 +36,12 @@ sha2 = { version = "0.11.1", optional = true }
 thiserror = "2.0.21"
 
 [[example]]
-name = "subscribers"
+name = "stream_subscribers"
 required-features = ["stream"]
+
+[[example]]
+name = "verify_webhook_signature"
+required-features = ["webhook-signature"]
 
 [dev-dependencies]
 http = "1.5.0"

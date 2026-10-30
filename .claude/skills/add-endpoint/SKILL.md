@@ -80,8 +80,11 @@ In the module's `#[cfg(test)] mod tests`:
 
 - Doc comment on every public item (`missing_docs` is on). Add a `no_run` example to new handles or
   non-obvious builders.
-- Update `examples/<area>.rs` if the endpoint is part of a common flow, and the resource table in
-  `README.md` when adding an area. Mention breaking changes in `MIGRATION.md`.
+- Add `examples/<verb>_<resource>.rs` (one call, printed; same shape as `examples/find_subscriber.rs`:
+  key from `MAILERLITE_API_KEY`, `"Your … ID"` placeholders, `main` returning `mailerlite_rs::Result`).
+  Follow the existing names: `get_*` lists, `find_*` fetches one, `create_*`, `update_*`, `delete_*`.
+  Update the resource table in `README.md` when adding an area. Mention breaking changes in
+  `MIGRATION.md`.
 
 ## 7. Verify
 

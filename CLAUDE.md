@@ -31,7 +31,7 @@ All of these run in CI (`.github/workflows/main.yaml`) and must pass before comm
 | `src/<resource>.rs` | One file per API area: handle, request/query builders, models, tests |
 | `src/ecommerce/` | `Ecommerce` handle, `ShopScope` (shop-scoped handles), one file per e-commerce resource |
 | `tests/fixtures/` | Response examples copied verbatim from the API docs |
-| `examples/` | One runnable example per resource (reads `MAILERLITE_API_KEY`) |
+| `examples/` | One small runnable example per endpoint, named after the call (`get_subscribers`, `find_subscriber`, `create_subscriber`, …); reads `MAILERLITE_API_KEY` |
 
 ## Conventions
 
