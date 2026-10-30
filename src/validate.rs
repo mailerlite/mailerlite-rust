@@ -16,28 +16,6 @@ pub(crate) fn path_id(name: &'static str, value: &str) -> Result<(), Error> {
     Ok(())
 }
 
-pub(crate) fn etag(value: &str) -> Result<(), Error> {
-    if value.is_empty() {
-        return Err(Error::EmptyEtag);
-    }
-
-    Ok(())
-}
-
-/// HTTP removes a space at the start or the end, so the API would get a different key.
-pub(crate) fn idempotency_key(key: &str) -> Result<(), Error> {
-    let valid: bool = (1..=255).contains(&key.len())
-        && key.bytes().all(|byte| (0x20..=0x7e).contains(&byte))
-        && !key.starts_with(' ')
-        && !key.ends_with(' ');
-
-    if !valid {
-        return Err(Error::InvalidIdempotencyKey);
-    }
-
-    Ok(())
-}
-
 /// The SDK adds the etag itself.
 pub(crate) fn no_etag_key(extra: &Map<String, Value>) -> Result<(), Error> {
     if extra.contains_key("etag") {
@@ -100,39 +78,6 @@ mod tests {
                 }
                 other => panic!("expected InvalidId for {value:?}, got {other:?}"),
             }
-        }
-    }
-
-    #[test]
-    fn etag_must_not_be_empty() {
-        assert!(etag("42").is_ok());
-        assert!(matches!(etag(""), Err(Error::EmptyEtag)));
-    }
-
-    #[test]
-    fn idempotency_key_accepts_1_to_255_printable_ascii_characters() {
-        assert!(idempotency_key("a").is_ok());
-        assert!(idempotency_key("key with inner spaces").is_ok());
-        assert!(idempotency_key(&"k".repeat(255)).is_ok());
-    }
-
-    #[test]
-    fn idempotency_key_rejects_bad_keys() {
-        let too_long: String = "k".repeat(256);
-        for key in [
-            "",
-            too_long.as_str(),
-            "key\n",
-            "key\t",
-            "clé",
-            "key\x7f",
-            " key",
-            "key ",
-        ] {
-            assert!(
-                matches!(idempotency_key(key), Err(Error::InvalidIdempotencyKey)),
-                "expected InvalidIdempotencyKey for {key:?}"
-            );
         }
     }
 

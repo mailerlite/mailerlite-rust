@@ -711,7 +711,7 @@ These methods edit emails built with the simple editor. To create such an email,
 - The methods return `Result<ApiResponse<T>, Error>`. `ApiResponse` acts like the body, so `response.data` and `response.etag` work. `response.status_code` and `response.headers` give the status code and the headers. These methods do not panic.
 - IDs are strings of the digits 0-9. An empty ID gives `Error::EmptyId`, and an ID with other characters gives `Error::InvalidId`. In these cases, the SDK sends no request.
 - A `4xx` or `5xx` status gives `Error::Api` with a boxed `ApiError`. You can read its fields directly, for example `error.code`. The `ApiError` has `status_code`, `message`, `code`, `etag`, `errors`, `headers` and the raw `body`. A network error gives `Error::Transport`.
-- Each write needs the etag from the last response for the email, and returns a new etag. The etag covers the whole email, so send the writes to one email one after another. An empty etag gives `Error::EmptyEtag`, and the SDK sends no request.
+- Each write needs the etag from the last response for the email, and returns a new etag. The etag covers the whole email, so send the writes to one email one after another. The SDK sends the etag as you give it. An empty etag gives a `422` error from the API.
 - If the email changed after you read it, the write gives a `409` error, and `ApiError::is_version_conflict()` is `true`. Then `ApiError::etag` has the current etag. Get the email again, and then send the write again with the current etag.
 - The keys of `editor_content` are camelCase, for example `textAlign`. The SDK sends them as you give them.
 
@@ -832,7 +832,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ### Insert a block
 
-Inserts a block, and returns the new block and the new etag. Use the block types of `BlockType`. `editor_content` can be an empty map. Without `placement`, the API puts the block at the end of the email. `Placement::before` and `Placement::after` need the ID of a block, and the ID must contain only digits. For the start and the end, the API ignores a block ID, so the SDK does not send it.
+Inserts a block, and returns the new block and the new etag. Use the block types of `BlockType`. `editor_content` can be an empty map. Without `placement`, the API puts the block at the end of the email. `Placement::before` and `Placement::after` need the ID of a block. The SDK sends the placement as you give it, and the API checks it.
 
 <details>
 <summary>
@@ -1386,7 +1386,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 If a write fails with a network error (`Error::Transport`), you do not know if the API did the write. Give the write an idempotency key with `email().with_idempotency_key(key)`, and send the write again with the same key and the same arguments. If the first request was a success, the API returns the stored response and does not do the write two times. Then `response.is_idempotent_replay()` is `true`.
 
 - Use a new key for each write. Do not use an `Email` value that has a key for a different write. The API keeps a key for 24 hours.
-- The key must be 1 to 255 printable ASCII characters, without a space at the start or the end. Otherwise the SDK gives `Error::InvalidIdempotencyKey` and sends no request.
+- The SDK sends the key as you give it. The key must be 1 to 255 printable ASCII characters. Otherwise the API gives a `400` error. HTTP removes a space at the start or the end of the key.
+- If HTTP cannot carry the key, for example because of a new line, the SDK gives `Error::InvalidIdempotencyKey` and sends no request.
 - The same key with different arguments gives a `422` error. If the first request is still running, the API gives a `409` error without a `code`.
 - These methods send the key: `create_block`, `update_block`, `delete_block`, `move_block`, `update_settings`, `create_template`, `create_version` and `restore_version`. The read methods and the validate methods ignore it.
 
@@ -1407,6 +1408,7 @@ use mailerlite_rs::{
     error::Error,
     MailerLite,
 };
+use serde_json::Map;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -1423,7 +1425,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let block: NewBlock = NewBlock {
         block_type: BlockType::Divider,
-        ..Default::default()
+        editor_content: Map::new(),
+        placement: None,
     };
 
     let email: Email = mailerlite.email().with_idempotency_key(idempotency_key);

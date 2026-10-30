@@ -4,6 +4,7 @@ use mailerlite_rs::{
     error::Error,
     MailerLite,
 };
+use serde_json::Map;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -20,7 +21,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let block: NewBlock = NewBlock {
         block_type: BlockType::Divider,
-        ..Default::default()
+        editor_content: Map::new(),
+        placement: None,
     };
 
     let email: Email = mailerlite.email().with_idempotency_key(idempotency_key);

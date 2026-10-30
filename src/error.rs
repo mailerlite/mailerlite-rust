@@ -40,9 +40,7 @@ pub enum Error {
     /// An ID contains a character that is not an ASCII digit.
     #[non_exhaustive]
     InvalidId { name: &'static str, value: String },
-    /// A write has an empty etag.
-    EmptyEtag,
-    /// The idempotency key is not 1 to 255 printable ASCII characters, or it starts or ends with a space.
+    /// The idempotency key has a character that an HTTP header cannot carry, for example a new line.
     InvalidIdempotencyKey,
     /// The `extra` map of the settings has an `etag` key. Give the etag as an argument.
     EtagInSettings,
@@ -71,10 +69,9 @@ impl fmt::Display for Error {
             Error::InvalidId { name, value } => {
                 write!(f, "{name} must contain only the digits 0-9, got {value:?}")
             }
-            Error::EmptyEtag => write!(f, "the etag must not be empty"),
             Error::InvalidIdempotencyKey => write!(
                 f,
-                "the idempotency key must be 1 to 255 printable ASCII characters, without a space at the start or the end"
+                "the idempotency key has a character that an HTTP header cannot carry"
             ),
             Error::EtagInSettings => write!(
                 f,
@@ -279,6 +276,9 @@ mod tests {
             .to_string(),
             "block_id must contain only the digits 0-9, got \"1/html\""
         );
-        assert_eq!(Error::EmptyEtag.to_string(), "the etag must not be empty");
+        assert_eq!(
+            Error::InvalidIdempotencyKey.to_string(),
+            "the idempotency key has a character that an HTTP header cannot carry"
+        );
     }
 }

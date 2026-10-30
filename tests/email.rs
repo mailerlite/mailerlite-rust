@@ -352,7 +352,8 @@ async fn create_block_sends_no_placement_when_there_is_none() {
 
     let block: NewBlock = NewBlock {
         block_type: BlockType::Divider,
-        ..Default::default()
+        editor_content: serde_json::Map::new(),
+        placement: None,
     };
     mailerlite(&server)
         .email()
@@ -384,28 +385,15 @@ fn placement_constructors_give_the_position_and_the_block_id() {
 }
 
 #[tokio::test]
-async fn create_block_checks_the_input_without_a_request() {
+async fn create_block_rejects_bad_ids_without_a_request() {
     let mut server: ServerGuard = Server::new_async().await;
     let mocks: Vec<Mock> = expect_no_request(&mut server).await;
     let email = mailerlite(&server).email();
 
     assert!(matches!(
-        email.create_block("123", "", &new_paragraph(None)).await,
-        Err(Error::EmptyEtag)
-    ));
-    assert!(matches!(
         email.create_block("", "42", &new_paragraph(None)).await,
         Err(Error::EmptyId {
             name: "email_id",
-            ..
-        })
-    ));
-    assert!(matches!(
-        email
-            .create_block("123", "42", &new_paragraph(Some(Placement::after(""))))
-            .await,
-        Err(Error::EmptyId {
-            name: "placement.block_id",
             ..
         })
     ));
@@ -417,18 +405,102 @@ async fn create_block_checks_the_input_without_a_request() {
                 ..
             })
         ));
-        assert!(matches!(
-            email
-                .create_block("123", "42", &new_paragraph(Some(Placement::before(id))))
-                .await,
-            Err(Error::InvalidId {
-                name: "placement.block_id",
-                ..
-            })
-        ));
     }
 
     assert_no_request(&mocks).await;
+}
+
+fn invalid_placement() -> String {
+    json!({
+        "message": "The placement.block_id field is required when placement.position is after.",
+        "errors": {
+            "placement.block_id": [
+                "The placement.block_id field is required when placement.position is after."
+            ]
+        }
+    })
+    .to_string()
+}
+
+#[tokio::test]
+async fn create_block_sends_an_after_placement_without_a_block_id_and_gives_the_api_error() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mock: Mock = expect_request(
+        &mut server,
+        "POST",
+        "/emails/123/blocks",
+        Some(json!({
+            "type": "paragraph",
+            "editor_content": {"attrs": {"textAlign": "center"}, "content": [{"type": "text", "text": "Hi"}]},
+            "placement": {"position": "after"},
+            "etag": "42"
+        })),
+        422,
+        &invalid_placement(),
+    )
+    .await;
+
+    let after: Placement = Placement {
+        position: Position::After,
+        block_id: None,
+    };
+    let error: Error = mailerlite(&server)
+        .email()
+        .create_block("123", "42", &new_paragraph(Some(after)))
+        .await
+        .unwrap_err();
+
+    mock.assert_async().await;
+    match error {
+        Error::Api(error) => {
+            assert_eq!(error.status_code, 422);
+            assert!(error.errors.unwrap().contains_key("placement.block_id"));
+        }
+        other => panic!("expected Error::Api, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn create_block_sends_the_placement_block_id_as_given() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mut mocks: Vec<Mock> = Vec::new();
+    for block_id in ["", "1/2"] {
+        mocks.push(
+            expect_request(
+                &mut server,
+                "POST",
+                "/emails/123/blocks",
+                Some(json!({
+                    "type": "paragraph",
+                    "editor_content": {"attrs": {"textAlign": "center"}, "content": [{"type": "text", "text": "Hi"}]},
+                    "placement": {"position": "before", "block_id": block_id},
+                    "etag": "42"
+                })),
+                422,
+                &invalid_placement(),
+            )
+            .await,
+        );
+    }
+    let email = mailerlite(&server).email();
+
+    for block_id in ["", "1/2"] {
+        let result = email
+            .create_block(
+                "123",
+                "42",
+                &new_paragraph(Some(Placement::before(block_id))),
+            )
+            .await;
+        assert!(
+            matches!(&result, Err(Error::Api(error)) if error.status_code == 422),
+            "expected Error::Api for {block_id:?}, got {result:?}"
+        );
+    }
+
+    for mock in mocks {
+        mock.assert_async().await;
+    }
 }
 
 fn hello_again() -> serde_json::Map<String, serde_json::Value> {
@@ -534,15 +606,11 @@ async fn update_block_gives_the_field_errors() {
 }
 
 #[tokio::test]
-async fn update_block_checks_the_input_without_a_request() {
+async fn update_block_rejects_bad_ids_without_a_request() {
     let mut server: ServerGuard = Server::new_async().await;
     let mocks: Vec<Mock> = expect_no_request(&mut server).await;
     let email = mailerlite(&server).email();
 
-    assert!(matches!(
-        email.update_block("123", "57", "", &hello_again()).await,
-        Err(Error::EmptyEtag)
-    ));
     assert!(matches!(
         email.update_block("", "57", "43", &hello_again()).await,
         Err(Error::EmptyId {
@@ -602,15 +670,11 @@ async fn delete_block_sends_the_etag_in_the_body() {
 }
 
 #[tokio::test]
-async fn delete_block_checks_the_input_without_a_request() {
+async fn delete_block_rejects_bad_ids_without_a_request() {
     let mut server: ServerGuard = Server::new_async().await;
     let mocks: Vec<Mock> = expect_no_request(&mut server).await;
     let email = mailerlite(&server).email();
 
-    assert!(matches!(
-        email.delete_block("123", "57", "").await,
-        Err(Error::EmptyEtag)
-    ));
     assert!(matches!(
         email.delete_block("", "57", "44").await,
         Err(Error::EmptyId {
@@ -672,15 +736,11 @@ async fn move_block_sends_the_placement_and_the_etag() {
 }
 
 #[tokio::test]
-async fn move_block_checks_the_input_without_a_request() {
+async fn move_block_rejects_bad_ids_without_a_request() {
     let mut server: ServerGuard = Server::new_async().await;
     let mocks: Vec<Mock> = expect_no_request(&mut server).await;
     let email = mailerlite(&server).email();
 
-    assert!(matches!(
-        email.move_block("123", "57", "", &Placement::start()).await,
-        Err(Error::EmptyEtag)
-    ));
     assert!(matches!(
         email.move_block("", "57", "45", &Placement::start()).await,
         Err(Error::EmptyId {
@@ -692,15 +752,6 @@ async fn move_block_checks_the_input_without_a_request() {
         email.move_block("123", "", "45", &Placement::start()).await,
         Err(Error::EmptyId {
             name: "block_id",
-            ..
-        })
-    ));
-    assert!(matches!(
-        email
-            .move_block("123", "57", "45", &Placement::after(""))
-            .await,
-        Err(Error::EmptyId {
-            name: "placement.block_id",
             ..
         })
     ));
@@ -719,28 +770,19 @@ async fn move_block_checks_the_input_without_a_request() {
                 ..
             })
         ));
-        assert!(matches!(
-            email
-                .move_block("123", "57", "45", &Placement::after(id))
-                .await,
-            Err(Error::InvalidId {
-                name: "placement.block_id",
-                ..
-            })
-        ));
     }
 
     assert_no_request(&mocks).await;
 }
 
 #[tokio::test]
-async fn placement_at_start_or_end_sends_no_block_id_and_has_no_check() {
+async fn placement_at_start_or_end_sends_the_block_id_as_given() {
     let mut server: ServerGuard = Server::new_async().await;
     let at_end: Mock = expect_request(
         &mut server,
         "POST",
         "/emails/123/blocks/57/move",
-        Some(json!({"placement": {"position": "end"}, "etag": "45"})),
+        Some(json!({"placement": {"position": "end", "block_id": ""}, "etag": "45"})),
         200,
         &fixture("email_block_moved"),
     )
@@ -752,7 +794,7 @@ async fn placement_at_start_or_end_sends_no_block_id_and_has_no_check() {
         Some(json!({
             "type": "paragraph",
             "editor_content": {"attrs": {"textAlign": "center"}, "content": [{"type": "text", "text": "Hi"}]},
-            "placement": {"position": "start"},
+            "placement": {"position": "start", "block_id": "1/2"},
             "etag": "42"
         })),
         201,
@@ -781,48 +823,50 @@ async fn placement_at_start_or_end_sends_no_block_id_and_has_no_check() {
 }
 
 #[tokio::test]
-async fn placement_before_or_after_needs_a_valid_block_id() {
+async fn move_block_sends_the_placement_as_given_and_gives_the_api_error() {
     let mut server: ServerGuard = Server::new_async().await;
-    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
+    let placements: [(Placement, serde_json::Value); 3] = [
+        (
+            Placement {
+                position: Position::After,
+                block_id: None,
+            },
+            json!({"position": "after"}),
+        ),
+        (
+            Placement::before("1/2"),
+            json!({"position": "before", "block_id": "1/2"}),
+        ),
+        (
+            Placement {
+                position: Position::Other("next_to".to_string()),
+                block_id: Some("1/2".to_string()),
+            },
+            json!({"position": "next_to", "block_id": "1/2"}),
+        ),
+    ];
     let email = mailerlite(&server).email();
 
-    for block_id in [None, Some(String::new())] {
-        let after: Placement = Placement {
-            position: Position::After,
-            block_id,
-        };
-        assert!(matches!(
-            email.move_block("123", "57", "45", &after).await,
-            Err(Error::EmptyId {
-                name: "placement.block_id",
-                ..
-            })
-        ));
-    }
-    let before: Placement = Placement {
-        position: Position::Before,
-        block_id: Some("1/2".to_string()),
-    };
-    assert!(matches!(
-        email.move_block("123", "57", "45", &before).await,
-        Err(Error::InvalidId {
-            name: "placement.block_id",
-            ..
-        })
-    ));
-    let other: Placement = Placement {
-        position: Position::Other("next_to".to_string()),
-        block_id: Some("1/2".to_string()),
-    };
-    assert!(matches!(
-        email.move_block("123", "57", "45", &other).await,
-        Err(Error::InvalidId {
-            name: "placement.block_id",
-            ..
-        })
-    ));
+    for (placement, sent) in placements {
+        let mock: Mock = expect_request(
+            &mut server,
+            "POST",
+            "/emails/123/blocks/57/move",
+            Some(json!({"placement": sent, "etag": "45"})),
+            422,
+            &invalid_placement(),
+        )
+        .await;
 
-    assert_no_request(&mocks).await;
+        let result = email.move_block("123", "57", "45", &placement).await;
+
+        mock.assert_async().await;
+        assert!(
+            matches!(&result, Err(Error::Api(error)) if error.status_code == 422),
+            "expected Error::Api for {placement:?}, got {result:?}"
+        );
+        mock.remove_async().await;
+    }
 }
 
 #[tokio::test]
@@ -866,7 +910,8 @@ async fn validate_block_sends_the_block_without_an_etag() {
 
     let block: NewBlock = NewBlock {
         block_type: BlockType::Divider,
-        ..Default::default()
+        editor_content: serde_json::Map::new(),
+        placement: None,
     };
     let response: ApiResponse<Validation> = mailerlite(&server)
         .email()
@@ -897,7 +942,8 @@ async fn validate_block_gives_the_errors_of_an_invalid_block() {
 
     let block: NewBlock = NewBlock {
         block_type: BlockType::Other("countdown".to_string()),
-        ..Default::default()
+        editor_content: serde_json::Map::new(),
+        placement: None,
     };
     let response: ApiResponse<Validation> = mailerlite(&server)
         .email()
@@ -928,7 +974,8 @@ async fn validate_block_accepts_an_empty_array_for_the_errors() {
 
     let block: NewBlock = NewBlock {
         block_type: BlockType::Divider,
-        ..Default::default()
+        editor_content: serde_json::Map::new(),
+        placement: None,
     };
     let response: ApiResponse<Validation> = mailerlite(&server)
         .email()
@@ -941,20 +988,31 @@ async fn validate_block_accepts_an_empty_array_for_the_errors() {
 }
 
 #[tokio::test]
-async fn validate_block_checks_the_placement_without_a_request() {
+async fn validate_block_sends_a_bad_placement_and_gives_the_errors() {
     let mut server: ServerGuard = Server::new_async().await;
-    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
+    let mock: Mock = expect_request(
+        &mut server,
+        "POST",
+        "/emails/blocks/validate",
+        Some(json!({
+            "type": "paragraph",
+            "editor_content": {"attrs": {"textAlign": "center"}, "content": [{"type": "text", "text": "Hi"}]},
+            "placement": {"position": "after", "block_id": "1/2"}
+        })),
+        200,
+        &fixture("email_block_validation_invalid"),
+    )
+    .await;
 
     let block: NewBlock = new_paragraph(Some(Placement::after("1/2")));
-    assert!(matches!(
-        mailerlite(&server).email().validate_block(&block).await,
-        Err(Error::InvalidId {
-            name: "placement.block_id",
-            ..
-        })
-    ));
+    let response: ApiResponse<Validation> = mailerlite(&server)
+        .email()
+        .validate_block(&block)
+        .await
+        .unwrap();
 
-    assert_no_request(&mocks).await;
+    mock.assert_async().await;
+    assert!(!response.valid);
 }
 
 fn settings_update() -> EmailSettingsUpdate {
@@ -1082,10 +1140,6 @@ async fn update_settings_checks_the_input_without_a_request() {
         Err(Error::EtagInSettings)
     ));
     assert!(matches!(
-        email.update_settings("123", "", &settings_update()).await,
-        Err(Error::EmptyEtag)
-    ));
-    assert!(matches!(
         email.update_settings("", "46", &settings_update()).await,
         Err(Error::EmptyId {
             name: "email_id",
@@ -1138,17 +1192,37 @@ async fn validate_settings_sends_the_settings_without_an_etag() {
 }
 
 #[tokio::test]
-async fn validate_settings_checks_the_input_without_a_request() {
+async fn validate_settings_sends_an_etag_key_of_the_extra_map() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mut sent: serde_json::Value = settings_update_json();
+    sent["etag"] = json!("1");
+    let mock: Mock = expect_request(
+        &mut server,
+        "POST",
+        "/emails/123/settings/validate",
+        Some(sent),
+        200,
+        &fixture("email_settings_validation"),
+    )
+    .await;
+
+    let mut with_etag: EmailSettingsUpdate = settings_update();
+    with_etag.extra.insert("etag".to_string(), json!("1"));
+    mailerlite(&server)
+        .email()
+        .validate_settings("123", &with_etag)
+        .await
+        .unwrap();
+
+    mock.assert_async().await;
+}
+
+#[tokio::test]
+async fn validate_settings_rejects_bad_ids_without_a_request() {
     let mut server: ServerGuard = Server::new_async().await;
     let mocks: Vec<Mock> = expect_no_request(&mut server).await;
     let email = mailerlite(&server).email();
 
-    let mut with_etag: EmailSettingsUpdate = settings_update();
-    with_etag.extra.insert("etag".to_string(), json!("1"));
-    assert!(matches!(
-        email.validate_settings("123", &with_etag).await,
-        Err(Error::EtagInSettings)
-    ));
     assert!(matches!(
         email.validate_settings("", &settings_update()).await,
         Err(Error::EmptyId {
@@ -1385,15 +1459,11 @@ async fn restore_version_sends_the_etag_and_gives_the_email() {
 }
 
 #[tokio::test]
-async fn restore_version_checks_the_input_without_a_request() {
+async fn restore_version_rejects_bad_ids_without_a_request() {
     let mut server: ServerGuard = Server::new_async().await;
     let mocks: Vec<Mock> = expect_no_request(&mut server).await;
     let email = mailerlite(&server).email();
 
-    assert!(matches!(
-        email.restore_version("123", "901", "").await,
-        Err(Error::EmptyEtag)
-    ));
     assert!(matches!(
         email.restore_version("", "901", "41").await,
         Err(Error::EmptyId {
@@ -1426,6 +1496,68 @@ async fn restore_version_checks_the_input_without_a_request() {
     }
 
     assert_no_request(&mocks).await;
+}
+
+#[tokio::test]
+async fn the_6_writes_with_an_etag_send_an_empty_etag_and_give_the_api_error() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let writes: [(&str, &str); 6] = [
+        ("POST", "/emails/123/blocks"),
+        ("PATCH", "/emails/123/blocks/57"),
+        ("DELETE", "/emails/123/blocks/57"),
+        ("POST", "/emails/123/blocks/57/move"),
+        ("PATCH", "/emails/123/settings"),
+        ("POST", "/emails/123/versions/901/restore"),
+    ];
+    let mut mocks: Vec<Mock> = Vec::new();
+    for (method, path) in writes {
+        mocks.push(
+            server
+                .mock(method, path)
+                .match_body(Matcher::PartialJson(json!({"etag": ""})))
+                .with_status(422)
+                .with_header("Content-Type", "application/json")
+                .with_body(r#"{"message": "The etag field is required.", "errors": {"etag": ["The etag field is required."]}}"#)
+                .expect(1)
+                .create_async()
+                .await,
+        );
+    }
+    let email = mailerlite(&server).email();
+
+    let results: Vec<Result<(), Error>> = vec![
+        email
+            .create_block("123", "", &new_paragraph(None))
+            .await
+            .map(|_| ()),
+        email
+            .update_block("123", "57", "", &hello_again())
+            .await
+            .map(|_| ()),
+        email.delete_block("123", "57", "").await.map(|_| ()),
+        email
+            .move_block("123", "57", "", &Placement::start())
+            .await
+            .map(|_| ()),
+        email
+            .update_settings("123", "", &settings_update())
+            .await
+            .map(|_| ()),
+        email.restore_version("123", "901", "").await.map(|_| ()),
+    ];
+
+    for mock in mocks {
+        mock.assert_async().await;
+    }
+    for result in results {
+        match result {
+            Err(Error::Api(error)) => {
+                assert_eq!(error.status_code, 422);
+                assert!(error.errors.unwrap().contains_key("etag"));
+            }
+            other => panic!("expected Error::Api, got {other:?}"),
+        }
+    }
 }
 
 /// Sends each of the 8 writes that accept an idempotency key, with valid input.
@@ -1560,21 +1692,41 @@ async fn reads_and_validations_ignore_the_idempotency_key() {
 }
 
 #[tokio::test]
-async fn bad_idempotency_keys_stop_the_writes_without_a_request() {
+async fn the_8_writes_send_the_idempotency_key_as_given() {
     let mut server: ServerGuard = Server::new_async().await;
-    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
     let too_long: String = "k".repeat(256);
 
-    for key in [
-        "",
-        too_long.as_str(),
-        "key\n",
-        "key\t",
-        "clé",
-        "key\x7f",
-        " key",
-        "key ",
+    // HTTP removes a space at the start or the end of a header value, so the API gets "key".
+    for (key, received) in [
+        ("", ""),
+        (too_long.as_str(), too_long.as_str()),
+        ("key\tkey", "key\tkey"),
+        (" key", "key"),
+        ("key ", "key"),
     ] {
+        let mocks: Vec<Mock> =
+            mock_all_writes(&mut server, Matcher::Exact(received.to_string())).await;
+        let email: Email = mailerlite(&server).email().with_idempotency_key(key);
+
+        for result in send_all_writes(&email).await {
+            assert!(
+                result.is_ok(),
+                "expected a request for {key:?}, got {result:?}"
+            );
+        }
+        for mock in mocks {
+            mock.assert_async().await;
+            mock.remove_async().await;
+        }
+    }
+}
+
+#[tokio::test]
+async fn a_key_that_http_cannot_carry_stops_the_writes_without_a_request() {
+    let mut server: ServerGuard = Server::new_async().await;
+    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
+
+    for key in ["key\n", "key\r", "key\x7f"] {
         let email: Email = mailerlite(&server).email().with_idempotency_key(key);
         for result in send_all_writes(&email).await {
             assert!(
@@ -1647,7 +1799,8 @@ async fn validate_block_decodes_a_null_schema() {
 
     let block: NewBlock = NewBlock {
         block_type: BlockType::Divider,
-        ..Default::default()
+        editor_content: serde_json::Map::new(),
+        placement: None,
     };
     let response: ApiResponse<Validation> = mailerlite(&server)
         .email()
@@ -1662,41 +1815,6 @@ async fn validate_block_decodes_a_null_schema() {
     );
     assert_eq!(response.schema.version, None);
     assert_eq!(response.schema.hash, None);
-}
-
-#[tokio::test]
-async fn an_other_position_with_a_known_value_follows_the_rules_of_that_value() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
-
-    let before: Placement = Placement {
-        position: Position::Other("before".to_string()),
-        block_id: None,
-    };
-    let result = mailerlite(&server)
-        .email()
-        .move_block("123", "57", "45", &before)
-        .await;
-    assert!(
-        matches!(
-            result,
-            Err(Error::EmptyId {
-                name: "placement.block_id",
-                ..
-            })
-        ),
-        "got {result:?}"
-    );
-    assert_no_request(&mocks).await;
-
-    let end: Placement = Placement {
-        position: Position::Other("end".to_string()),
-        block_id: Some("12".to_string()),
-    };
-    assert_eq!(
-        serde_json::to_value(&end).unwrap(),
-        json!({"position": "end"})
-    );
 }
 
 #[test]

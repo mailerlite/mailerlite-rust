@@ -243,22 +243,28 @@ pub struct EmailHtml {
     pub html: String,
 }
 
-/// The default block type is `Paragraph`.
-impl Default for BlockType {
-    fn default() -> Self {
-        BlockType::Paragraph
-    }
-}
-
-/// The default position is `End`, as in the API.
-impl Default for Position {
-    fn default() -> Self {
-        Position::End
-    }
-}
+/// The SDK sends no value that the caller did not give, so these types have no default:
+///
+/// ```compile_fail,E0277
+/// let block: mailerlite_rs::email::NewBlock = Default::default();
+/// ```
+///
+/// ```compile_fail,E0277
+/// let block_type: mailerlite_rs::email::BlockType = Default::default();
+/// ```
+///
+/// ```compile_fail,E0277
+/// let placement: mailerlite_rs::email::Placement = Default::default();
+/// ```
+///
+/// ```compile_fail,E0277
+/// let position: mailerlite_rs::email::Position = Default::default();
+/// ```
+#[cfg(doctest)]
+pub struct NoMadeUpDefaults;
 
 /// A new block for `Email::create_block` and `Email::validate_block`.
-#[derive(Debug, Clone, Default, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct NewBlock {
     #[serde(rename = "type")]
     pub block_type: BlockType,
@@ -270,35 +276,13 @@ pub struct NewBlock {
     pub placement: Option<Placement>,
 }
 
-/// Where to put a block. `block_id` is necessary for the positions `Before` and `After`.
-///
-/// For `Start` and `End`, the API ignores `block_id`, so the SDK does not check it and does not send it.
-#[derive(Debug, Clone, Default)]
+/// Where to put a block. The positions `Before` and `After` need the `block_id` of a block at the same
+/// level. The SDK sends the placement as you give it.
+#[derive(Debug, Clone, Serialize)]
 pub struct Placement {
     pub position: Position,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub block_id: Option<String>,
-}
-
-impl Serialize for Placement {
-    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        #[derive(Serialize)]
-        struct Body<'a> {
-            position: &'a Position,
-            #[serde(skip_serializing_if = "Option::is_none")]
-            block_id: Option<&'a str>,
-        }
-
-        let block_id: Option<&str> = match self.position.as_str() {
-            "start" | "end" => None,
-            _ => self.block_id.as_deref(),
-        };
-
-        Body {
-            position: &self.position,
-            block_id,
-        }
-        .serialize(serializer)
-    }
 }
 
 impl Placement {
@@ -327,18 +311,6 @@ impl Placement {
         Self {
             position: Position::After,
             block_id: Some(block_id.into()),
-        }
-    }
-
-    /// The match uses the value of the position, so an `Other` with a known value follows its rule.
-    fn check(&self) -> Result<(), Error> {
-        match (self.position.as_str(), self.block_id.as_deref()) {
-            ("start" | "end", _) => Ok(()),
-            ("before" | "after", block_id) => {
-                validate::path_id("placement.block_id", block_id.unwrap_or_default())
-            }
-            (_, Some(block_id)) => validate::path_id("placement.block_id", block_id),
-            (_, None) => Ok(()),
         }
     }
 }
@@ -742,6 +714,7 @@ settings_keys!(
 settings_keys!(SocialLinkUpdate, ["url", "type", "label", "link_id"]);
 
 impl EmailSettingsUpdate {
+    /// Only `update_settings` adds an etag, so `validate_settings` does not check for an `etag` key.
     fn check(&self) -> Result<(), Error> {
         validate::no_etag_key(&self.extra)?;
         self.check_keys("")
@@ -814,9 +787,10 @@ impl Email {
     /// - Only these methods send the key: `create_block`, `update_block`, `delete_block`, `move_block`,
     ///   `update_settings`, `create_template`, `create_version` and `restore_version`. The read methods and
     ///   the validate methods ignore it.
-    /// - The key must be 1 to 255 printable ASCII characters, without a space at the start or the end.
-    ///   The SDK checks the key when a write runs. A bad key gives `Error::InvalidIdempotencyKey`, and the
-    ///   SDK sends no request.
+    /// - The SDK sends the key as you give it. The key must be 1 to 255 printable ASCII characters.
+    ///   Otherwise the API gives a `400` error. HTTP removes a space at the start or the end of the key.
+    /// - If HTTP cannot carry the key, for example because of a new line, the write gives
+    ///   `Error::InvalidIdempotencyKey` and sends no request.
     ///
     /// Warning: use a new key for each write. Do not use an `Email` value that has a key for a different
     /// write. The API keeps a key for 24 hours, and it rejects the same key with a different request.
@@ -824,13 +798,6 @@ impl Email {
         self.idempotency_key = Some(key.into());
 
         self
-    }
-
-    fn write_key(&self) -> Result<Option<&str>, Error> {
-        match self.idempotency_key.as_deref() {
-            Some(key) => validate::idempotency_key(key).map(|()| Some(key)),
-            None => Ok(None),
-        }
     }
 
     pub async fn find(
@@ -899,12 +866,8 @@ impl Email {
     ) -> Result<ApiResponse<WithEtag<EmailBlock>>, Error> {
         let (email_id, etag): (&str, &str) = (email_id.as_ref(), etag.as_ref());
         validate::path_id("email_id", email_id)?;
-        validate::etag(etag)?;
-        if let Some(placement) = &block.placement {
-            placement.check()?;
-        }
 
-        let idempotency_key: Option<&str> = self.write_key()?;
+        let idempotency_key: Option<&str> = self.idempotency_key.as_deref();
 
         http::send(
             &self.mailerlite,
@@ -930,9 +893,8 @@ impl Email {
             (email_id.as_ref(), block_id.as_ref(), etag.as_ref());
         validate::path_id("email_id", email_id)?;
         validate::path_id("block_id", block_id)?;
-        validate::etag(etag)?;
 
-        let idempotency_key: Option<&str> = self.write_key()?;
+        let idempotency_key: Option<&str> = self.idempotency_key.as_deref();
 
         http::send(
             &self.mailerlite,
@@ -959,9 +921,8 @@ impl Email {
             (email_id.as_ref(), block_id.as_ref(), etag.as_ref());
         validate::path_id("email_id", email_id)?;
         validate::path_id("block_id", block_id)?;
-        validate::etag(etag)?;
 
-        let idempotency_key: Option<&str> = self.write_key()?;
+        let idempotency_key: Option<&str> = self.idempotency_key.as_deref();
 
         http::send(
             &self.mailerlite,
@@ -990,10 +951,8 @@ impl Email {
             (email_id.as_ref(), block_id.as_ref(), etag.as_ref());
         validate::path_id("email_id", email_id)?;
         validate::path_id("block_id", block_id)?;
-        validate::etag(etag)?;
-        placement.check()?;
 
-        let idempotency_key: Option<&str> = self.write_key()?;
+        let idempotency_key: Option<&str> = self.idempotency_key.as_deref();
 
         http::send(
             &self.mailerlite,
@@ -1009,10 +968,6 @@ impl Email {
     /// Checks a block with the rules of `create_block`. The API saves nothing. The method needs no email
     /// and no etag.
     pub async fn validate_block(&self, block: &NewBlock) -> Result<ApiResponse<Validation>, Error> {
-        if let Some(placement) = &block.placement {
-            placement.check()?;
-        }
-
         http::send(
             &self.mailerlite,
             Method::POST,
@@ -1034,10 +989,9 @@ impl Email {
     ) -> Result<ApiResponse<SettingsResult>, Error> {
         let (email_id, etag): (&str, &str) = (email_id.as_ref(), etag.as_ref());
         validate::path_id("email_id", email_id)?;
-        validate::etag(etag)?;
         settings.check()?;
 
-        let idempotency_key: Option<&str> = self.write_key()?;
+        let idempotency_key: Option<&str> = self.idempotency_key.as_deref();
 
         http::send(
             &self.mailerlite,
@@ -1062,7 +1016,7 @@ impl Email {
     ) -> Result<ApiResponse<Validation>, Error> {
         let email_id: &str = email_id.as_ref();
         validate::path_id("email_id", email_id)?;
-        settings.check()?;
+        settings.check_keys("")?;
 
         http::send(
             &self.mailerlite,
@@ -1084,7 +1038,7 @@ impl Email {
         let email_id: &str = email_id.as_ref();
         validate::path_id("email_id", email_id)?;
 
-        let idempotency_key: Option<&str> = self.write_key()?;
+        let idempotency_key: Option<&str> = self.idempotency_key.as_deref();
 
         http::send(
             &self.mailerlite,
@@ -1133,7 +1087,7 @@ impl Email {
         let email_id: &str = email_id.as_ref();
         validate::path_id("email_id", email_id)?;
 
-        let idempotency_key: Option<&str> = self.write_key()?;
+        let idempotency_key: Option<&str> = self.idempotency_key.as_deref();
 
         http::send(
             &self.mailerlite,
@@ -1158,9 +1112,8 @@ impl Email {
             (email_id.as_ref(), version_id.as_ref(), etag.as_ref());
         validate::path_id("email_id", email_id)?;
         validate::path_id("version_id", version_id)?;
-        validate::etag(etag)?;
 
-        let idempotency_key: Option<&str> = self.write_key()?;
+        let idempotency_key: Option<&str> = self.idempotency_key.as_deref();
 
         http::send(
             &self.mailerlite,
