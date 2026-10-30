@@ -1,0 +1,42 @@
+{
+  "data": [
+    {
+      "id": "1",
+      "name": "new field",
+      "key": "new_field",
+      "type": "text"
+    }
+  ],
+  "links": {
+    "first": "https://connect.mailerlite.com/api/fields?page=1",
+    "last": "https://connect.mailerlite.com/api/fields?page=1",
+    "prev": null,
+    "next": null
+  },
+  "meta": {
+    "current_page": 1,
+    "from": 1,
+    "last_page": 1,
+    "links": [
+      {
+        "url": null,
+        "label": "&laquo; Previous",
+        "active": false
+      },
+      {
+        "url": "https://connect.mailerlite.com/api/fields?page=1",
+        "label": "1",
+        "active": true
+      },
+      {
+        "url": null,
+        "label": "Next &raquo;",
+        "active": false
+      }
+    ],
+    "path": "https://connect.mailerlite.com/api/fields",
+    "per_page": 100,
+    "to": 1,
+    "total": 1
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "data": [
+    {
+      "id": "38965245585131492",
+      "type": "embedded",
+      "slug": "Ec7t3n",
+      "name": "inventore provident ut",
+      "created_at": "2021-11-17 14:42:33",
+      "conversions_count": 0,
+      "opens_count": 0,
+      "conversion_rate": {
+        "float": 0,
+        "string": "0%"
+      },
+      "settings": [],
+      "last_registration_at": null,
+      "active": false,
+      "is_broken": false,
+      "has_content": false,
+      "can": {
+        "update": true
+      },
+      "used_in_automations": false,
+      "warnings": [],
+      "double_optin": null,
+      "screenshot_url": null
+    }
+  ],
+  "links": {
+    "first": "https://connect.mailerlite.com/api/forms/embedded?page=1",
+    "last": "https://connect.mailerlite.com/api/forms/embedded?page=1",
+    "prev": null,
+    "next": null
+  },
+  "meta": {
+    "current_page": 1,
+    "from": 1,
+    "last_page": 1,
+    "links": [
+      {
+        "url": null,
+        "label": "&laquo; Previous",
+        "active": false
+      },
+      {
+        "url": "https://connect.mailerlite.com/api/forms/embedded?page=1",
+        "label": "1",
+        "active": true
+      },
+      {
+        "url": null,
+        "label": "Next &raquo;",
+        "active": false
+      }
+    ],
+    "path": "https://connect.mailerlite.com/api/forms/embedded",
+    "per_page": 25,
+    "to": 1,
+    "total": 1,
+    "aggregations": {
+      "popup": 3,
+      "embedded": 1,
+      "promotion": 1
+    }
+  }
+}

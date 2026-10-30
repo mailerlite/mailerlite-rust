@@ -1,0 +1,26 @@
+{
+  "total": 1,
+  "successful": 1,
+  "failed": 0,
+  "responses": [
+    {
+      "code": 200,
+      "body": {
+        "data": [
+          {
+            "id": "1",
+            "name": "test field",
+            "key": "test_field",
+            "type": "text"
+          },
+          {
+            "id": "2",
+            "name": "new field",
+            "key": "new_field",
+            "type": "text"
+          }
+        ]
+      }
+    }
+  ]
+}

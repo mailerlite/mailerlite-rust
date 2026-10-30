@@ -1,0 +1,27 @@
+{
+  "data": {
+    "id": "38965245585131492",
+    "type": "embedded",
+    "slug": "Ec7t3n",
+    "name": "inventore provident ut",
+    "created_at": "2021-11-17 14:42:33",
+    "conversions_count": 0,
+    "opens_count": 0,
+    "conversion_rate": {
+      "float": 0,
+      "string": "0%"
+    },
+    "settings": [],
+    "last_registration_at": null,
+    "active": false,
+    "is_broken": false,
+    "has_content": false,
+    "can": {
+      "update": true
+    },
+    "used_in_automations": false,
+    "warnings": [],
+    "double_optin": null,
+    "screenshot_url": null
+  }
+}

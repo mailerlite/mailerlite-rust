@@ -1,0 +1,11 @@
+{
+  "data": [
+    {
+      "id": "370",
+      "name": "Europe/Vilnius",
+      "name_for_humans": "Europe/Vilnius (+03:00)",
+      "offset_name": "+03:00",
+      "offset": 180
+    }
+  ]
+}

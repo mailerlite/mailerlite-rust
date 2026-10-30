@@ -1,0 +1,257 @@
+{
+  "data": [
+    {
+      "id": "68079566047937883",
+      "name": "Test 2",
+      "url": "http://google.com",
+      "events": [
+        "subscriber.created"
+      ],
+      "enabled": true,
+      "secret": "ybmcD7PQ9R",
+      "created_at": "2022-10-04 23:22:13",
+      "updated_at": "2022-10-04 23:54:04",
+      "batchable": true
+    },
+    {
+      "id": "68078863100413274",
+      "name": "Test",
+      "url": "http://google.com",
+      "events": [
+        "subscriber.created"
+      ],
+      "enabled": true,
+      "secret": "9JVEvb07Yq",
+      "created_at": "2022-10-04 23:11:03",
+      "updated_at": "2022-10-04 23:11:03",
+      "batchable": false
+    },
+    {
+      "id": "68078820398204249",
+      "name": "Test",
+      "url": "http://google.com",
+      "events": [
+        "subscriber.created"
+      ],
+      "enabled": true,
+      "secret": "yXIrayUCWJ",
+      "created_at": "2022-10-04 23:10:22",
+      "updated_at": "2022-10-04 23:10:22",
+      "batchable": true
+    },
+    {
+      "id": "68074372003267924",
+      "name": "Eveniet vero minus.",
+      "url": "http://www.marvin.com/omnis-accusamus-est-rem-delectus-quaerat.html",
+      "events": [
+        "subscriber.bounced"
+      ],
+      "enabled": true,
+      "secret": "Kn556GohSH",
+      "created_at": "2022-10-04 21:59:40",
+      "updated_at": "2022-10-04 21:59:40",
+      "batchable": false
+    },
+    {
+      "id": "68074372003267926",
+      "name": "Et voluptatibus et est voluptatibus.",
+      "url": "http://harber.net/ipsa-molestias-voluptatem-fugiat-quis-tempora-ullam.html",
+      "events": [
+        "subscriber.automation_completed"
+      ],
+      "enabled": true,
+      "secret": "WXS0dF3FHc",
+      "created_at": "2022-10-04 21:59:40",
+      "updated_at": "2022-10-04 21:59:40",
+      "batchable": true
+    },
+    {
+      "id": "68074372005365080",
+      "name": "Perferendis dolorem aut nulla.",
+      "url": "http://www.brekke.com/",
+      "events": [
+        "subscriber.added_to_group"
+      ],
+      "enabled": true,
+      "secret": "Ko17Uw3hiB",
+      "created_at": "2022-10-04 21:59:40",
+      "updated_at": "2022-10-04 21:59:40",
+      "batchable": true
+    },
+    {
+      "id": "68074372004316503",
+      "name": "Tenetur delectus eum fugiat.",
+      "url": "http://www.cartwright.info/eligendi-soluta-corporis-in-quod-ullam",
+      "events": [
+        "subscriber.bounced"
+      ],
+      "enabled": true,
+      "secret": "4jQ3Y4UlLI",
+      "created_at": "2022-10-04 21:59:40",
+      "updated_at": "2022-10-04 21:59:40",
+      "batchable": true
+    },
+    {
+      "id": "68074372001170769",
+      "name": "Tempore voluptatem et voluptas.",
+      "url": "http://www.pfeffer.net/quod-voluptatibus-explicabo-nihil-ipsum-accusamus-error",
+      "events": [
+        "subscriber.removed_from_group"
+      ],
+      "enabled": true,
+      "secret": "hvHGn2D4yu",
+      "created_at": "2022-10-04 21:59:40",
+      "updated_at": "2022-10-04 21:59:40",
+      "batchable": true
+    },
+    {
+      "id": "68074372001170770",
+      "name": "Vel inventore rem.",
+      "url": "http://kautzer.com/consequatur-neque-eaque-ad-et-rem-labore-ut.html",
+      "events": [
+        "subscriber.created"
+      ],
+      "enabled": true,
+      "secret": "xbzp318Djs",
+      "created_at": "2022-10-04 21:59:40",
+      "updated_at": "2022-10-04 21:59:40",
+      "batchable": true
+    },
+    {
+      "id": "68074372003267925",
+      "name": "Voluptas animi consequatur.",
+      "url": "http://www.oconner.org/laudantium-ipsa-ad-distinctio-eos-quasi-dicta.html",
+      "events": [
+        "campaign.sent"
+      ],
+      "enabled": true,
+      "secret": "3b1EMAhuoT",
+      "created_at": "2022-10-04 21:59:40",
+      "updated_at": "2022-10-04 21:59:40",
+      "batchable": true
+    },
+    {
+      "id": "68074371998025039",
+      "name": "Expedita esse est fugit.",
+      "url": "https://www.deckow.com/aut-quae-voluptate-ab-qui-qui",
+      "events": [
+        "subscriber.removed_from_group"
+      ],
+      "enabled": true,
+      "secret": "QbVgXU0L93",
+      "created_at": "2022-10-04 21:59:40",
+      "updated_at": "2022-10-04 21:59:40",
+      "batchable": true
+    },
+    {
+      "id": "68074372000122192",
+      "name": "Autem culpa perferendis quaerat.",
+      "url": "http://homenick.biz/tempora-asperiores-qui-alias-voluptas-eos-necessitatibus-et",
+      "events": [
+        "subscriber.automation_completed"
+      ],
+      "enabled": true,
+      "secret": "N3cZ5WO2ep",
+      "created_at": "2022-10-04 21:59:40",
+      "updated_at": "2022-10-04 21:59:40",
+      "batchable": true
+    },
+    {
+      "id": "68074372002219347",
+      "name": "Officia quia aut.",
+      "url": "https://www.cartwright.org/mollitia-corporis-ipsam-reiciendis-dolor-error-amet-velit",
+      "events": [
+        "subscriber.updated"
+      ],
+      "enabled": true,
+      "secret": "xRyma5WnWP",
+      "created_at": "2022-10-04 21:59:40",
+      "updated_at": "2022-10-04 21:59:40",
+      "batchable": true
+    },
+    {
+      "id": "68079566047937234",
+      "name": "Campaign Open",
+      "url": "http://google.com",
+      "events": [
+        "campaign.open"
+      ],
+      "enabled": true,
+      "secret": "ybmcD7PQ9R",
+      "created_at": "2022-10-04 23:22:13",
+      "updated_at": "2022-10-04 23:54:04",
+      "batchable": true
+    },
+    {
+      "id": "68079566047937324",
+      "name": "Campaign link clicked",
+      "url": "http://google.com",
+      "events": [
+        "campaign.click"
+      ],
+      "enabled": true,
+      "secret": "ybmcD7PQ9R",
+      "created_at": "2022-10-04 23:22:13",
+      "updated_at": "2022-10-04 23:54:04",
+      "batchable": true
+    },
+    {
+      "id": "68079566047937325",
+      "name": "Subscriber deleted",
+      "url": "http://google.com",
+      "events": [
+        "subscriber.deleted"
+      ],
+      "enabled": true,
+      "secret": "ybmcD7PQ9o",
+      "created_at": "2022-10-04 23:22:13",
+      "updated_at": "2022-10-04 23:54:04",
+      "batchable": true
+    },
+    {
+      "id": "68079566047937321",
+      "name": "Subscriber deleted",
+      "url": "http://google.com",
+      "events": [
+        "subscriber.active"
+      ],
+      "enabled": true,
+      "secret": "ybmcD7PQ1o",
+      "created_at": "2022-10-04 23:22:13",
+      "updated_at": "2022-10-04 23:54:04",
+      "batchable": false
+    }
+  ],
+  "links": {
+    "first": "http://localhost:8080/api/webhooks?page=1",
+    "last": "http://localhost:8080/api/webhooks?page=1",
+    "prev": null,
+    "next": null
+  },
+  "meta": {
+    "current_page": 1,
+    "from": 1,
+    "last_page": 1,
+    "links": [
+      {
+        "url": null,
+        "label": "&laquo; Previous",
+        "active": false
+      },
+      {
+        "url": "http://localhost:8080/api/webhooks?page=1",
+        "label": "1",
+        "active": true
+      },
+      {
+        "url": null,
+        "label": "Next &raquo;",
+        "active": false
+      }
+    ],
+    "path": "http://localhost:8080/api/webhooks",
+    "per_page": 50,
+    "to": 13,
+    "total": 13
+  }
+}
