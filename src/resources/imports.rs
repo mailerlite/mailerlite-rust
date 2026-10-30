@@ -1,0 +1,371 @@
+//! Group subscriber imports and explicit bounded progress polling.
+use crate::{
+    Error, MailerLite, Response, Result,
+    http::{OperationPolicy, body},
+    models::{
+        ImportId,
+        imports::{ImportReceipt, ImportReport},
+    },
+};
+use reqwest::{Method, Url};
+use serde::Serialize;
+use std::{collections::BTreeMap, fmt, time::Duration};
+
+/// Scalar custom-field value for a subscriber import.
+#[derive(Debug, Clone, Serialize)]
+#[serde(untagged)]
+pub enum ImportFieldValue {
+    /// Text field value.
+    Text(String),
+    /// Numeric field value, retained without conversion through floating point.
+    Number(serde_json::Number),
+}
+impl From<String> for ImportFieldValue {
+    fn from(value: String) -> Self {
+        Self::Text(value)
+    }
+}
+impl From<&str> for ImportFieldValue {
+    fn from(value: &str) -> Self {
+        Self::Text(value.into())
+    }
+}
+impl From<i64> for ImportFieldValue {
+    fn from(value: i64) -> Self {
+        Self::Number(value.into())
+    }
+}
+/// A subscriber to import into a group.
+#[derive(Clone, Serialize)]
+pub struct ImportSubscriber {
+    email: String,
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+    fields: BTreeMap<String, ImportFieldValue>,
+}
+impl ImportSubscriber {
+    /// Set the required email address.
+    pub fn new(email: impl Into<String>) -> Self {
+        Self {
+            email: email.into(),
+            fields: BTreeMap::new(),
+        }
+    }
+    /// Add a named default or custom field. Omitted fields remain unchanged.
+    pub fn field(mut self, name: impl Into<String>, value: impl Into<ImportFieldValue>) -> Self {
+        self.fields.insert(name.into(), value.into());
+        self
+    }
+}
+impl fmt::Debug for ImportSubscriber {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ImportSubscriber").finish_non_exhaustive()
+    }
+}
+/// Import creation and reporting operations.
+#[derive(Debug, Clone, Copy)]
+pub struct Imports<'a> {
+    client: &'a MailerLite,
+}
+impl<'a> Imports<'a> {
+    pub(crate) fn new(client: &'a MailerLite) -> Self {
+        Self { client }
+    }
+    /// Start a group import; this write is never automatically retried.
+    pub async fn import_to_group(
+        &self,
+        group: impl AsRef<str>,
+        subscribers: Vec<ImportSubscriber>,
+    ) -> Result<Response<ImportReceipt>> {
+        if subscribers.is_empty() {
+            return Err(Error::Config(
+                "an import requires at least one subscriber".into(),
+            ));
+        }
+        #[derive(Serialize)]
+        struct Payload {
+            subscribers: Vec<ImportSubscriber>,
+        }
+        let response: Response<ImportReceipt> = self
+            .client
+            .request(
+                Method::POST,
+                &["groups", group.as_ref(), "import-subscribers"],
+                &[],
+                Some(body(&Payload { subscribers })?),
+                OperationPolicy::IMPORT.with_success_statuses(&[200]),
+            )
+            .await?;
+        self.receipt_id(&response.data)?;
+        Ok(response)
+    }
+    /// Fetch a report by import identifier.
+    pub async fn get(&self, id: impl AsRef<str>) -> Result<Response<ImportReport>> {
+        self.client
+            .data(
+                Method::GET,
+                &["subscribers", "import", id.as_ref()],
+                &[],
+                None,
+                OperationPolicy::READ,
+            )
+            .await
+    }
+    /// Validate a receipt's origin and exact endpoint, then fetch its report.
+    pub async fn progress(&self, receipt: &ImportReceipt) -> Result<Response<ImportReport>> {
+        self.get(self.receipt_id(receipt)?).await
+    }
+    /// Poll until done or the explicit overall timeout expires.
+    ///
+    /// Fetches sequentially and observes the shared client rate limiter. Dropping
+    /// this future cancels further polling. A stopped import without `done=true`
+    /// continues until the supplied deadline; inspect reports manually if needed.
+    pub async fn wait(
+        &self,
+        receipt: &ImportReceipt,
+        interval: Duration,
+        timeout: Duration,
+    ) -> Result<Response<ImportReport>> {
+        if interval.is_zero() || timeout.is_zero() {
+            return Err(Error::Config(
+                "poll interval and timeout must be positive".into(),
+            ));
+        }
+        let now = tokio::time::Instant::now();
+        let deadline = now.checked_add(timeout).ok_or_else(|| {
+            Error::Config("polling timeout exceeds the supported clock range".into())
+        })?;
+        if now.checked_add(interval).is_none() {
+            return Err(Error::Config(
+                "polling interval exceeds the supported clock range".into(),
+            ));
+        }
+        let id = self.receipt_id(receipt)?;
+        poll_until_complete(|| self.get(&id), interval, deadline).await
+    }
+    fn receipt_id(&self, receipt: &ImportReceipt) -> Result<ImportId> {
+        let invalid = || {
+            Error::Config("import receipt must reference the configured origin and subscriber import endpoint".into())
+        };
+        let url = Url::parse(&receipt.import_progress_url).map_err(|_| invalid())?;
+        let base = &self.client.inner.base_url;
+        if url.origin() != base.origin()
+            || !url.username().is_empty()
+            || url.password().is_some()
+            || url.query().is_some()
+            || url.fragment().is_some()
+        {
+            return Err(invalid());
+        }
+        let prefix = format!("{}/subscribers/import/", base.path().trim_end_matches('/'));
+        let id = url.path().strip_prefix(&prefix).ok_or_else(invalid)?;
+        if id.is_empty() || !id.bytes().all(|byte| byte.is_ascii_digit()) {
+            return Err(invalid());
+        }
+        Ok(ImportId::new(id))
+    }
+}
+
+// Keep the polling lifetime explicit: the deadline covers both fetches and
+// intervals, and dropping this future drops the active fetch or sleep with it.
+async fn poll_until_complete<F, Fut>(
+    mut fetch: F,
+    interval: Duration,
+    deadline: tokio::time::Instant,
+) -> Result<Response<ImportReport>>
+where
+    F: FnMut() -> Fut,
+    Fut: std::future::Future<Output = Result<Response<ImportReport>>>,
+{
+    tokio::time::timeout_at(deadline, async {
+        loop {
+            let report = fetch().await?;
+            if report.data.done {
+                return Ok(report);
+            }
+            tokio::time::sleep(interval).await;
+        }
+    })
+    .await
+    .map_err(|_| Error::Timeout)?
+}
+
+#[cfg(test)]
+mod polling_tests {
+    use super::*;
+    use crate::{ApiError, ResponseMetadata};
+    use std::{
+        future::{Future, pending, poll_fn},
+        pin::Pin,
+        sync::{
+            Arc,
+            atomic::{AtomicUsize, Ordering},
+        },
+        task::Poll,
+    };
+    use tokio::time::{Instant, advance};
+
+    fn metadata(status: reqwest::StatusCode) -> ResponseMetadata {
+        ResponseMetadata {
+            status,
+            rate_limit: None,
+            rate_remaining: None,
+            retry_after: None,
+            request_id: None,
+        }
+    }
+
+    fn report(done: bool) -> Response<ImportReport> {
+        Response {
+            data: serde_json::from_value(serde_json::json!({
+                "id":"001", "total":1, "processed":u8::from(done),
+                "imported":u8::from(done), "updated":0, "errored":0,
+                "percent":if done { 100 } else { 0 }, "done":done
+            }))
+            .unwrap(),
+            metadata: metadata(reqwest::StatusCode::OK),
+        }
+    }
+
+    async fn poll_once<F: Future>(mut future: Pin<&mut F>) -> Poll<F::Output> {
+        poll_fn(|context| Poll::Ready(future.as_mut().poll(context))).await
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn overall_deadline_expires_during_interval_without_fetching_again() {
+        let calls = AtomicUsize::new(0);
+        let start = Instant::now();
+        let result = poll_until_complete(
+            || {
+                calls.fetch_add(1, Ordering::SeqCst);
+                std::future::ready(Ok(report(false)))
+            },
+            Duration::from_secs(30),
+            start + Duration::from_secs(10),
+        )
+        .await;
+        assert!(matches!(result, Err(Error::Timeout)));
+        assert_eq!(start.elapsed(), Duration::from_secs(10));
+        assert_eq!(calls.load(Ordering::SeqCst), 1);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn overall_deadline_expires_during_an_in_flight_fetch() {
+        let calls = AtomicUsize::new(0);
+        let dropped = Arc::new(AtomicUsize::new(0));
+        let start = Instant::now();
+        let result = poll_until_complete(
+            || {
+                calls.fetch_add(1, Ordering::SeqCst);
+                let dropped = Arc::clone(&dropped);
+                async move {
+                    let _guard = DropProbe(dropped);
+                    pending().await
+                }
+            },
+            Duration::from_secs(1),
+            start + Duration::from_secs(10),
+        )
+        .await;
+        assert!(matches!(result, Err(Error::Timeout)));
+        assert_eq!(start.elapsed(), Duration::from_secs(10));
+        assert_eq!(calls.load(Ordering::SeqCst), 1);
+        assert_eq!(dropped.load(Ordering::SeqCst), 1);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn completion_stops_polling_after_the_exact_interval() {
+        let calls = AtomicUsize::new(0);
+        let start = Instant::now();
+        let result = poll_until_complete(
+            || {
+                let call = calls.fetch_add(1, Ordering::SeqCst);
+                std::future::ready(Ok(report(call > 0)))
+            },
+            Duration::from_secs(5),
+            start + Duration::from_secs(60),
+        )
+        .await
+        .unwrap();
+        assert!(result.data.done);
+        assert_eq!(start.elapsed(), Duration::from_secs(5));
+        assert_eq!(calls.load(Ordering::SeqCst), 2);
+        advance(Duration::from_secs(120)).await;
+        assert_eq!(calls.load(Ordering::SeqCst), 2);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn fetch_error_returns_immediately_without_another_poll() {
+        let calls = AtomicUsize::new(0);
+        let start = Instant::now();
+        let result = poll_until_complete(
+            || {
+                calls.fetch_add(1, Ordering::SeqCst);
+                std::future::ready(Err(Error::Api(ApiError::new(
+                    metadata(reqwest::StatusCode::NOT_FOUND),
+                    br#"{"message":"Import not found"}"#,
+                ))))
+            },
+            Duration::from_secs(5),
+            start + Duration::from_secs(60),
+        )
+        .await;
+        let Error::Api(error) = result.unwrap_err() else {
+            panic!("expected original API error");
+        };
+        assert_eq!(error.status(), reqwest::StatusCode::NOT_FOUND);
+        assert_eq!(error.message(), Some("Import not found"));
+        assert_eq!(start.elapsed(), Duration::ZERO);
+        advance(Duration::from_secs(120)).await;
+        assert_eq!(calls.load(Ordering::SeqCst), 1);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn dropping_during_interval_prevents_future_polls() {
+        let calls = AtomicUsize::new(0);
+        let mut polling = Box::pin(poll_until_complete(
+            || {
+                calls.fetch_add(1, Ordering::SeqCst);
+                std::future::ready(Ok(report(false)))
+            },
+            Duration::from_secs(5),
+            Instant::now() + Duration::from_secs(60),
+        ));
+        assert!(poll_once(polling.as_mut()).await.is_pending());
+        assert_eq!(calls.load(Ordering::SeqCst), 1);
+        drop(polling);
+        advance(Duration::from_secs(120)).await;
+        assert_eq!(calls.load(Ordering::SeqCst), 1);
+    }
+
+    struct DropProbe(Arc<AtomicUsize>);
+    impl Drop for DropProbe {
+        fn drop(&mut self) {
+            self.0.fetch_add(1, Ordering::SeqCst);
+        }
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn dropping_during_fetch_cancels_that_fetch_and_prevents_future_polls() {
+        let calls = AtomicUsize::new(0);
+        let dropped = Arc::new(AtomicUsize::new(0));
+        let mut polling = Box::pin(poll_until_complete(
+            || {
+                calls.fetch_add(1, Ordering::SeqCst);
+                let dropped = Arc::clone(&dropped);
+                async move {
+                    let _guard = DropProbe(dropped);
+                    pending().await
+                }
+            },
+            Duration::from_secs(5),
+            Instant::now() + Duration::from_secs(60),
+        ));
+        assert!(poll_once(polling.as_mut()).await.is_pending());
+        assert_eq!(calls.load(Ordering::SeqCst), 1);
+        assert_eq!(dropped.load(Ordering::SeqCst), 0);
+        drop(polling);
+        assert_eq!(dropped.load(Ordering::SeqCst), 1);
+        advance(Duration::from_secs(120)).await;
+        assert_eq!(calls.load(Ordering::SeqCst), 1);
+    }
+}
