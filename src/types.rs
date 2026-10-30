@@ -61,11 +61,15 @@ macro_rules! string_enum {
         }
 
         impl ::std::str::FromStr for $name {
-            type Err = ::std::convert::Infallible;
+            type Err = $crate::types::UnknownValue;
 
-            /// Never fails: unknown values become `Other`.
+            /// Parses a known value and rejects anything else, so typos in user input surface
+            /// here. Use `From<&str>` to accept unknown values as `Other`.
             fn from_str(value: &str) -> Result<Self, Self::Err> {
-                Ok(Self::from(value))
+                match value {
+                    $( $value => Ok(Self::$variant), )+
+                    other => Err($crate::types::UnknownValue::new(stringify!($name), other)),
+                }
             }
         }
 
@@ -98,6 +102,37 @@ macro_rules! string_enum {
 }
 
 pub(crate) use string_enum;
+
+/// Error of `FromStr` on the SDK's string enums: the value is not one this SDK version
+/// knows. (Decoding API responses never fails this way; unknown values become `Other`.)
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct UnknownValue {
+    kind: &'static str,
+    value: String,
+}
+
+impl UnknownValue {
+    pub(crate) fn new(kind: &'static str, value: &str) -> Self {
+        Self {
+            kind,
+            value: value.to_owned(),
+        }
+    }
+
+    /// The rejected input.
+    #[must_use]
+    pub fn value(&self) -> &str {
+        &self.value
+    }
+}
+
+impl fmt::Display for UnknownValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "unknown {} `{}`", self.kind, self.value)
+    }
+}
+
+impl std::error::Error for UnknownValue {}
 
 /// A MailerLite resource identifier.
 ///
@@ -587,7 +622,12 @@ mod tests {
         );
         assert_eq!(Colour::DarkBlue.to_string(), "dark_blue");
         assert_eq!("dark_blue".parse::<Colour>(), Ok(Colour::DarkBlue));
-        assert_eq!("neon".parse::<Colour>(), Ok(Colour::Other("neon".into())));
+        let err = "neon".parse::<Colour>().unwrap_err();
+        assert_eq!(
+            (err.value(), err.to_string().as_str()),
+            ("neon", "unknown Colour `neon`")
+        );
+        assert_eq!(Colour::from("neon"), Colour::Other("neon".into()));
     }
 
     #[test]
