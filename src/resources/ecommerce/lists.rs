@@ -105,6 +105,40 @@ impl<'a, T: DeserializeOwned + 'a> List<'a, T> {
         Ok(())
     }
     /// Fetch exactly one page.
+    ///
+    /// The returned page retains continuation metadata. This method does not
+    /// follow response links or fetch additional pages. Shop listings may
+    /// initialize the internal shop, and their requests are never retried even
+    /// when safe-read retries are enabled.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::{MailerLite, resources::ecommerce::Sort};
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let shop = mailerlite.ecommerce().shop("123456789");
+    /// let page = shop.products().list()
+    ///     .sort(Sort::Name)
+    ///     .page(1)
+    ///     .limit(25)
+    ///     .send()
+    ///     .await?;
+    ///
+    /// println!("Next page: {:?}", page.data.next_page());
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Config`] before dispatch for a zero page or limit, a sort
+    /// on an endpoint that does not support sorting, or name sorting outside
+    /// product/category paths. Empty or dot path identifiers are also rejected.
+    /// Server validation of filters and resource access returns [`Error::Api`].
+    /// HTTP failures, malformed responses, and execution deadlines return
+    /// [`Error::Transport`], [`Error::Decode`], and [`Error::Timeout`]. Missing
+    /// continuation metadata is valid and means no known next page.
     pub async fn send(self) -> Result<Response<NumberedPage<T>>> {
         self.validate()?;
         let path: Vec<&str> = self.scope.path.iter().map(String::as_str).collect();
@@ -114,6 +148,41 @@ impl<'a, T: DeserializeOwned + 'a> List<'a, T> {
             .await
     }
     /// Fetch pages on demand, retaining at most one page. Dropping stops further requests.
+    ///
+    /// Requires the `stream` feature. Requests begin when the stream is polled;
+    /// filters and external-resource-ID mode are retained across pages. Response
+    /// links are never followed. Each page has its own execution deadline, rather
+    /// than one deadline for consuming the entire stream. Shop-list requests
+    /// remain non-retryable because they may initialize the internal shop.
+    ///
+    /// # Examples
+    ///
+    /// This example also uses `futures-util` to consume the stream.
+    ///
+    /// ```no_run
+    /// use futures_util::TryStreamExt;
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let shop = mailerlite.ecommerce().shop("123456789");
+    /// let stream = shop.products().list().limit(25).into_stream();
+    /// tokio::pin!(stream);
+    ///
+    /// while let Some(product) = stream.try_next().await? {
+    ///     println!("{}", product.id);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Errors are yielded as stream items. The first poll reports invalid
+    /// parameters without dispatching a request; see [`Self::send`] for validation
+    /// and HTTP errors. A reported page number that differs from the requested
+    /// page yields [`Error::Pagination`]. Missing continuation metadata ends the
+    /// stream normally. An error terminates the stream, but items already yielded
+    /// remain available to the caller.
     #[cfg(feature = "stream")]
     pub fn into_stream(self) -> impl futures_core::Stream<Item = Result<T>> + 'a {
         let validation = self.validate();
