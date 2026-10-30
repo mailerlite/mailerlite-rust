@@ -300,7 +300,7 @@ impl fmt::Display for ValidationError {
 
 impl std::error::Error for ValidationError {}
 
-/// One field's validation errors.
+/// One field's validation errors. Always holds at least one message.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FieldError {
     field: String,
@@ -315,7 +315,8 @@ impl FieldError {
         &self.field
     }
 
-    /// The first (usually only) message.
+    /// The first (usually only) message. Never empty: fields the API reports without a message
+    /// are dropped while parsing.
     #[must_use]
     pub fn message(&self) -> &str {
         self.messages.first().map_or("", String::as_str)
@@ -561,10 +562,12 @@ impl<'de> Deserialize<'de> for FieldErrors {
             fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<FieldErrors, A::Error> {
                 let mut errors = Vec::new();
                 while let Some((field, value)) = map.next_entry::<String, Value>()? {
-                    errors.push(FieldError {
-                        field,
-                        messages: messages(value),
-                    });
+                    // A field without messages carries no information; dropping it keeps the
+                    // invariant that every FieldError has at least one message.
+                    let messages = messages(value);
+                    if !messages.is_empty() {
+                        errors.push(FieldError { field, messages });
+                    }
                 }
                 Ok(FieldErrors(errors))
             }
@@ -847,5 +850,18 @@ mod tests {
     fn truncates_on_char_boundary() {
         assert_eq!(truncate("ąčę".as_bytes(), 2), "ąč…");
         assert_eq!(truncate(b"short", 10), "short");
+    }
+
+    #[test]
+    fn fields_without_messages_are_dropped() {
+        let err = error(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            br#"{"message":"Bad","errors":{"email":[],"name":null,"groups.0":["Invalid."]}}"#,
+        );
+        let invalid = err.validation().unwrap();
+
+        assert_eq!(invalid.len(), 1);
+        assert_eq!(invalid.first().map(FieldError::field), Some("groups.0"));
+        assert_eq!(invalid.first().map(FieldError::message), Some("Invalid."));
     }
 }

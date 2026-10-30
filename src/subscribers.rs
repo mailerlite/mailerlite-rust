@@ -1086,7 +1086,10 @@ mod tests {
         );
         assert_eq!(stats.ecommerce.orders_count, 2);
         assert!((stats.ecommerce.revenue - 40.0).abs() < f64::EPSILON);
-        assert_eq!(orders.data[0].order, "2 X T-shirt, 1 X Mug");
+        assert_eq!(
+            orders.data[0].order.as_deref(),
+            Some("2 X T-shirt, 1 X Mug")
+        );
         assert_eq!(orders.meta.total, 1);
     }
 }
