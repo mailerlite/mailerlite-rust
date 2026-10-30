@@ -441,7 +441,22 @@ impl<'a> Subscribers<'a> {
     }
 }
 /// Builder for the cursor-paginated subscriber list.
+///
+/// Discarding a builder does not send a request. Call [`Self::send`] and await
+/// its result, or enable `stream` and consume `.into_stream()`.
+/// An unused builder triggers the `unused_must_use` lint, including after
+/// configuring it with consuming setters:
+///
+/// ```compile_fail
+/// #![deny(unused_must_use)]
+/// use mailerlite_rs::MailerLite;
+///
+/// let client = MailerLite::new("api-token").unwrap();
+///
+/// client.subscribers().list().limit(100);
+/// ```
 #[derive(Debug)]
+#[must_use = "request builders do nothing until sent; call .send().await"]
 pub struct ListSubscribers<'a> {
     client: &'a MailerLite,
     query: Vec<(String, String)>,
@@ -568,6 +583,7 @@ impl<'a> ListSubscribers<'a> {
 }
 /// Cursor-paginated subscribers belonging to a group, segment, or form.
 #[derive(Debug)]
+#[must_use = "request builders do nothing until sent; call .send().await"]
 pub struct SubscriberMembers<'a> {
     client: &'a MailerLite,
     path: Vec<String>,
@@ -703,6 +719,7 @@ impl<'a> SubscriberMembers<'a> {
 }
 /// Manual subscriber activity query.
 #[derive(Debug)]
+#[must_use = "request builders do nothing until sent; call .send().await"]
 pub struct ListSubscriberActivity<'a> {
     client: &'a MailerLite,
     id: String,

@@ -89,6 +89,7 @@ impl<'a> AutomationTemplates<'a> {
 }
 /// Builder for numbered pages of automation templates.
 #[derive(Debug)]
+#[must_use = "request builders do nothing until sent; call .send().await"]
 pub struct ListAutomationTemplates<'a> {
     client: &'a MailerLite,
     query: Vec<(String, String)>,

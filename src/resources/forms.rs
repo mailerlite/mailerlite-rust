@@ -201,6 +201,7 @@ impl<'a> Forms<'a> {
 }
 /// Parameters for a paginated request.
 #[derive(Debug)]
+#[must_use = "request builders do nothing until sent; call .send().await"]
 pub struct ListForms<'a> {
     client: &'a MailerLite,
     path: Vec<String>,
@@ -312,6 +313,7 @@ impl<'a> ListForms<'a> {
 }
 /// Parameters for a paginated request.
 #[derive(Debug)]
+#[must_use = "request builders do nothing until sent; call .send().await"]
 pub struct FormSubscribers<'a> {
     client: &'a MailerLite,
     path: Vec<String>,

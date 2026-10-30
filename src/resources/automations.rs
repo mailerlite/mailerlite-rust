@@ -225,6 +225,7 @@ impl<'a> Automations<'a> {
 }
 /// Parameters for a paginated request.
 #[derive(Debug)]
+#[must_use = "request builders do nothing until sent; call .send().await"]
 pub struct ListAutomations<'a> {
     client: &'a MailerLite,
     path: Vec<String>,
@@ -337,6 +338,7 @@ impl<'a> ListAutomations<'a> {
 }
 /// Parameters for a paginated request.
 #[derive(Debug)]
+#[must_use = "request builders do nothing until sent; call .send().await"]
 pub struct ListAutomationActivity<'a> {
     client: &'a MailerLite,
     path: Vec<String>,

@@ -196,6 +196,7 @@ pub enum FieldSort {
 }
 /// Field list builder.
 #[derive(Debug)]
+#[must_use = "request builders do nothing until sent; call .send().await"]
 pub struct ListFields<'a> {
     client: &'a MailerLite,
     query: Vec<(String, String)>,

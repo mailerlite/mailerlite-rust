@@ -78,6 +78,7 @@ fn validate_date(date: &str) -> Result<()> {
 ///
 /// The builder's debug output excludes credentials and injected HTTP-client internals.
 #[derive(Clone)]
+#[must_use = "client builders do nothing until built; call .build()"]
 pub struct MailerLiteBuilder {
     pub(crate) token: SecretString,
     pub(crate) http_client: Option<reqwest::Client>,

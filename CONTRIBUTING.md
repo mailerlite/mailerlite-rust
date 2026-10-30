@@ -122,6 +122,13 @@ public naming. Required request fields belong in constructors; optional fields
 use consuming setters. Resource handles borrow a reusable client. Avoid extra
 traits, macros, dependencies, allocations, or cloning without a concrete need.
 
+Mark lazy request-builder types `#[must_use]` with a message directing callers
+to `.send().await`, and client configuration builders with a message directing
+callers to `.build()`. Type-level annotations also catch discarded consuming
+setter chains. Async request futures and pagination streams already inherit
+`must_use` from `Future` and `Stream`. Keep these warnings focused on unfinished
+operations rather than applying them to every resource handle or data model.
+
 Return `Result` for recoverable failures. Do not introduce `unwrap`, `expect`, or
 panics into normal request handling. Tests can use assertions and unwrap known
 fixtures. Unsafe code is forbidden. Document every new public type, variant,

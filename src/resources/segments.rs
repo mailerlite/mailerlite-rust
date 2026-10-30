@@ -159,6 +159,7 @@ impl<'a> Segments<'a> {
 }
 /// Segment list builder.
 #[derive(Debug)]
+#[must_use = "request builders do nothing until sent; call .send().await"]
 pub struct ListSegments<'a> {
     client: &'a MailerLite,
     query: Vec<(String, String)>,

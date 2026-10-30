@@ -164,6 +164,13 @@ nested resource. The shop itself still takes its MailerLite shop ID.
 
 ## Listing and pagination
 
+Lazy request builders are `#[must_use]`: discarding one now warns, or fails
+compilation when `unused_must_use` is denied. Call `.send().await` to execute a
+request, or enable `stream` and consume `.into_stream()`. Discarded client
+configuration builders also warn; call `.build()` to construct the client.
+Use `let _ = ...` only when intentionally discarding a builder; it does not
+execute the operation.
+
 V1 listing and manual continuation used string parameters and raw JSON:
 
 ```rust

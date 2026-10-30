@@ -42,6 +42,7 @@ impl Sort {
 }
 /// A numbered e-commerce list request. Fetch one page or lazily stream items.
 #[derive(Debug, Clone)]
+#[must_use = "request builders do nothing until sent; call .send().await"]
 pub struct List<'a, T> {
     scope: Scope<'a>,
     sortable: bool,

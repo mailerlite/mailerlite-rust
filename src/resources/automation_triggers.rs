@@ -613,6 +613,7 @@ impl<'a> AutomationTriggers<'a> {
 }
 /// Builder for paginated subscribers associated with a trigger.
 #[derive(Debug)]
+#[must_use = "request builders do nothing until sent; call .send().await"]
 pub struct TriggerSubscribers<'a> {
     client: &'a MailerLite,
     path: Vec<String>,
