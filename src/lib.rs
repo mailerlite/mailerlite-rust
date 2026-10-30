@@ -114,7 +114,14 @@ pub use client::{MailerLite, MailerLiteBuilder};
 pub use error::{ApiError, Error, FieldError, PathSegment, RateLimit, Result, ValidationError};
 pub use http::RawRequest;
 pub use pagination::{CursorPage, Page};
-pub use reqwest::Method;
+pub use reqwest::{Method, StatusCode};
+
+/// The HTTP client the SDK is built on, re-exported so you can build a matching
+/// [`reqwest::Client`] for [`MailerLiteBuilder::http_client`].
+pub use reqwest;
+
+/// Re-exported because loosely typed API fields use [`serde_json::Value`].
+pub use serde_json;
 pub use types::{FieldValue, Id, Rate, Sort, Timestamp};
 
 /// Every request goes to production. For a one-off local run, edit this constant and

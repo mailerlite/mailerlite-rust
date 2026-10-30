@@ -127,7 +127,9 @@ impl MailerLiteBuilder {
         self
     }
 
-    /// Uses your own `reqwest::Client` (e.g. to share a connection pool or set a proxy).
+    /// Uses your own [`reqwest::Client`](crate::reqwest::Client) (e.g. to share a connection pool
+    /// or set a proxy); build it from [`mailerlite_rs::reqwest`](crate::reqwest) so the versions
+    /// match.
     /// Authentication and other headers are still added to every request.
     pub fn http_client(mut self, client: reqwest::Client) -> Self {
         self.http = Some(client);
