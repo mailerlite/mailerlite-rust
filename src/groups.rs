@@ -298,7 +298,8 @@ impl<'a> Groups<'a> {
     }
 
     /// `DELETE /subscribers/{subscriber_id}/groups/{group_id}`: removes a subscriber from the
-    /// group. `subscriber_id` may also be the subscriber's email.
+    /// group. `subscriber_id` may also be the subscriber's email, as shown in MailerLite's
+    /// basic integration guide (the endpoint reference only mentions ids).
     pub async fn unassign_subscriber(
         &self,
         group_id: impl AsRef<str>,

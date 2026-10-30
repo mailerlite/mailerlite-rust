@@ -201,14 +201,15 @@ mod tests {
                 &ListSubscribers::new()
                     .status(SubscriberStatus::Unsubscribed)
                     .limit(50)
-                    .cursor("abc"),
+                    .cursor("abc")
+                    .after("99"),
             )
             .await
             .unwrap();
 
         mock.request().assert(
             Method::GET,
-            "segments/5/subscribers?filter%5Bstatus%5D=unsubscribed&limit=50&cursor=abc",
+            "segments/5/subscribers?filter%5Bstatus%5D=unsubscribed&limit=50&cursor=abc&after=99",
         );
         assert_eq!(page.data[0].email, "dummy@example.com");
         assert_eq!(

@@ -246,9 +246,10 @@ impl MailerLite {
 impl Batch<'_> {
     /// `POST /batch`: runs every call in `request` in order.
     ///
-    /// Fails with `422` if the envelope itself is invalid (e.g. more than [`MAX_REQUESTS`]
-    /// items or a path not starting with `api/`); failures of individual calls are reported
-    /// in [`BatchResponse::responses`] instead.
+    /// The request as a whole fails with [`Error::Api`] when MailerLite
+    /// rejects the envelope (e.g. more than [`MAX_REQUESTS`] items or a path not starting with
+    /// `api/`; the docs state these rules but not the status code). Failures of individual
+    /// calls are reported in [`BatchResponse::responses`] instead.
     pub async fn send(&self, request: &BatchRequest) -> Result<BatchResponse> {
         self.client
             .call(Method::POST, &["batch"])

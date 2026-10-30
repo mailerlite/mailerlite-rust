@@ -104,8 +104,9 @@ pub struct Subscriber {
     /// Custom and default field values keyed by field key (`name`, `last_name`, ...).
     #[serde(default, deserialize_with = "de::null_default")]
     pub fields: BTreeMap<String, FieldValue>,
-    /// Groups the subscriber belongs to. Only filled by [`Subscribers::get`] and by lists
-    /// requested with [`ListSubscribers::include_groups`].
+    /// Groups the subscriber belongs to. Returned by single-subscriber responses (get, create,
+    /// update, forget) and by lists requested with [`ListSubscribers::include_groups`]; empty
+    /// when the API leaves it out.
     #[serde(default, deserialize_with = "de::null_default")]
     pub groups: Vec<Group>,
     /// When double opt-in was confirmed.
@@ -120,6 +121,12 @@ pub struct Subscriber {
     /// When the subscriber's data will be erased (after [`Subscribers::forget`]).
     #[serde(default)]
     pub forget_at: Option<Timestamp>,
+    /// When the email address last changed.
+    #[serde(default)]
+    pub email_changed_at: Option<Timestamp>,
+    /// Location derived from the signup IP (returned when forgetting a subscriber).
+    #[serde(default)]
+    pub location: Option<Location>,
 }
 
 impl Subscriber {
@@ -128,6 +135,30 @@ impl Subscriber {
     pub fn field(&self, key: &str) -> Option<&FieldValue> {
         self.fields.get(key).filter(|value| !value.is_null())
     }
+}
+
+/// Approximate location of a subscriber.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
+pub struct Location {
+    /// Location id.
+    #[serde(default)]
+    pub id: Option<Id>,
+    /// City or place name.
+    #[serde(default)]
+    pub title: Option<String>,
+    /// Country.
+    #[serde(default)]
+    pub country_name: Option<String>,
+    /// Continent.
+    #[serde(default)]
+    pub continent_name: Option<String>,
+    /// State or region.
+    #[serde(default)]
+    pub state_name: Option<String>,
+    /// IANA timezone, e.g. `America/New_York`.
+    #[serde(default)]
+    pub time_zone: Option<String>,
 }
 
 /// Result of [`Subscribers::create`], which upserts by email.
@@ -149,13 +180,18 @@ pub struct ListSubscribers {
     /// `active` on the API side.
     #[serde(rename = "filter[status]", skip_serializing_if = "Option::is_none")]
     pub status: Option<SubscriberStatus>,
-    /// Page size (API default 25, at most 1000 for group subscribers).
+    /// Page size. API defaults: 25 for subscribers, segments and forms; 50 (at most 1000) for
+    /// group subscribers.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<u32>,
     /// Cursor from [`CursorPage::next_cursor`].
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cursor: Option<String>,
-    /// Embed each subscriber's groups.
+    /// Segment subscribers only: the id of the last subscriber already fetched. Prefer
+    /// [`cursor`](Self::cursor), which every subscriber listing supports.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub after: Option<Id>,
+    /// Embed each subscriber's groups (documented for `/subscribers` and group subscribers).
     #[serde(
         rename = "include",
         skip_serializing_if = "std::ops::Not::not",
@@ -194,6 +230,13 @@ impl ListSubscribers {
     #[must_use]
     pub fn cursor(mut self, cursor: impl Into<String>) -> Self {
         self.cursor = Some(cursor.into());
+        self
+    }
+
+    /// Segment subscribers only: continue after this subscriber id.
+    #[must_use]
+    pub fn after(mut self, subscriber_id: impl Into<Id>) -> Self {
+        self.after = Some(subscriber_id.into());
         self
     }
 
@@ -457,6 +500,9 @@ pub struct Activity {
 #[non_exhaustive]
 pub struct ListActivity {
     /// Only entries of this type.
+    ///
+    /// The API accepts the first ten [`ActivityType`] values here; `AddedToGroup` and
+    /// `Activated` only appear in responses.
     #[serde(rename = "filter[log_name]", skip_serializing_if = "Option::is_none")]
     pub log_name: Option<ActivityType>,
     /// Page size (API default 100).
@@ -587,6 +633,18 @@ pub struct ImportStatus {
     /// Rows rejected because the address is banned.
     #[serde(default)]
     pub banned_import_emails_count: u64,
+    /// Account the import belongs to.
+    #[serde(default)]
+    pub account_id: Option<Id>,
+    /// Uploaded file path (empty for API imports).
+    #[serde(default)]
+    pub file_path: Option<String>,
+    /// How rows were matched to existing subscribers.
+    #[serde(default)]
+    pub match_route: Option<String>,
+    /// Source label shown in the app.
+    #[serde(default)]
+    pub source_label: Option<String>,
     /// Last update time (ISO-8601).
     #[serde(default)]
     pub updated_at: Option<Timestamp>,
@@ -730,6 +788,9 @@ impl<'a> Subscribers<'a> {
     }
 
     /// `GET /subscribers/{id}/activity-log`: the subscriber's activity.
+    ///
+    /// The API returns no pagination metadata for this list, so [`Page::next_page`] is always
+    /// `None`; request the next [`ListActivity::page`] until a page comes back empty.
     pub async fn activity(
         &self,
         id: impl AsRef<str>,
@@ -947,6 +1008,9 @@ mod tests {
             forgotten.subscriber.forget_at.unwrap().as_str(),
             "2023-05-19 05:40:50"
         );
+        let location = forgotten.subscriber.location.unwrap();
+        assert_eq!(location.time_zone.as_deref(), Some("America/New_York"));
+        assert_eq!(forgotten.subscriber.email_changed_at, None);
     }
 
     #[tokio::test]
@@ -990,6 +1054,8 @@ mod tests {
             .assert(Method::GET, "subscribers/import/47366063630845932");
         assert!(status.done);
         assert_eq!(status.unchanged_count, 3);
+        assert_eq!(status.file_path.as_deref(), Some(""));
+        assert_eq!(status.source_label.as_deref(), Some(""));
         assert_eq!(status.unchanged[1].email, "dummy_two+two@import.com");
     }
 

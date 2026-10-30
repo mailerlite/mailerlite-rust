@@ -94,7 +94,9 @@ pub struct Webhook {
 ///
 /// Set [`batchable(true)`](Self::batchable) when subscribing to
 /// [`WebhookEvent::SubscriberDeleted`], [`WebhookEvent::CampaignOpen`] or
-/// [`WebhookEvent::CampaignClick`]; the API rejects those events otherwise.
+/// [`WebhookEvent::CampaignClick`]. The docs' event table lists all three as requiring it,
+/// while the request-body table names only the two campaign events; setting it for all three
+/// satisfies both.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[non_exhaustive]
 pub struct CreateWebhook {

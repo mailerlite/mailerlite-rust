@@ -534,6 +534,9 @@ impl CampaignEmail {
 
     /// An email without subject or sender, for multivariate campaigns where those come from
     /// [`MultivariateSettings`] (typically one per content variation, with [`content`](Self::content)).
+    ///
+    /// Only valid with [`CreateCampaign::multivariate`]: every other campaign type (and
+    /// [`UpdateCampaign`]) requires subject, `from_name` and `from`, so use [`new`](Self::new).
     #[must_use]
     pub fn variation() -> Self {
         Self::default()
@@ -742,10 +745,17 @@ pub struct TestVariants {
 ///     MultivariateSettings, Sender, TimeUnit, WinnerMetric, WinnerSelection,
 /// };
 ///
-/// let settings = MultivariateSettings::new("Hello", Sender::new("Ann", "ann@example.com"), 20)
-///     .subject("Hi there")
-///     .content(2)
-///     .winner(WinnerSelection::new(WinnerMetric::Clicks, 4, TimeUnit::Hours));
+/// let settings = MultivariateSettings::new(
+///     "Hello",
+///     Sender::new("Ann", "ann@example.com"),
+///     20,
+///     WinnerSelection::new(WinnerMetric::Clicks, 4, TimeUnit::Hours),
+/// )
+/// .subject("Hi there")
+/// .content(2);
+///
+/// // Testing 3 sending times: no winner selection, the split is 100%.
+/// let timing = MultivariateSettings::sending_time_test("Hello", Sender::new("Ann", "ann@example.com"), 3);
 /// ```
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[non_exhaustive]
@@ -760,9 +770,17 @@ pub struct MultivariateSettings {
 }
 
 impl MultivariateSettings {
-    /// A test starting from one subject and one sender, with a single content version and
-    /// sending time. Add variants with the setters.
-    pub fn new(subject: impl Into<String>, sender: Sender, test_split: u32) -> Self {
+    /// A test that does not vary the sending time, starting from one subject and one sender
+    /// with a single content version. Add variants with the setters.
+    ///
+    /// `test_split` must be 10 to 50. The winner selection is required by the API for every
+    /// test that doesn't vary the sending time.
+    pub fn new(
+        subject: impl Into<String>,
+        sender: Sender,
+        test_split: u32,
+        winner: WinnerSelection,
+    ) -> Self {
         Self {
             test_variants: TestVariants {
                 subject: vec![subject.into()],
@@ -770,8 +788,23 @@ impl MultivariateSettings {
                 content: 1,
                 sending_time: 1,
             },
-            winner: None,
+            winner: Some(winner),
             test_split,
+        }
+    }
+
+    /// A test of `times` sending times (2 to 8). The API picks no winner for these, so no
+    /// winner selection is sent, and the split is 100%.
+    pub fn sending_time_test(subject: impl Into<String>, sender: Sender, times: u8) -> Self {
+        Self {
+            test_variants: TestVariants {
+                subject: vec![subject.into()],
+                sender: vec![sender],
+                content: 1,
+                sending_time: times,
+            },
+            winner: None,
+            test_split: 100,
         }
     }
 
@@ -796,7 +829,9 @@ impl MultivariateSettings {
         self
     }
 
-    /// Sets the number of sending times (1 to 8).
+    /// Sets the number of sending times (1 to 8). Prefer
+    /// [`sending_time_test`](Self::sending_time_test) to test more than one: it also drops the
+    /// winner selection and sets the 100% split the API expects.
     #[must_use]
     pub fn sending_time(mut self, times: u8) -> Self {
         self.test_variants.sending_time = times;
@@ -1038,28 +1073,52 @@ impl UpdateCampaign {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[non_exhaustive]
 pub struct Schedule {
-    /// Date, `YYYY-MM-DD`, in the future.
-    pub date: String,
-    /// Hour, `HH`.
-    pub hours: String,
-    /// Minute, `mm`.
-    pub minutes: String,
+    /// Date, `YYYY-MM-DD`, in the future. Used by `scheduled` and `smart_sending` delivery.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub date: Option<String>,
+    /// Hour, `HH`. Used by `scheduled` and `timezone_based` delivery.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hours: Option<String>,
+    /// Minute, `mm`. Used by `scheduled` and `timezone_based` delivery.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub minutes: Option<String>,
     /// Timezone id (see the timezones endpoint). Defaults to the account's timezone.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub timezone_id: Option<u64>,
 }
 
 impl Schedule {
-    /// `date` (`YYYY-MM-DD`) at `hours`:`minutes` (`HH`, `mm`).
+    /// `date` (`YYYY-MM-DD`) at `hours`:`minutes` (`HH`, `mm`), for `scheduled` delivery,
+    /// resends and sending time tests.
     pub fn new(
         date: impl Into<String>,
         hours: impl Into<String>,
         minutes: impl Into<String>,
     ) -> Self {
         Self {
-            date: date.into(),
-            hours: hours.into(),
-            minutes: minutes.into(),
+            date: Some(date.into()),
+            hours: Some(hours.into()),
+            minutes: Some(minutes.into()),
+            timezone_id: None,
+        }
+    }
+
+    /// A date only (`YYYY-MM-DD`), for `smart_sending` delivery.
+    pub fn on(date: impl Into<String>) -> Self {
+        Self {
+            date: Some(date.into()),
+            hours: None,
+            minutes: None,
+            timezone_id: None,
+        }
+    }
+
+    /// A time of day only (`HH`, `mm`), for `timezone_based` delivery.
+    pub fn at(hours: impl Into<String>, minutes: impl Into<String>) -> Self {
+        Self {
+            date: None,
+            hours: Some(hours.into()),
+            minutes: Some(minutes.into()),
             timezone_id: None,
         }
     }
@@ -1138,19 +1197,24 @@ impl ScheduleCampaign {
         Self::with(Some(Delivery::Scheduled), Some(schedule))
     }
 
-    /// Sends at `schedule`'s time in each subscriber's timezone.
+    /// Sends at `schedule`'s time of day in each subscriber's timezone; build it with
+    /// [`Schedule::at`].
     #[must_use]
     pub fn timezone_based(schedule: Schedule) -> Self {
         Self::with(Some(Delivery::TimezoneBased), Some(schedule))
     }
 
-    /// Smart sending starting at `schedule`.
+    /// Smart sending on `schedule`'s date; build it with [`Schedule::on`].
     #[must_use]
     pub fn smart_sending(schedule: Schedule) -> Self {
         Self::with(Some(Delivery::SmartSending), Some(schedule))
     }
 
     /// An A/B sending time test sending version A at `a` and version B at `b`.
+    ///
+    /// The docs list `timezone_id` here as a required *string* (it is an integer everywhere
+    /// else); the SDK sends the integer from [`Schedule::timezone`] and omits it when unset,
+    /// which the docs also describe as defaulting to the account timezone.
     ///
     /// The docs do not say which `delivery` goes with a sending time test; this sends
     /// `scheduled`. Set [`ScheduleCampaign::delivery`] directly if the API expects another.
@@ -1767,14 +1831,14 @@ mod tests {
                     CampaignEmail::variation().content("<p>A</p>"),
                     CampaignEmail::variation().content("<p>B</p>"),
                 ],
-                MultivariateSettings::new("Hello", Sender::new("Ann", "ann@example.com"), 20)
-                    .subject("Hi")
-                    .content(2)
-                    .winner(WinnerSelection::new(
-                        WinnerMetric::Clicks,
-                        1,
-                        TimeUnit::Days,
-                    )),
+                MultivariateSettings::new(
+                    "Hello",
+                    Sender::new("Ann", "ann@example.com"),
+                    20,
+                    WinnerSelection::new(WinnerMetric::Clicks, 1, TimeUnit::Days),
+                )
+                .subject("Hi")
+                .content(2),
             ))
             .await
             .unwrap();
@@ -2020,5 +2084,46 @@ mod tests {
 
         assert_eq!(campaign.settings, CampaignSettings::default());
         assert_eq!(campaign.emails[0].language_id.as_deref(), Some("4"));
+    }
+
+    #[test]
+    fn schedule_sends_only_the_parts_each_delivery_uses() {
+        let body = |schedule: &ScheduleCampaign| serde_json::to_value(schedule).unwrap();
+
+        assert_eq!(
+            body(&ScheduleCampaign::smart_sending(Schedule::on("2030-01-02"))),
+            json!({"delivery": "smart_sending", "schedule": {"date": "2030-01-02"}})
+        );
+        assert_eq!(
+            body(&ScheduleCampaign::timezone_based(Schedule::at("09", "30"))),
+            json!({"delivery": "timezone_based", "schedule": {"hours": "09", "minutes": "30"}})
+        );
+        assert_eq!(
+            body(&ScheduleCampaign::scheduled(
+                Schedule::new("2030-01-02", "09", "30").timezone(370)
+            )),
+            json!({
+                "delivery": "scheduled",
+                "schedule": {"date": "2030-01-02", "hours": "09", "minutes": "30", "timezone_id": 370}
+            })
+        );
+    }
+
+    #[test]
+    fn multivariate_sending_time_test_has_no_winner() {
+        let settings =
+            MultivariateSettings::sending_time_test("Hi", Sender::new("Ann", "ann@example.com"), 3);
+        assert_eq!(
+            serde_json::to_value(settings).unwrap(),
+            json!({
+                "test_variants": {
+                    "subject": ["Hi"],
+                    "sender": [{"from": "ann@example.com", "from_name": "Ann"}],
+                    "content": 1,
+                    "sending_time": 3
+                },
+                "test_split": 100
+            })
+        );
     }
 }
