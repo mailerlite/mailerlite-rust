@@ -7,7 +7,6 @@ use serde_json::{Map, Value};
 use crate::{
     MailerLite, Page, Result,
     campaigns::Email,
-    subscribers::Subscriber,
     types::{Id, NameBody, Rate, Timestamp, de, string_enum},
 };
 
@@ -93,7 +92,8 @@ pub struct Automation {
     /// Whether the content was flagged as banned.
     #[serde(default, deserialize_with = "de::null_default")]
     pub has_banned_content: bool,
-    /// Subscribers that currently qualify for the trigger.
+    /// Subscribers that currently qualify for the trigger. Only computed when fetching a single
+    /// automation ([`Automations::get`]); 0 in lists.
     #[serde(default, deserialize_with = "de::null_default")]
     pub qualified_subscribers_count: u64,
 }
@@ -286,9 +286,18 @@ pub struct AutomationStats {
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct AutomationAggregations {
-    /// Total number of automations in the account.
+    /// All automations. The API sends `all` (the public docs say `sum`; both are accepted).
+    #[serde(default, alias = "sum", deserialize_with = "de::null_default")]
+    pub all: u64,
+    /// Automations that are not drafts.
     #[serde(default, deserialize_with = "de::null_default")]
-    pub sum: u64,
+    pub workflows: u64,
+    /// Draft automations.
+    #[serde(default, deserialize_with = "de::null_default")]
+    pub drafts: u64,
+    /// Automations with unpublished changes.
+    #[serde(default, deserialize_with = "de::null_default")]
+    pub unsync: u64,
 }
 
 /// Query for [`Automations::list`].
@@ -386,7 +395,7 @@ pub struct ListAutomationActivity {
     /// 1-based page number.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub page: Option<u32>,
-    /// Page size (API default 10).
+    /// Page size (API default 50).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<u32>,
 }
@@ -486,7 +495,7 @@ pub struct AutomationActivity {
     pub current_step: Option<Step>,
     /// The subscriber, when the API includes it.
     #[serde(default)]
-    pub subscriber: Option<Subscriber>,
+    pub subscriber: Option<ActivitySubscriber>,
 }
 
 /// One executed step of an [`AutomationActivity`].
@@ -503,6 +512,23 @@ pub struct StepRun {
     /// When the step is or was scheduled to run.
     #[serde(default)]
     pub scheduled_for: Option<Timestamp>,
+    /// When the step finished running.
+    #[serde(default)]
+    pub finished_at: Option<Timestamp>,
+}
+
+/// The subscriber of an [`AutomationActivity`] (a reduced subscriber object).
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
+pub struct ActivitySubscriber {
+    /// Subscriber id.
+    pub id: Id,
+    /// Email address.
+    #[serde(default)]
+    pub email: String,
+    /// Name, if set.
+    #[serde(default)]
+    pub name: Option<String>,
 }
 
 string_enum! {
@@ -825,7 +851,7 @@ mod tests {
             Method::GET,
             "automations?filter%5Benabled%5D=false&filter%5Bname%5D=Welcome&filter%5Bgroup%5D=42&page=2&limit=5",
         );
-        assert_eq!(page.aggregations.unwrap().sum, 24);
+        assert_eq!(page.aggregations.unwrap().all, 24);
         let automation = &page.data[0];
         assert!(!automation.enabled);
         assert_eq!(automation.trigger_data.valid, Some(true));

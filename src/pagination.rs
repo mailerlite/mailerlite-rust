@@ -170,8 +170,8 @@ pub struct CursorMeta {
     pub path: Option<String>,
 }
 
-/// Wire shape of [`Page`]: `aggregations` lives in `meta` for most endpoints but at the top
-/// level for automations, and `meta`/`links` are missing on a few lists.
+/// Wire shape of [`Page`]: `aggregations` lives in `meta` (a top-level `aggregations`, as some
+/// doc examples show, is accepted too), and `meta`/`links` are missing on a few lists.
 #[derive(Deserialize)]
 #[serde(bound(deserialize = "T: Deserialize<'de>, A: Deserialize<'de>"))]
 struct RawPage<T, A> {
