@@ -479,15 +479,19 @@ in screenshots, logs, or attachments.
 
 The current [workflow](.github/workflows/main.yaml) runs on pushes:
 
-- Build and test with default features on stable, beta, and nightly.
+- Build, run tests (including doctests), compile examples, and check rustdoc
+  with warnings denied on Rust 1.88.0, stable, beta, and nightly for default
+  features, all features, native TLS alone, and no default features (16 matrix
+  jobs).
 - Check formatting and run Clippy across all targets and features on stable.
 - On `main`, run release-please after build/test and quality checks pass.
 - When release-please creates a release, run the crates.io publish job using the
   configured environment and repository credentials.
 
-It does not currently have a `pull_request` trigger or dedicated MSRV,
-feature-matrix, rustdoc, advisory-audit, or package-consumer jobs. Those local
-checks remain important; do not assume a green workflow covers them.
+Feature and rustdoc checks live in the existing build/test job. CI compiles
+examples without running them, and normal tests require no API token. It does
+not currently have a `pull_request` trigger, advisory-audit, or package-consumer
+job; those release checks still need to be completed locally.
 
 Maintainers should complete these steps before approving a release:
 
