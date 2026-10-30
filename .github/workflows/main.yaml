@@ -33,11 +33,28 @@ jobs:
       - name: Test
         run: cargo test --verbose
 
+  quality:
+    name: Formatting and lint
+
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install stable tooling
+        run: rustup toolchain install stable --profile minimal --component rustfmt --component clippy
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+
+      - name: Check formatting
+        run: cargo +stable fmt --all -- --check
+
+      - name: Lint
+        run: cargo +stable clippy --all-targets --all-features -- -D warnings
+
   release-please:
     name: Execute release
 
     runs-on: ubuntu-24.04
-    needs: build-test
+    needs: [build-test, quality]
     if: github.ref == 'refs/heads/main'
 
     outputs:
