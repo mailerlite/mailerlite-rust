@@ -77,7 +77,7 @@ before modelling an endpoint; most decoding bugs come from one of these.
   the `Signature` header is `hex(HMAC-SHA256(raw_body, secret))` (`webhook_signature::verify`).
 - Batch: max 50 requests, `path` must start with `api/`, webhook endpoints aren't allowed, a failed item
   doesn't fail the batch.
-- E-commerce: `?with_resource_id` makes every id in the path *and* body your platform's `resource_id`.
+- E-commerce: `?with_resource_id` makes every id below the shop (path *and* body) your platform's `resource_id`; the shop stays addressed by its MailerLite id.
   Carts are created only via orders and can't be deleted. Variant `POST` is a **sync**: if any item has a
   `resource_id`, existing variants not listed are deleted. Order `pending` triggers abandoned-cart
   automations, `complete` triggers purchase automations.

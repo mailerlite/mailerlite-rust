@@ -16,9 +16,9 @@
 //!
 //! Most resources accept a `resource_id`: an id you choose (e.g. your platform's product id).
 //! Call [`ShopScope::with_resource_id`] and every request through that scope carries the
-//! `with_resource_id` flag. In that mode **every** id is one of your `resource_id`s: the shop
-//! id, the ids in the path, and references in request bodies (product categories, cart item
-//! products, ...).
+//! `with_resource_id` flag. In that mode every id *below* the shop is one of your
+//! `resource_id`s: ids in the path and references in request bodies (product categories, cart
+//! item products, ...). The shop itself is still addressed by its MailerLite id.
 //!
 //! ```no_run
 //! # async fn run(client: mailerlite_rs::MailerLite) -> mailerlite_rs::Result<()> {
@@ -144,8 +144,9 @@ pub struct ShopScope<'a> {
 
 impl<'a> ShopScope<'a> {
     /// Switches to your own ids: every request through this scope adds the
-    /// `with_resource_id` query flag, so the shop id, every id in the path and every id
-    /// reference in a request body is read as a `resource_id` you assigned.
+    /// `with_resource_id` query flag, so every id in the path below the shop and every id
+    /// reference in a request body is read as a `resource_id` you assigned. The shop id
+    /// itself stays the MailerLite shop id.
     #[must_use]
     pub fn with_resource_id(mut self) -> Self {
         self.with_resource_id = true;
