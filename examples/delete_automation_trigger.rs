@@ -1,19 +1,17 @@
-use mailerlite_rs::{response::Response, MailerLite};
+//! Delete an automation trigger.
+//!
+//! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_AUTOMATION_ID`, `MAILERLITE_TRIGGER_ID`.
+use mailerlite_rs::MailerLite;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let automation_id: String = String::from("Your Automation ID");
-
-    let trigger_id: String = String::from("Your Trigger ID");
-
-    let response: Response = mailerlite
-        .automation_trigger()
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let automation_id = std::env::var("MAILERLITE_AUTOMATION_ID")?;
+    let trigger_id = std::env::var("MAILERLITE_TRIGGER_ID")?;
+    let response = mailerlite
+        .automation_triggers()
         .delete(automation_id, trigger_id)
-        .await;
-
-    println!("{:#?}", response);
+        .await?;
+    println!("HTTP {}", response.metadata.status);
+    Ok(())
 }

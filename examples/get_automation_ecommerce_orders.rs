@@ -1,19 +1,25 @@
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+//! Read a page of automation order activity.
+//!
+//! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_AUTOMATION_ID`.
+use mailerlite_rs::MailerLite;
+use mailerlite_rs::resources::automation_actions::{
+    AutomationOrderQuery, AutomationOrderTimeFrame,
+};
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Automation ID");
-
-    let parameter: Parameter = Parameter::new().add("time_frame", "all_time");
-
-    let response: Response = mailerlite
-        .automation()
-        .ecommerce_orders(id, parameter.clone())
-        .await;
-
-    println!("{:#?}", response);
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let id = std::env::var("MAILERLITE_AUTOMATION_ID")?;
+    let params = AutomationOrderQuery::new(AutomationOrderTimeFrame::AllTime);
+    let response = mailerlite
+        .automations()
+        .ecommerce_orders(id, params)
+        .await?;
+    for order in response.data.data {
+        println!(
+            "Subscriber {}: order total {}",
+            order.subscriber.id, order.total
+        );
+    }
+    Ok(())
 }

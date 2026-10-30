@@ -1,21 +1,22 @@
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+//! Delete an automation step and its branches.
+//!
+//! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_AUTOMATION_ID`, `MAILERLITE_STEP_ID`.
+use mailerlite_rs::MailerLite;
+use mailerlite_rs::resources::automation_steps::{DeleteBranch, DeleteStep};
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let automation_id: String = String::from("Your Automation ID");
-
-    let step_id: String = String::from("Your Step ID");
-
-    let parameter: Parameter = Parameter::new().add("branch_to_delete", "all");
-
-    let response: Response = mailerlite
-        .automation_step()
-        .delete(automation_id, step_id, parameter.clone())
-        .await;
-
-    println!("{:#?}", response);
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let automation_id = std::env::var("MAILERLITE_AUTOMATION_ID")?;
+    let step_id = std::env::var("MAILERLITE_STEP_ID")?;
+    let response = mailerlite
+        .automation_steps()
+        .delete(
+            automation_id,
+            step_id,
+            DeleteStep::new().branch_to_delete(DeleteBranch::All),
+        )
+        .await?;
+    println!("HTTP {}", response.metadata.status);
+    Ok(())
 }

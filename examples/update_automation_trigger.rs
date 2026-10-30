@@ -1,21 +1,23 @@
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
+//! Update the group associated with an automation trigger.
+//!
+//! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_AUTOMATION_ID`, `MAILERLITE_TRIGGER_ID`, `MAILERLITE_GROUP_ID`.
+use mailerlite_rs::MailerLite;
+use mailerlite_rs::resources::automation_triggers::UpdateAutomationTrigger;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let automation_id: String = String::from("Your Automation ID");
-
-    let trigger_id: String = String::from("Your Trigger ID");
-
-    let data: Data = Data::new().add("data[group_ids][0]", "Your Group ID");
-
-    let response: Response = mailerlite
-        .automation_trigger()
-        .update(automation_id, trigger_id, data.clone())
-        .await;
-
-    println!("{:#?}", response);
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let automation_id = std::env::var("MAILERLITE_AUTOMATION_ID")?;
+    let trigger_id = std::env::var("MAILERLITE_TRIGGER_ID")?;
+    let group_id = std::env::var("MAILERLITE_GROUP_ID")?;
+    let response = mailerlite
+        .automation_triggers()
+        .update(
+            automation_id,
+            trigger_id,
+            UpdateAutomationTrigger::new().group_ids([group_id]),
+        )
+        .await?;
+    println!("HTTP {}", response.metadata.status);
+    Ok(())
 }

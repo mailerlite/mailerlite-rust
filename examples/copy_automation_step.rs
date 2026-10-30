@@ -1,21 +1,23 @@
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
+//! Copy an automation step.
+//!
+//! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_AUTOMATION_ID`, `MAILERLITE_STEP_ID`, `MAILERLITE_PARENT_STEP_ID`.
+use mailerlite_rs::MailerLite;
+use mailerlite_rs::resources::automation_steps::CopyStep;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let automation_id: String = String::from("Your Automation ID");
-
-    let step_id: String = String::from("Your Step ID");
-
-    let data: Data = Data::new().add("parent_id", "Your Step ID");
-
-    let response: Response = mailerlite
-        .automation_step()
-        .copy(automation_id, step_id, data.clone())
-        .await;
-
-    println!("{:#?}", response);
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let automation_id = std::env::var("MAILERLITE_AUTOMATION_ID")?;
+    let step_id = std::env::var("MAILERLITE_STEP_ID")?;
+    let parent_step_id = std::env::var("MAILERLITE_PARENT_STEP_ID")?;
+    let response = mailerlite
+        .automation_steps()
+        .copy(
+            automation_id,
+            step_id,
+            CopyStep::new().parent_id(parent_step_id),
+        )
+        .await?;
+    println!("Updated automation {}", response.data.id);
+    Ok(())
 }

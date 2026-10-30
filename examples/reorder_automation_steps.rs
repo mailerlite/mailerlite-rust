@@ -1,21 +1,22 @@
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
+//! Move an automation step below a new parent.
+//!
+//! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_AUTOMATION_ID`, `MAILERLITE_STEP_ID`, `MAILERLITE_PARENT_STEP_ID`.
+use mailerlite_rs::MailerLite;
+use mailerlite_rs::resources::automation_steps::ReorderSteps;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let automation_id: String = String::from("Your Automation ID");
-
-    let data: Data = Data::new()
-        .add("dragged_step_id", "Your Step ID")
-        .add("new_parent_step_id", "Your Parent Step ID");
-
-    let response: Response = mailerlite
-        .automation_step()
-        .reorder(automation_id, data.clone())
-        .await;
-
-    println!("{:#?}", response);
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let automation_id = std::env::var("MAILERLITE_AUTOMATION_ID")?;
+    let step_id = std::env::var("MAILERLITE_STEP_ID")?;
+    let parent_step_id = std::env::var("MAILERLITE_PARENT_STEP_ID")?;
+    let response = mailerlite
+        .automation_steps()
+        .reorder(
+            automation_id,
+            ReorderSteps::new(step_id).new_parent_step_id(parent_step_id),
+        )
+        .await?;
+    println!("Updated automation {}", response.data.id);
+    Ok(())
 }

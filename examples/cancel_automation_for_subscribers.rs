@@ -1,21 +1,20 @@
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
+//! Cancel selected subscriber executions.
+//!
+//! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_AUTOMATION_ID`, `MAILERLITE_ACTIVITY_ID`.
+use mailerlite_rs::MailerLite;
+use mailerlite_rs::resources::automation_actions::AutomationActivityFilter;
+use mailerlite_rs::resources::automations::ActivityStatus;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Automation ID");
-
-    let data: Data = Data::new()
-        .add("filter[status]", "active")
-        .add("filter[id][0]", "Your Activity ID");
-
-    let response: Response = mailerlite
-        .automation()
-        .cancel_subscribers(id, data.clone())
-        .await;
-
-    println!("{:#?}", response);
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let id = std::env::var("MAILERLITE_AUTOMATION_ID")?;
+    let params = AutomationActivityFilter::new(ActivityStatus::Active)
+        .id(std::env::var("MAILERLITE_ACTIVITY_ID")?);
+    let response = mailerlite
+        .automations()
+        .cancel_subscribers(id, params)
+        .await?;
+    println!("HTTP {}", response.metadata.status);
+    Ok(())
 }
