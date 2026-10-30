@@ -1,19 +1,18 @@
-use mailerlite_rs::{response::Response, MailerLite};
+//! Remove a subscriber from a group.
+//!
+//! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_GROUP_ID`, `MAILERLITE_SUBSCRIBER_ID`.
+
+use mailerlite_rs::MailerLite;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let group_id: String = String::from("Your Group ID");
-
-    let subscriber_id: String = String::from("Your Subscriber ID");
-
-    let response: Response = mailerlite
-        .group()
-        .unassign_subscriber(group_id, subscriber_id)
-        .await;
-
-    println!("{:#?}", response);
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let group_id = std::env::var("MAILERLITE_GROUP_ID")?;
+    let subscriber_id = std::env::var("MAILERLITE_SUBSCRIBER_ID")?;
+    mailerlite
+        .groups()
+        .unassign(&group_id, &subscriber_id)
+        .await?;
+    println!("Removed subscriber {subscriber_id} from group {group_id}");
+    Ok(())
 }

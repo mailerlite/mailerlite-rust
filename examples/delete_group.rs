@@ -1,14 +1,14 @@
-use mailerlite_rs::{response::Response, MailerLite};
+//! Delete a subscriber group.
+//!
+//! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_GROUP_ID`.
+
+use mailerlite_rs::MailerLite;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Group ID");
-
-    let response: Response = mailerlite.group().delete(id).await;
-
-    println!("{:#?}", response);
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let id = std::env::var("MAILERLITE_GROUP_ID")?;
+    mailerlite.groups().delete(&id).await?;
+    println!("Deleted group: {id}");
+    Ok(())
 }

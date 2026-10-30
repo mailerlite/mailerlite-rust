@@ -1,14 +1,14 @@
-use mailerlite_rs::{response::Response, MailerLite};
+//! Delete an existing custom field.
+//!
+//! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_FIELD_ID`.
+
+use mailerlite_rs::MailerLite;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Field ID");
-
-    let response: Response = mailerlite.field().delete(id).await;
-
-    println!("{:#?}", response);
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let id = std::env::var("MAILERLITE_FIELD_ID")?;
+    mailerlite.fields().delete(&id).await?;
+    println!("Deleted field: {id}");
+    Ok(())
 }

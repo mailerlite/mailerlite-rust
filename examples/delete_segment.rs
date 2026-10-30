@@ -1,14 +1,14 @@
-use mailerlite_rs::{response::Response, MailerLite};
+//! Delete a subscriber segment.
+//!
+//! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_SEGMENT_ID`.
+
+use mailerlite_rs::MailerLite;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Segment ID");
-
-    let response: Response = mailerlite.segment().delete(id).await;
-
-    println!("{:#?}", response);
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let id = std::env::var("MAILERLITE_SEGMENT_ID")?;
+    mailerlite.segments().delete(&id).await?;
+    println!("Deleted segment: {id}");
+    Ok(())
 }
