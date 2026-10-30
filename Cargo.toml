@@ -11,7 +11,7 @@ repository = "https://github.com/mailerlite/mailerlite-rust"
 license = "MIT"
 keywords = ["mailerlite", "sdk", "email", "marketing", "api"]
 categories = ["api-bindings", "asynchronous", "email", "web-programming::http-client"]
-include = ["src/**/*", "examples/**/*", "README.md", "MIGRATION.md", "CHANGELOG.md", "LICENSE"]
+include = ["/src/**/*", "/examples/**/*", "/README.md", "/MIGRATION.md", "/CHANGELOG.md", "/LICENSE"]
 
 [features]
 default = ["rustls", "stream"]
