@@ -5,12 +5,13 @@ before modelling an endpoint; most decoding bugs come from one of these.
 
 ## Transport
 
-- Base URL `https://connect.mailerlite.com/api`; `Authorization: Bearer <key>`, `Accept: application/json`,
+- Base URL `https://connect.mailerlite.com/api`; `Authorization: Bearer <key>`, `Accept: application/json` and
+  `Content-Type: application/json` on every request (even bodiless ones),
   JSON bodies. Optional `X-Version: YYYY-MM-DD` pins the API version (`MailerLiteBuilder::api_version`).
 - Rate limits: **120 requests/minute** globally; **5/minute** for import creation
   (`POST /subscribers/import`, `POST /groups/{id}/import-subscribers`, and batches made only of
   `POST api/subscribers`). `429` carries `Retry-After` (seconds), `X-RateLimit-Limit`,
-  `X-RateLimit-Remaining`. The SDK surfaces these on `ApiError`; it does not retry.
+  `X-RateLimit-Remaining`. The SDK surfaces all three on `ApiError`; it does not retry.
 - `408` and `5xx` are MailerLite-side errors.
 
 ## Error bodies

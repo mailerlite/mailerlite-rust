@@ -100,6 +100,8 @@ pub struct ApiError {
     pub errors: BTreeMap<String, Vec<String>>,
     /// How long to wait before retrying, from the `Retry-After` header (set on `429`).
     pub retry_after: Option<Duration>,
+    /// Requests allowed per window, from `X-RateLimit-Limit` (120/minute globally).
+    pub rate_limit_limit: Option<u32>,
     /// Requests left in the current window, from `X-RateLimit-Remaining`.
     pub rate_limit_remaining: Option<u32>,
 }
@@ -109,6 +111,12 @@ impl ApiError {
     #[must_use]
     pub fn is_unauthorized(&self) -> bool {
         self.status == StatusCode::UNAUTHORIZED
+    }
+
+    /// `true` for `403 Forbidden` (the action is denied for this account or API key).
+    #[must_use]
+    pub fn is_forbidden(&self) -> bool {
+        self.status == StatusCode::FORBIDDEN
     }
 
     /// `true` for `404 Not Found`.
@@ -175,6 +183,8 @@ impl ApiError {
             message,
             errors,
             retry_after: header_u64(headers, "retry-after").map(Duration::from_secs),
+            rate_limit_limit: header_u64(headers, "x-ratelimit-limit")
+                .and_then(|value| u32::try_from(value).ok()),
             rate_limit_remaining: header_u64(headers, "x-ratelimit-remaining")
                 .and_then(|value| u32::try_from(value).ok()),
         }
@@ -281,6 +291,7 @@ mod tests {
     fn reads_rate_limit_headers() {
         let mut headers = HeaderMap::new();
         headers.insert("retry-after", HeaderValue::from_static("119"));
+        headers.insert("x-ratelimit-limit", HeaderValue::from_static("120"));
         headers.insert("x-ratelimit-remaining", HeaderValue::from_static("0"));
 
         let err = ApiError::from_parts(
@@ -292,6 +303,7 @@ mod tests {
         assert!(err.is_rate_limited());
         assert_eq!(err.retry_after, Some(Duration::from_secs(119)));
         assert_eq!(err.rate_limit_remaining, Some(0));
+        assert_eq!(err.rate_limit_limit, Some(120));
         assert!(Error::from(err).is_rate_limited());
     }
 

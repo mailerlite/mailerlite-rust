@@ -363,6 +363,8 @@ mod tests {
         assert_eq!(request.headers[header::AUTHORIZATION], "Bearer test-key");
         assert!(request.headers[header::AUTHORIZATION].is_sensitive());
         assert_eq!(request.headers[header::ACCEPT], "application/json");
+        // Required on every request by the API docs, even without a body.
+        assert_eq!(request.headers[header::CONTENT_TYPE], "application/json");
         assert!(
             request.headers[header::USER_AGENT]
                 .to_str()
@@ -483,5 +485,26 @@ mod tests {
 
         assert_eq!(none, None);
         assert_eq!(mock.request().headers["x-version"], "2038-01-19");
+    }
+
+    #[tokio::test]
+    async fn json_bodies_send_a_single_content_type() {
+        let (client, mock) = mock::client();
+        mock.respond(200, json!({}));
+
+        let _: Value = client
+            .call(Method::POST, &["groups"])
+            .json(&json!({"name": "VIP"}))
+            .send()
+            .await
+            .unwrap();
+
+        let request = mock.request();
+        let content_types: Vec<_> = request
+            .headers
+            .get_all(header::CONTENT_TYPE)
+            .iter()
+            .collect();
+        assert_eq!(content_types, ["application/json"]);
     }
 }

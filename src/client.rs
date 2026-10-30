@@ -4,7 +4,7 @@ use std::{fmt, sync::Arc, time::Duration};
 
 use reqwest::{
     Url,
-    header::{ACCEPT, AUTHORIZATION, HeaderMap, HeaderName, HeaderValue, USER_AGENT},
+    header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE, HeaderMap, HeaderName, HeaderValue, USER_AGENT},
 };
 
 use crate::{BASE_URL, Error, Result};
@@ -34,7 +34,8 @@ pub struct MailerLite {
 pub(crate) struct Inner {
     pub(crate) http: reqwest::Client,
     pub(crate) base_url: Url,
-    /// Authorization (marked sensitive), Accept, User-Agent and the optional X-Version.
+    /// Authorization (marked sensitive), Accept, Content-Type, User-Agent and the optional
+    /// X-Version.
     pub(crate) headers: HeaderMap,
     /// Per-request timeout, applied on top of the `reqwest::Client`'s own settings.
     pub(crate) timeout: Option<Duration>,
@@ -152,9 +153,11 @@ impl MailerLiteBuilder {
             None => HeaderValue::from_static(DEFAULT_USER_AGENT),
         };
 
-        let mut headers = HeaderMap::with_capacity(4);
+        let mut headers = HeaderMap::with_capacity(5);
         headers.insert(AUTHORIZATION, authorization);
         headers.insert(ACCEPT, HeaderValue::from_static("application/json"));
+        // The API asks for this on every request, including ones without a body.
+        headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
         headers.insert(USER_AGENT, user_agent);
         if let Some(version) = self.api_version {
             let version = HeaderValue::try_from(version)
