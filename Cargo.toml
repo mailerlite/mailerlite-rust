@@ -1,21 +1,62 @@
 [package]
 name = "mailerlite-rs"
-version = "1.1.0"
+version = "2.0.0"
 authors = ["Shuvro Roy <shuvro@mailerlite.com>"]
-edition = "2021"
-description = "MailerLite Rust SDK"
+edition = "2024"
+rust-version = "1.88"
+description = "Typed asynchronous Rust SDK for the MailerLite API"
 readme = "README.md"
 repository = "https://github.com/mailerlite/mailerlite-rust"
+documentation = "https://docs.rs/mailerlite-rs"
 license = "MIT"
-keywords = ["MailerLite", "mailerlite", "sdk", "email", "marketing"]
+keywords = ["mailerlite", "sdk", "email", "marketing"]
+categories = ["api-bindings", "email"]
+include = ["/src/**", "/tests/**", "/examples/**", "/Cargo.toml", "/Cargo.lock", "/README.md", "/UPGRADE.md", "/CONTRIBUTING.md", "/CHANGELOG.md", "/LICENSE"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[package.metadata.docs.rs]
+features = ["stream", "tracing", "webhook-signatures"]
+
+[features]
+default = ["rustls-tls"]
+rustls-tls = ["reqwest/rustls"]
+native-tls = ["reqwest/native-tls"]
+stream = ["dep:futures-core", "dep:futures-util"]
+tracing = ["dep:tracing"]
+webhook-signatures = ["dep:hmac", "dep:sha2", "dep:hex"]
 
 [dependencies]
-reqwest = { version = "0.11", features = ["json"] }
-tokio = { version = "1", features = ["full"] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
+reqwest = { version = "0.13", default-features = false, features = ["json", "query"] }
+tokio = { version = "1", features = ["time", "sync", "rt"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+httpdate = "1"
+fastrand = "2"
+serde_path_to_error = "0.1"
+rust_decimal = { version = "1", features = ["serde-with-arbitrary-precision"] }
+futures-core = { version = "0.3", optional = true }
+futures-util = { version = "0.3", optional = true }
+tracing = { version = "0.1", optional = true }
+hmac = { version = "0.13", optional = true }
+sha2 = { version = "0.11", optional = true }
+hex = { version = "0.4", optional = true }
 
 [dev-dependencies]
-mockito = "1.0.2"
+wiremock = "0.6"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "test-util"] }
+
+[lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[lints.clippy]
+unwrap_used = "warn"
+expect_used = "warn"
+
+[[example]]
+name = "stream_subscribers"
+required-features = ["stream"]
+
+[[example]]
+name = "verify_webhook"
+required-features = ["webhook-signatures"]
