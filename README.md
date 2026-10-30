@@ -49,6 +49,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
 
     println!("Subscriber ID: {}", response.data.id);
+
     Ok(())
 }
 ```
@@ -135,11 +136,14 @@ async fn list_subscribers(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> 
             .cursor(cursor)
             .send()
             .await?;
+
         println!("Next page: {} subscribers", next.data.data.len());
     }
 
     let groups = mailerlite.groups().list().page(1).limit(25).send().await?;
+
     println!("Groups on this page: {}", groups.data.data.len());
+
     Ok(())
 }
 ```
@@ -231,17 +235,22 @@ async fn find_subscriber(mailerlite: &MailerLite, id: &str) -> mailerlite_rs::Re
     match mailerlite.subscribers().get(id).await {
         Ok(response) => {
             println!("{}", response.data.id);
+
             Ok(())
         }
+
         Err(Error::Api(error)) => {
             eprintln!("HTTP {}", error.status());
+
             if error.is_validation() {
                 eprintln!("Invalid fields: {}", error.validation_errors().len());
             } else if error.is_rate_limited() {
                 eprintln!("Retry delay: {:?}", error.metadata().retry_after());
             }
+
             Err(Error::Api(error))
         }
+
         Err(error) => Err(error),
     }
 }
@@ -305,6 +314,7 @@ fn receive(
     body: &[u8],
 ) -> Result<WebhookPayload, Box<dyn std::error::Error>> {
     verify_signature(secret, body, signature)?;
+
     Ok(serde_json::from_slice(body)?)
 }
 ```

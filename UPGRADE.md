@@ -55,7 +55,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .subscribers()
         .upsert(UpsertSubscriber::new("jane@example.com").field("name", "Jane"))
         .await?;
+
     println!("{}", response.data.id);
+
     Ok(())
 }
 ```
@@ -165,9 +167,11 @@ async fn list_active(mailerlite: &MailerLite) {
         .add("filter[status]", "active")
         .add("limit", "100");
     let response = mailerlite.subscriber().get(params).await;
+
     println!("{}", response.content["data"]);
     // Continuation was read manually from JSON for a subsequent request.
     let next_cursor = response.content["meta"]["next_cursor"].as_str();
+
     println!("Next cursor: {next_cursor:?}");
 }
 ```
@@ -185,18 +189,22 @@ async fn list_active(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
             .list()
             .status(SubscriberStatus::Active)
             .limit(100);
+
         if let Some(value) = cursor {
             request = request.cursor(value);
         }
         let response = request.send().await?;
+
         for subscriber in &response.data.data {
             println!("{}", subscriber.id);
         }
         cursor = response.data.next_cursor().map(str::to_owned);
+
         if cursor.is_none() {
             break;
         }
     }
+
     Ok(())
 }
 ```
@@ -218,9 +226,11 @@ async fn stream_subscribers(mailerlite: &MailerLite) -> mailerlite_rs::Result<()
     let subscribers = mailerlite.subscribers();
     let stream = subscribers.list().limit(100).into_stream();
     tokio::pin!(stream);
+
     while let Some(subscriber) = stream.try_next().await? {
         println!("{}", subscriber.id);
     }
+
     Ok(())
 }
 ```
@@ -240,6 +250,7 @@ use mailerlite_rs::MailerLite;
 
 async fn find_subscriber(mailerlite: &MailerLite, id: &str) {
     let response = mailerlite.subscriber().find(id).await;
+
     if response.status_code.as_u16() == 422 {
         println!("Validation failed");
     } else if response.status_code.is_success() {
@@ -258,12 +269,15 @@ use mailerlite_rs::{Error, MailerLite};
 async fn find_subscriber(mailerlite: &MailerLite, id: &str) -> mailerlite_rs::Result<()> {
     match mailerlite.subscribers().get(id).await {
         Ok(response) => println!("{}: {}", response.metadata.status, response.data.id),
+
         Err(Error::Api(error)) if error.is_validation() => {
             // Handle 422 using the structured field-to-messages map.
             let invalid_fields = error.validation_errors().keys().count();
+
             eprintln!("Validation failed for {invalid_fields} fields");
             return Err(Error::Api(error));
         }
+
         Err(Error::Api(error)) if error.is_rate_limited() => {
             eprintln!(
                 "Rate limited; retry delay: {:?}",
@@ -271,8 +285,10 @@ async fn find_subscriber(mailerlite: &MailerLite, id: &str) -> mailerlite_rs::Re
             );
             return Err(Error::Api(error));
         }
+
         Err(error) => return Err(error),
     }
+
     Ok(())
 }
 ```
@@ -365,6 +381,7 @@ fn configuration() -> mailerlite_rs::Result<(CreateStep, UpdateStep)> {
     let update = UpdateStep::new().configuration(StepConfiguration::Delay(
         DelayConfiguration::new(DelayUnit::Days, 2),
     ))?;
+
     Ok((create, update))
 }
 ```

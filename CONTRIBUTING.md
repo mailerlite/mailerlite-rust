@@ -178,9 +178,11 @@ raise the MSRV or change default features incidentally.
    requests against the configured endpoint instead of following arbitrary
    response URLs. Subscriber activity has no reliable automatic traversal;
    keep it manual until the backend contract changes.
-7. Add deterministic tests for the request and representative responses, then
-   update rustdoc and an example. Update [UPGRADE.md](UPGRADE.md) for breaking
-   changes and document unsupported behavior explicitly.
+7. Add deterministic tests for the request and representative responses. Include
+   a compilable rustdoc example and an error contract for the operation and its
+   list/stream builders, following [Documentation and examples](#documentation-and-examples).
+   Update the standalone example and [UPGRADE.md](UPGRADE.md) when applicable,
+   and document unsupported behavior explicitly.
 
 ## Testing
 
@@ -300,6 +302,74 @@ and endpoint details in resource rustdoc. Update relative links when
 moving documentation. User-facing guides should describe the current SDK,
 without implementation-session history or agent ownership notes.
 
+### Resource rustdoc
+
+Every exposed endpoint operation needs an inline `# Examples` section. Public
+fallible constructors, request helpers, and decoding helpers also need examples
+and `# Errors`. Put the summary and important behavior first, then `# Examples`,
+then `# Errors`. Link related types and methods with rustdoc links such as
+``[`Self::send`]`` or ``[`crate::Error::Api`]``.
+
+Describe the actual contract rather than repeating the method name:
+
+- Distinguish validation performed before dispatch from validation performed by
+  MailerLite. For example, invalid path IDs can fail locally while IDs in request
+  bodies or query parameters may be checked only by the server.
+- Identify relevant error variants and actionable details, such as HTTP 422
+  validation messages. Do not claim every operation can produce every error.
+- Explain writes that replace data, schedule delivery, enroll subscribers, or
+  delete resources. State retry behavior where it matters, and explain when a
+  failure after dispatch can leave the server-side outcome uncertain.
+- Distinguish acceptance receipts from completed work and describe explicit
+  polling, cancellation, and partial failures where applicable.
+- For list constructors, explain that they build a request and link to the
+  execution method's errors. An infallible setter does not need an artificial
+  `# Errors` section; document deferred validation at `send` or consumption.
+- For streams, document errors yielded as items, termination after an error,
+  continuation requirements, and the scope of deadlines. Items already yielded
+  remain available to the caller.
+
+Check these claims against the implementation and established API contract.
+Use [subscriber operations](src/resources/subscribers.rs),
+[import polling](src/resources/imports.rs), and
+[webhook verification](src/webhooks/signature.rs) as examples of the format.
+Standalone files in `examples/` complement these method-level docs; they do not
+replace them.
+
+### Writing and formatting examples
+
+Use `no_run` Rust fences for examples that could contact an API or change account
+data. They must compile without an API token or running backend. Pure examples,
+such as decoding synthetic data or verifying a sample signature, should run as
+doctests. Use `?` for recoverable errors and keep credentials synthetic.
+
+Rustdoc source comments may hide a wrapper function and its final `Ok(())` with
+`# ` lines. Keep useful imports and operation steps visible. For feature-gated
+methods, attach examples to the gated item and test with that feature enabled.
+Document any application dependencies needed to consume a stream or decode JSON.
+Do not use `ignore` to hide a broken example or bypass feature verification.
+
+Separate logical steps with a blank line: configuration, parameter construction,
+request execution, result handling, and return. Keep related setup variables
+together, and keep fluent method chains intact. In `///` comments, use a bare
+`///` line for the gap. Apply the same spacing to standalone examples and Markdown
+guides:
+
+```rust
+use mailerlite_rs::MailerLite;
+
+async fn count_subscribers(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    let response = mailerlite.subscribers().count().await?;
+
+    println!("{} subscribers", response.data.total);
+
+    Ok(())
+}
+```
+
+Rustfmt does not insert these logical gaps into documentation snippets; review
+their rendered appearance as well as their compilation.
+
 Preserve nonduplicate examples, including the original v1 operation filenames.
 Update their implementations when APIs change. List new examples in
 [examples/README.md](examples/README.md), document required environment variables,
@@ -312,6 +382,29 @@ variables explicitly and may modify account data or send email. Running them
 is separate from test and compilation checks. Use a suitable test account or an
 explicitly configured local backend, and keep credentials out of source,
 fixtures, command output, and pull requests.
+
+### Checking rendered documentation
+
+Run doctests with default and optional features, then build and open rustdoc:
+
+```sh
+cargo +stable test --doc
+cargo +stable test --doc --all-features
+cargo +1.88.0 test --doc --all-features
+RUSTDOCFLAGS='-D warnings' cargo +stable doc --no-deps --all-features --open
+```
+
+The crate landing page displays the README. Method examples and error contracts
+appear on their resource type's page. For example, navigate to
+`resources → subscribers → Subscribers → count`, or open
+`target/doc/mailerlite_rs/resources/subscribers/struct.Subscribers.html#method.count`.
+Expand the method's documentation if collapsed. After changing source comments,
+regenerate the docs and refresh any previously opened browser tab.
+
+Check headings, code highlighting, blank lines, and links. Confirm that network
+examples are compile-only and report any intentionally ignored examples when
+summarizing verification. The commands above do not run standalone examples or
+require live API credentials.
 
 ## Conventional Commits
 
