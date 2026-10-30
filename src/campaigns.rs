@@ -232,7 +232,7 @@ pub struct Campaign {
     /// Readable type, e.g. `"Regular"`.
     #[serde(default)]
     pub type_for_humans: String,
-    /// Aggregated statistics. Only included in list responses.
+    /// Aggregated statistics, present once the campaign has been sent.
     #[serde(default)]
     pub stats: Option<EmailStats>,
     /// Whether sending was stopped.
@@ -256,9 +256,10 @@ pub struct Campaign {
     /// Whether the campaign contains a survey.
     #[serde(default, deserialize_with = "de::null_default")]
     pub uses_survey: bool,
-    /// Whether the campaign is complete enough to be scheduled.
-    #[serde(default, deserialize_with = "de::null_default")]
-    pub can_be_scheduled: bool,
+    /// Whether the campaign is complete enough to be scheduled. Only sent when fetching a
+    /// single campaign ([`Campaigns::get`]).
+    #[serde(default)]
+    pub can_be_scheduled: Option<bool>,
     /// Warnings about the campaign's content or settings.
     #[serde(default, deserialize_with = "de::null_default")]
     pub warnings: Vec<Value>,
@@ -317,9 +318,9 @@ pub struct Email {
     /// Internal email name.
     #[serde(default)]
     pub name: Option<String>,
-    /// Subject line.
+    /// Subject line; `None` for emails without one (e.g. multivariate variations).
     #[serde(default)]
-    pub subject: String,
+    pub subject: Option<String>,
     /// Plain text version.
     #[serde(default)]
     pub plain_text: Option<String>,
@@ -363,21 +364,23 @@ pub struct EmailStats {
     /// Emails sent.
     #[serde(default, deserialize_with = "de::null_default")]
     pub sent: u64,
-    /// Opens.
-    #[serde(default, deserialize_with = "de::null_default")]
-    pub opens_count: u64,
     /// Unique opens.
     #[serde(default, deserialize_with = "de::null_default")]
-    pub unique_opens_count: u64,
+    pub opens_count: u64,
+    /// Unique opens, only sent when pinning an API version before 2025-05-20 (use
+    /// [`opens_count`](Self::opens_count) otherwise).
+    #[serde(default)]
+    pub unique_opens_count: Option<u64>,
     /// Open rate.
     #[serde(default, deserialize_with = "de::null_default")]
     pub open_rate: Rate,
-    /// Clicks.
-    #[serde(default, deserialize_with = "de::null_default")]
-    pub clicks_count: u64,
     /// Unique clicks.
     #[serde(default, deserialize_with = "de::null_default")]
-    pub unique_clicks_count: u64,
+    pub clicks_count: u64,
+    /// Unique clicks, only sent when pinning an API version before 2025-05-20 (use
+    /// [`clicks_count`](Self::clicks_count) otherwise).
+    #[serde(default)]
+    pub unique_clicks_count: Option<u64>,
     /// Click rate.
     #[serde(default, deserialize_with = "de::null_default")]
     pub click_rate: Rate,
@@ -408,6 +411,21 @@ pub struct EmailStats {
     /// Forwards.
     #[serde(default, deserialize_with = "de::null_default")]
     pub forwards_count: u64,
+    /// Forward rate.
+    #[serde(default, deserialize_with = "de::null_default")]
+    pub forward_rate: Rate,
+    /// Emails delivered.
+    #[serde(default, deserialize_with = "de::null_default")]
+    pub deliveries_count: u64,
+    /// Delivery rate.
+    #[serde(default, deserialize_with = "de::null_default")]
+    pub delivery_rate: Rate,
+    /// Social media interactions.
+    #[serde(default, deserialize_with = "de::null_default")]
+    pub social_interactions_count: u64,
+    /// Social media interaction rate.
+    #[serde(default, deserialize_with = "de::null_default")]
+    pub social_interaction_rate: Rate,
     /// Click-to-open rate. Only present on campaign-level statistics.
     #[serde(default)]
     pub click_to_open_rate: Option<Rate>,
@@ -417,9 +435,9 @@ pub struct EmailStats {
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct CampaignAggregations {
-    /// All campaigns.
-    #[serde(default, deserialize_with = "de::null_default")]
-    pub sum: u64,
+    /// All campaigns. The API sends `all` (the public docs say `sum`; both are accepted).
+    #[serde(default, alias = "sum", deserialize_with = "de::null_default")]
+    pub all: u64,
     /// Draft campaigns.
     #[serde(default, deserialize_with = "de::null_default")]
     pub draft: u64,
@@ -435,11 +453,12 @@ pub struct CampaignAggregations {
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize)]
 #[non_exhaustive]
 pub struct ListCampaigns {
-    /// Only campaigns with this status. **The API defaults to `ready`**, so drafts and sent
-    /// campaigns are only listed when asked for.
+    /// Only campaigns with this status. With no filter at all the API lists every status; once
+    /// any other filter is set, it defaults to `ready`.
     #[serde(rename = "filter[status]", skip_serializing_if = "Option::is_none")]
     pub status: Option<CampaignStatus>,
-    /// Only campaigns of this type (`regular`, `ab`, `resend` or `rss`). Defaults to all.
+    /// Only campaigns of this type (`regular`, `ab`, `resend`, `rss` or `multivariate`).
+    /// Defaults to all.
     #[serde(rename = "filter[type]", skip_serializing_if = "Option::is_none")]
     pub campaign_type: Option<CampaignType>,
     /// Page size (API default 25).
@@ -535,8 +554,9 @@ impl CampaignEmail {
     /// An email without subject or sender, for multivariate campaigns where those come from
     /// [`MultivariateSettings`] (typically one per content variation, with [`content`](Self::content)).
     ///
-    /// Only valid with [`CreateCampaign::multivariate`]: every other campaign type (and
-    /// [`UpdateCampaign`]) requires subject, `from_name` and `from`, so use [`new`](Self::new).
+    /// Only valid for multivariate campaigns ([`CreateCampaign::multivariate`],
+    /// [`UpdateCampaign::multivariate`]): every other campaign type requires subject,
+    /// `from_name` and `from`, so use [`new`](Self::new).
     #[must_use]
     pub fn variation() -> Self {
         Self::default()
@@ -724,7 +744,7 @@ impl Sender {
 }
 
 /// Variants of a multivariate test. All four are sent; the number of combinations
-/// (subjects × senders × content × sending times) may not exceed 8.
+/// (subjects × senders × content × sending times) must be between 2 and 8.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[non_exhaustive]
 pub struct TestVariants {
@@ -765,7 +785,9 @@ pub struct MultivariateSettings {
     /// How the winner is picked (not used when the sending time is tested).
     #[serde(flatten)]
     pub winner: Option<WinnerSelection>,
-    /// Percentage of recipients in the test: 10 to 50, or 100 when the sending time is tested.
+    /// Percentage of recipients in the test: at most 50 when every variant reaches at least 1000
+    /// recipients, otherwise (and when the sending time is tested) 100. Requires the campaign
+    /// to have groups or segments.
     pub test_split: u32,
 }
 
@@ -773,8 +795,9 @@ impl MultivariateSettings {
     /// A test that does not vary the sending time, starting from one subject and one sender
     /// with a single content version. Add variants with the setters.
     ///
-    /// `test_split` must be 10 to 50. The winner selection is required by the API for every
-    /// test that doesn't vary the sending time.
+    /// Add at least one more variant: the API requires 2 to 8 combinations. See
+    /// [`test_split`](Self::test_split) for the allowed split. The winner selection is required
+    /// by the API for every test that doesn't vary the sending time.
     pub fn new(
         subject: impl Into<String>,
         sender: Sender,
@@ -994,7 +1017,8 @@ impl CreateCampaign {
 }
 
 /// Body for [`Campaigns::update`] (draft campaigns only). The campaign type cannot change;
-/// pass the A/B or resend settings again for those types.
+/// pass the A/B, resend or multivariate settings again for those types (the API requires
+/// `multivariate_settings` on every update of a multivariate campaign).
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[non_exhaustive]
 pub struct UpdateCampaign {
@@ -1003,7 +1027,7 @@ pub struct UpdateCampaign {
     /// Language id for the unsubscribe template.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub language_id: Option<u64>,
-    /// Emails (exactly one).
+    /// Emails: exactly one, or one per content variation for multivariate campaigns.
     pub emails: Vec<CampaignEmail>,
     /// Recipient groups.
     #[serde(skip_serializing_if = "Vec::is_empty")]
@@ -1017,6 +1041,9 @@ pub struct UpdateCampaign {
     /// Auto resend settings (resend campaigns).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub resend_settings: Option<ResendSettings>,
+    /// Multivariate settings (required for multivariate campaigns).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub multivariate_settings: Option<MultivariateSettings>,
 }
 
 impl UpdateCampaign {
@@ -1030,6 +1057,7 @@ impl UpdateCampaign {
             segments: Vec::new(),
             ab_settings: None,
             resend_settings: None,
+            multivariate_settings: None,
         }
     }
 
@@ -1067,29 +1095,47 @@ impl UpdateCampaign {
         self.resend_settings = Some(settings);
         self
     }
+
+    /// Updates a multivariate campaign: `emails` are its content variations and `settings` its
+    /// test settings, both sent again on every update.
+    pub fn multivariate(
+        name: impl Into<String>,
+        emails: impl IntoIterator<Item = CampaignEmail>,
+        settings: MultivariateSettings,
+    ) -> Self {
+        Self {
+            emails: emails.into_iter().collect(),
+            multivariate_settings: Some(settings),
+            ..Self::new(name, CampaignEmail::variation())
+        }
+    }
 }
 
 /// A send date and time.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[non_exhaustive]
 pub struct Schedule {
-    /// Date, `YYYY-MM-DD`, in the future. Used by `scheduled` and `smart_sending` delivery.
+    /// Date, `YYYY-MM-DD`, in the future. Required by every delivery type.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub date: Option<String>,
-    /// Hour, `HH`. Used by `scheduled` and `timezone_based` delivery.
+    /// Hour, `HH`. Required for `scheduled` and `timezone_based` delivery, and for
+    /// `smart_sending` with a [custom time](Schedule::custom_time).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hours: Option<String>,
-    /// Minute, `mm`. Used by `scheduled` and `timezone_based` delivery.
+    /// Minute, `mm`. Required whenever `hours` is.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub minutes: Option<String>,
+    /// Smart sending only: send at `hours`:`minutes` instead of the best time of day.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub custom_time: Option<bool>,
     /// Timezone id (see the timezones endpoint). Defaults to the account's timezone.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub timezone_id: Option<u64>,
 }
 
 impl Schedule {
-    /// `date` (`YYYY-MM-DD`) at `hours`:`minutes` (`HH`, `mm`), for `scheduled` delivery,
-    /// resends and sending time tests.
+    /// `date` (`YYYY-MM-DD`) at `hours`:`minutes` (`HH`, `mm`), for `scheduled` and
+    /// `timezone_based` delivery, resends and sending time tests.
     pub fn new(
         date: impl Into<String>,
         hours: impl Into<String>,
@@ -1099,28 +1145,29 @@ impl Schedule {
             date: Some(date.into()),
             hours: Some(hours.into()),
             minutes: Some(minutes.into()),
+            custom_time: None,
             timezone_id: None,
         }
     }
 
-    /// A date only (`YYYY-MM-DD`), for `smart_sending` delivery.
+    /// A date only (`YYYY-MM-DD`), for `smart_sending` delivery, which then picks the time.
     pub fn on(date: impl Into<String>) -> Self {
         Self {
             date: Some(date.into()),
             hours: None,
             minutes: None,
+            custom_time: None,
             timezone_id: None,
         }
     }
 
-    /// A time of day only (`HH`, `mm`), for `timezone_based` delivery.
-    pub fn at(hours: impl Into<String>, minutes: impl Into<String>) -> Self {
-        Self {
-            date: None,
-            hours: Some(hours.into()),
-            minutes: Some(minutes.into()),
-            timezone_id: None,
-        }
+    /// Smart sending at a fixed `hours`:`minutes` (`HH`, `mm`) instead of the best time.
+    #[must_use]
+    pub fn custom_time(mut self, hours: impl Into<String>, minutes: impl Into<String>) -> Self {
+        self.hours = Some(hours.into());
+        self.minutes = Some(minutes.into());
+        self.custom_time = Some(true);
+        self
     }
 
     /// Interprets the time in this timezone.
@@ -1197,14 +1244,15 @@ impl ScheduleCampaign {
         Self::with(Some(Delivery::Scheduled), Some(schedule))
     }
 
-    /// Sends at `schedule`'s time of day in each subscriber's timezone; build it with
-    /// [`Schedule::at`].
+    /// Sends on `schedule`'s date (after today) at its time of day in each subscriber's
+    /// timezone; build it with [`Schedule::new`].
     #[must_use]
     pub fn timezone_based(schedule: Schedule) -> Self {
         Self::with(Some(Delivery::TimezoneBased), Some(schedule))
     }
 
-    /// Smart sending on `schedule`'s date; build it with [`Schedule::on`].
+    /// Smart sending on `schedule`'s date; build it with [`Schedule::on`], adding
+    /// [`Schedule::custom_time`] to fix the time of day.
     #[must_use]
     pub fn smart_sending(schedule: Schedule) -> Self {
         Self::with(Some(Delivery::SmartSending), Some(schedule))
@@ -1261,9 +1309,9 @@ pub struct CampaignActivity {
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct CampaignActivityAggregations {
-    /// All recipients.
-    #[serde(default, deserialize_with = "de::null_default")]
-    pub sum: u64,
+    /// All recipients. The API sends `all` (the public docs say `sum`; both are accepted).
+    #[serde(default, alias = "sum", deserialize_with = "de::null_default")]
+    pub all: u64,
     /// Opened.
     #[serde(default, deserialize_with = "de::null_default")]
     pub opened: u64,
@@ -1288,6 +1336,9 @@ pub struct CampaignActivityAggregations {
     /// Marked as junk.
     #[serde(default, deserialize_with = "de::null_default")]
     pub junk: u64,
+    /// Interacted on social media.
+    #[serde(default, deserialize_with = "de::null_default")]
+    pub social_interaction: u64,
 }
 
 /// Query for [`Campaigns::subscriber_activity`].
@@ -1374,7 +1425,42 @@ pub struct CampaignEcommerceReport {
     /// The email that earned the most, only set when the campaign has more than one email
     /// (e.g. an A/B test).
     #[serde(default)]
-    pub best_performing_email: Option<Email>,
+    pub best_performing_email: Option<BestPerformingEmail>,
+}
+
+/// The top-earning email of a campaign, in [`CampaignEcommerceReport`].
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[non_exhaustive]
+pub struct BestPerformingEmail {
+    /// Email id.
+    pub id: Id,
+    /// Email id the orders are attributed to (same as `id`).
+    #[serde(default)]
+    pub email_id: Option<Id>,
+    /// Account id.
+    #[serde(default)]
+    pub account_id: Option<Id>,
+    /// Subject line.
+    #[serde(default)]
+    pub subject: Option<String>,
+    /// Screenshot of the email.
+    #[serde(default)]
+    pub screenshot_url: Option<String>,
+    /// Emails sent.
+    #[serde(default, deserialize_with = "de::null_default")]
+    pub sent_count: u64,
+    /// Orders attributed to the email.
+    #[serde(default, deserialize_with = "de::null_default")]
+    pub orders_count: u64,
+    /// Revenue attributed to the email.
+    #[serde(default, deserialize_with = "de::number")]
+    pub revenue: f64,
+    /// Average order value.
+    #[serde(default, deserialize_with = "de::number")]
+    pub average_order_value: f64,
+    /// Creation time of the email.
+    #[serde(default)]
+    pub created_at: Option<Timestamp>,
 }
 
 /// A language for the unsubscribe template of a campaign.
@@ -1412,8 +1498,8 @@ impl MailerLite {
 }
 
 impl<'a> Campaigns<'a> {
-    /// `GET /campaigns`: one page of campaigns. Only `ready` campaigns unless
-    /// [`ListCampaigns::status`] says otherwise.
+    /// `GET /campaigns`: one page of campaigns. Every status when no filter is set; with another
+    /// filter but no [`ListCampaigns::status`], only `ready` campaigns.
     pub async fn list(
         &self,
         query: &ListCampaigns,
@@ -1625,7 +1711,7 @@ mod tests {
             campaign.filter_for_humans[0][0],
             "In any group: dummy group"
         );
-        assert_eq!(campaign.emails[0].stats.unique_opens_count, 5);
+        assert_eq!(campaign.emails[0].stats.unique_opens_count, Some(5));
         assert_eq!(
             campaign.emails[0].reply_to.as_deref(),
             Some("reply-to@mailerlite.io")
@@ -1637,7 +1723,7 @@ mod tests {
         assert!(campaign.uses_survey);
         let aggregations = page.aggregations.unwrap();
         assert_eq!(
-            (aggregations.sum, aggregations.draft, aggregations.sent),
+            (aggregations.all, aggregations.draft, aggregations.sent),
             (2, 1, 1)
         );
     }
@@ -2031,7 +2117,7 @@ mod tests {
             "dummy@mailerlite.com"
         );
         let aggregations = page.aggregations.unwrap();
-        assert_eq!((aggregations.sum, aggregations.unopened), (11, 10));
+        assert_eq!((aggregations.all, aggregations.unopened), (11, 10));
     }
 
     #[tokio::test]
@@ -2094,8 +2180,24 @@ mod tests {
             json!({"delivery": "smart_sending", "schedule": {"date": "2030-01-02"}})
         );
         assert_eq!(
-            body(&ScheduleCampaign::timezone_based(Schedule::at("09", "30"))),
-            json!({"delivery": "timezone_based", "schedule": {"hours": "09", "minutes": "30"}})
+            body(&ScheduleCampaign::smart_sending(
+                Schedule::on("2030-01-02").custom_time("09", "30")
+            )),
+            json!({
+                "delivery": "smart_sending",
+                "schedule": {"date": "2030-01-02", "hours": "09", "minutes": "30", "custom_time": true}
+            })
+        );
+        assert_eq!(
+            body(&ScheduleCampaign::timezone_based(Schedule::new(
+                "2030-01-02",
+                "09",
+                "30"
+            ))),
+            json!({
+                "delivery": "timezone_based",
+                "schedule": {"date": "2030-01-02", "hours": "09", "minutes": "30"}
+            })
         );
         assert_eq!(
             body(&ScheduleCampaign::scheduled(

@@ -848,7 +848,7 @@ mod tests {
         assert_eq!(email_step.step_type, StepType::Email);
         assert_eq!(email_step.description, "Send \"mail {$name}\" email");
         let email = email_step.email().unwrap();
-        assert_eq!(email.subject, "mail {$name}");
+        assert_eq!(email.subject.as_deref(), Some("mail {$name}"));
         assert_eq!(email.language_id.as_deref(), Some("4"));
     }
 
