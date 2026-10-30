@@ -40,8 +40,9 @@ pub struct ReportOrder {
     /// Order total in the shop's currency.
     #[serde(default, deserialize_with = "de::number")]
     pub total: f64,
-    /// Human readable order summary, e.g. `"2 X T-shirt, 1 X Mug"`.
-    #[serde(default)]
+    /// Human readable order summary, e.g. `"2 X T-shirt, 1 X Mug"`; empty when the order's cart
+    /// was deleted.
+    #[serde(default, deserialize_with = "de::null_default")]
     pub order: String,
     /// Last update time.
     #[serde(default)]
