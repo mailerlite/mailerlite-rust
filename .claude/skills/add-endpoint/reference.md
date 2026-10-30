@@ -82,10 +82,3 @@ before modelling an endpoint; most decoding bugs come from one of these.
   Carts are created only via orders and can't be deleted. Variant `POST` is a **sync**: if any item has a
   `resource_id`, existing variants not listed are deleted. Order `pending` triggers abandoned-cart
   automations, `complete` triggers purchase automations.
-
-## Not in the public docs
-
-Kept from v1 or mentioned elsewhere, but undocumented upstream. Return `serde_json::Value` and say so:
-`GET /automations/{id}/monthly-totals/ecommerce`, `/automations/{id}/emails/{email_id}/ecommerce-overview-stats`,
-`/automations/{id}/order-activity`. Not implemented (no REST docs): segment/form creation, single segment
-fetch, automation update/enable, the `POST /subscribers/import` body, e-commerce settings update.
