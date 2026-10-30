@@ -112,7 +112,9 @@ impl MailerLiteBuilder {
     }
 
     /// Pins the API version by sending `X-Version: <date>` (e.g. `"2038-01-19"`).
-    /// Without it MailerLite serves the latest version.
+    /// Without it the API applies its default pin (currently 2025-05-20), which serves the
+    /// current response formats. The value must be a full `YYYY-MM-DD` date; anything else is
+    /// silently ignored.
     pub fn api_version(mut self, version: impl Into<String>) -> Self {
         self.api_version = Some(version.into());
         self

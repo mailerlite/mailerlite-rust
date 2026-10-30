@@ -91,7 +91,7 @@ match client.subscribers().create(&body).await {
         }
     }
 
-    // 429: MailerLite allows 120 requests/minute (5/minute for imports)
+    // 429: MailerLite allows 120 requests/minute (20/minute for imports)
     Err(Error::RateLimited(limit)) => {
         tokio::time::sleep(limit.retry_after().unwrap_or(Duration::from_secs(60))).await;
     }
@@ -105,7 +105,7 @@ Every error also prints as one readable line, listing each field error once:
 
 ```text
 MailerLite API error 422 Unprocessable Entity: email: The email field must be a valid email address.; groups.1: The selected groups.1 is invalid.
-MailerLite API error 429 Too Many Requests: Too Many Attempts. (retry after 42s)
+MailerLite API error 429 Too Many Requests: You're being rate limited. Consider using batch requests: … (retry after 42s)
 failed to decode MailerLite response at `data.status`: invalid type: null, expected a string
 ```
 

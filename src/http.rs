@@ -161,8 +161,8 @@ impl Response {
         serde_json::from_slice(body).map_err(|err| Error::decode::<T>(err, body))
     }
 
-    /// Decodes `{"data": T}`. Also accepts a bare `T`, which a few e-commerce delete
-    /// endpoints return instead of the usual envelope.
+    /// Decodes `{"data": T}`. Also accepts a bare `T` (some doc examples, e.g. e-commerce
+    /// category deletes, show one) so either shape decodes.
     ///
     /// The bare fallback only runs when the body has no `data` key: if `data` is present
     /// but does not match `T`, that error is returned instead of being masked by a lenient

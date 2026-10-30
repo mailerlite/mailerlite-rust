@@ -44,7 +44,7 @@ pub enum Error {
     Validation(Box<ValidationError>),
 
     /// `429 Too Many Requests`: back off for [`RateLimit::retry_after`]. MailerLite allows 120
-    /// requests per minute (5 per minute for imports); the SDK never retries on its own.
+    /// requests per minute (20 per minute for imports); the SDK never retries on its own.
     #[error(transparent)]
     RateLimited(Box<RateLimit>),
 
@@ -404,7 +404,7 @@ impl RateLimit {
         self.remaining
     }
 
-    /// The API's message, e.g. `Too Many Attempts.` or
+    /// The API's message, e.g. `You're being rate limited. Consider using batch requests: …` or
     /// `You're being rate limited on import creation.`.
     #[must_use]
     pub fn message(&self) -> &str {

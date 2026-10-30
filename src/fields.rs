@@ -49,7 +49,7 @@ string_enum! {
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize)]
 #[non_exhaustive]
 pub struct ListFields {
-    /// Page size (at most 100).
+    /// Page size (API default 200, at most 1000).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<u32>,
     /// 1-based page number.
@@ -73,7 +73,7 @@ impl ListFields {
         Self::default()
     }
 
-    /// Page size (at most 100).
+    /// Page size (API default 200, at most 1000).
     #[must_use]
     pub fn limit(mut self, limit: u32) -> Self {
         self.limit = Some(limit);

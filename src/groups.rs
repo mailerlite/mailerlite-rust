@@ -52,13 +52,14 @@ pub struct Group {
     /// Creation time.
     #[serde(default)]
     pub created_at: Option<Timestamp>,
-    /// `true` while MailerLite is still processing membership changes.
+    /// `true` while MailerLite is still processing membership changes. Not sent to API-key
+    /// requests, so normally `None`.
     #[serde(default)]
     pub processing: Option<bool>,
-    /// Whether a form uses the group.
+    /// Whether a form uses the group. Only sent to the MailerLite app, so `None` for API keys.
     #[serde(default)]
     pub used_in_forms: Option<bool>,
-    /// Whether a site uses the group.
+    /// Whether a site uses the group. Only sent to the MailerLite app, so `None` for API keys.
     #[serde(default)]
     pub used_in_sites: Option<bool>,
 }
@@ -325,7 +326,7 @@ impl<'a> Groups<'a> {
     }
 
     /// `POST /groups/{id}/import-subscribers`: bulk-imports subscribers into the group in the
-    /// background. Limited to 5 imports per minute; poll progress with
+    /// background. Limited to 20 imports per minute; poll progress with
     /// [`Subscribers::import_status`](crate::subscribers::Subscribers::import_status).
     pub async fn import_subscribers(
         &self,

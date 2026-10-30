@@ -36,7 +36,7 @@
 //! [`Error::Validation`] (`422`, with per-field errors in the order the API sent them),
 //! [`Error::RateLimited`] (`429`, with [`RateLimit::retry_after`]), [`Error::Unauthorized`]
 //! (`401`), [`Error::NotFound`] (`404`) and [`Error::Api`] for any other non-2xx response.
-//! The SDK never retries on its own; MailerLite allows 120 requests per minute (5 per minute
+//! The SDK never retries on its own; MailerLite allows 120 requests per minute (20 per minute
 //! for imports).
 //!
 //! ```no_run
