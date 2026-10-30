@@ -219,11 +219,7 @@ impl<'a> Forms<'a> {
         query: ListForms,
     ) -> impl futures_util::Stream<Item = Result<Form>> + 'a {
         let forms = *self;
-        crate::pagination::stream::pages(query.page.unwrap_or(1), move |page| {
-            let query = ListForms {
-                page: Some(page),
-                ..query.clone()
-            };
+        crate::pagination::stream::paged(query, move |query| {
             let form_type = form_type.clone();
             async move { forms.list(&form_type, &query).await }
         })
@@ -277,12 +273,7 @@ impl<'a> Forms<'a> {
     ) -> impl futures_util::Stream<Item = Result<Subscriber>> + 'a {
         let forms = *self;
         let id = id.into();
-        let first = query.cursor.clone();
-        crate::pagination::stream::cursor(first, move |cursor| {
-            let query = ListSubscribers {
-                cursor,
-                ..query.clone()
-            };
+        crate::pagination::stream::cursored(query, move |query| {
             let id = id.clone();
             async move { forms.subscribers(&id, &query).await }
         })

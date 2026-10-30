@@ -139,18 +139,27 @@ impl ApiError {
         #[derive(Deserialize)]
         #[serde(untagged)]
         enum Body {
+            // Both fields are read loosely: PHP sends an empty `errors` map as `[]`, and a
+            // shape mismatch here must not discard the message.
             Object {
                 #[serde(default)]
-                message: Option<String>,
+                message: Option<serde_json::Value>,
                 #[serde(default)]
-                errors: Option<BTreeMap<String, Vec<String>>>,
+                errors: Option<serde_json::Value>,
             },
             // Some campaign endpoints answer with a bare JSON string.
             Message(String),
         }
 
         let (message, errors) = match serde_json::from_slice::<Body>(body) {
-            Ok(Body::Object { message, errors }) => (message, errors.unwrap_or_default()),
+            Ok(Body::Object { message, errors }) => (
+                message.and_then(|message| match message {
+                    serde_json::Value::String(text) => Some(text),
+                    serde_json::Value::Null => None,
+                    other => Some(other.to_string()),
+                }),
+                errors.map(field_errors).unwrap_or_default(),
+            ),
             Ok(Body::Message(message)) => (Some(message), BTreeMap::new()),
             Err(_) if body.is_empty() => (None, BTreeMap::new()),
             Err(_) => (Some(truncate(body, 512)), BTreeMap::new()),
@@ -179,6 +188,31 @@ impl fmt::Display for ApiError {
             write!(f, "; {field}: {}", messages.join(", "))?;
         }
         Ok(())
+    }
+}
+
+/// Normalizes the `errors` member into `field -> messages`, whatever shape it arrived in.
+fn field_errors(errors: serde_json::Value) -> BTreeMap<String, Vec<String>> {
+    use serde_json::Value;
+
+    fn messages(value: Value) -> Vec<String> {
+        match value {
+            Value::Null => Vec::new(),
+            Value::String(text) => vec![text],
+            Value::Array(items) => items.into_iter().flat_map(messages).collect(),
+            other => vec![other.to_string()],
+        }
+    }
+
+    match errors {
+        Value::Object(map) => map
+            .into_iter()
+            .map(|(field, value)| (field, messages(value)))
+            .collect(),
+        Value::Null => BTreeMap::new(),
+        Value::Array(items) if items.is_empty() => BTreeMap::new(),
+        // A bare list or string has no field; keep the messages under an empty key.
+        other => BTreeMap::from([(String::new(), messages(other))]),
     }
 }
 
@@ -265,5 +299,33 @@ mod tests {
     fn truncates_on_char_boundary() {
         assert_eq!(truncate("ąčę".as_bytes(), 2), "ąč…");
         assert_eq!(truncate(b"short", 10), "short");
+    }
+
+    #[test]
+    fn tolerates_unexpected_errors_shapes() {
+        let empty = ApiError::from_parts(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            &HeaderMap::new(),
+            br#"{"message":"Invalid data","errors":[]}"#,
+        );
+        assert_eq!(empty.message, "Invalid data");
+        assert!(empty.errors.is_empty());
+
+        let mixed = ApiError::from_parts(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            &HeaderMap::new(),
+            br#"{"message":"Bad","errors":{"email":"taken","requests.0":[["nested"]],"n":[1]}}"#,
+        );
+        assert_eq!(mixed.message, "Bad");
+        assert_eq!(mixed.errors["email"], ["taken"]);
+        assert_eq!(mixed.errors["requests.0"], ["nested"]);
+        assert_eq!(mixed.errors["n"], ["1"]);
+
+        let bare = ApiError::from_parts(
+            StatusCode::BAD_REQUEST,
+            &HeaderMap::new(),
+            br#"{"message":"Bad","errors":"something broke"}"#,
+        );
+        assert_eq!(bare.errors[""], ["something broke"]);
     }
 }

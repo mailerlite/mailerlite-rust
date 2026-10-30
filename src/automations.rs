@@ -539,12 +539,8 @@ impl<'a> Automations<'a> {
         query: ListAutomations,
     ) -> impl futures_util::Stream<Item = Result<Automation>> + 'a {
         let automations = *self;
-        crate::pagination::stream::pages(query.page.unwrap_or(1), move |page| {
-            let query = ListAutomations {
-                page: Some(page),
-                ..query.clone()
-            };
-            async move { automations.list(&query).await }
+        crate::pagination::stream::paged(query, move |query| async move {
+            automations.list(&query).await
         })
     }
 

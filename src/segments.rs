@@ -99,13 +99,10 @@ impl<'a> Segments<'a> {
         query: ListSegments,
     ) -> impl futures_util::Stream<Item = Result<Segment>> + 'a {
         let segments = *self;
-        crate::pagination::stream::pages(query.page.unwrap_or(1), move |page| {
-            let query = ListSegments {
-                page: Some(page),
-                ..query.clone()
-            };
-            async move { segments.list(&query).await }
-        })
+        crate::pagination::stream::paged(
+            query,
+            move |query| async move { segments.list(&query).await },
+        )
     }
 
     /// `PUT /segments/{id}`: renames a segment (name at most 255 characters).
@@ -148,12 +145,7 @@ impl<'a> Segments<'a> {
     ) -> impl futures_util::Stream<Item = Result<Subscriber>> + 'a {
         let segments = *self;
         let id = id.into();
-        let first = query.cursor.clone();
-        crate::pagination::stream::cursor(first, move |cursor| {
-            let query = ListSubscribers {
-                cursor,
-                ..query.clone()
-            };
+        crate::pagination::stream::cursored(query, move |query| {
             let id = id.clone();
             async move { segments.subscribers(&id, &query).await }
         })

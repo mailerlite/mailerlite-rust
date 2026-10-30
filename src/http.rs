@@ -2,7 +2,10 @@
 
 use bytes::Bytes;
 use reqwest::{Method, StatusCode};
-use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use serde::{
+    Deserialize, Serialize,
+    de::{DeserializeOwned, IgnoredAny},
+};
 
 use crate::{ApiError, Error, MailerLite, Result};
 
@@ -40,23 +43,40 @@ impl MailerLite {
     /// Starts a request to `path`, relative to `https://connect.mailerlite.com/api/`
     /// (e.g. `"subscribers/123/activity-log"`).
     ///
-    /// Each `/`-separated segment is percent-encoded. Prefer the typed resource methods; this
-    /// is an escape hatch for endpoints the SDK does not cover.
+    /// Each `/`-separated segment is percent-encoded, so pass ids and emails unencoded
+    /// (`"subscribers/ann+tag@example.com"`). A query string after `?` is sent as written;
+    /// [`RawRequest::query`] appends further parameters. Prefer the typed resource methods;
+    /// this is an escape hatch for endpoints the SDK does not cover.
     pub fn request(&self, method: Method, path: &str) -> RawRequest<'_> {
+        let path = path.split_once('#').map_or(path, |(path, _fragment)| path);
+        let (path, query) = match path.split_once('?') {
+            Some((path, query)) => (path, Some(query).filter(|query| !query.is_empty())),
+            None => (path, None),
+        };
         let segments: Vec<&str> = path
             .split('/')
             .filter(|segment| !segment.is_empty())
             .collect();
-        self.call(method, &segments)
+        self.build_request(method, &segments, query)
     }
 
     /// Starts a request to `BASE_URL/segment/segment/...`, percent-encoding every segment.
     pub(crate) fn call(&self, method: Method, segments: &[&str]) -> RawRequest<'_> {
+        self.build_request(method, segments, None)
+    }
+
+    fn build_request(
+        &self,
+        method: Method,
+        segments: &[&str],
+        query: Option<&str>,
+    ) -> RawRequest<'_> {
         let inner = &self.inner;
         let mut url = inner.base_url.clone();
         if let Ok(mut path) = url.path_segments_mut() {
             path.pop_if_empty().extend(segments);
         }
+        url.set_query(query);
 
         let mut builder = inner
             .http
@@ -143,17 +163,29 @@ impl Response {
 
     /// Decodes `{"data": T}`. Also accepts a bare `T`, which a few e-commerce delete
     /// endpoints return instead of the usual envelope.
+    ///
+    /// The bare fallback only runs when the body has no `data` key: if `data` is present
+    /// but does not match `T`, that error is returned instead of being masked by a lenient
+    /// decode of the outer object (which would yield `T::default()`-like values).
     pub(crate) fn data<T: DeserializeOwned>(&self) -> Result<T> {
         #[derive(Deserialize)]
         struct Envelope<T> {
             data: T,
         }
 
+        #[derive(Deserialize)]
+        struct HasData {
+            #[allow(dead_code)]
+            data: IgnoredAny,
+        }
+
         match serde_json::from_slice::<Envelope<T>>(&self.body) {
             Ok(envelope) => Ok(envelope.data),
-            Err(err) => {
-                serde_json::from_slice::<T>(&self.body).map_err(|_| Error::decode(err, &self.body))
+            Err(err) if serde_json::from_slice::<HasData>(&self.body).is_ok() => {
+                Err(Error::decode(err, &self.body))
             }
+            Err(_) => serde_json::from_slice::<T>(&self.body)
+                .map_err(|err| Error::decode(err, &self.body)),
         }
     }
 }
@@ -345,6 +377,40 @@ mod tests {
             .await
             .unwrap();
         mock.request().assert(Method::GET, "forms/a%20b");
+
+        // An inline query string is kept and `.query()` appends to it.
+        mock.respond(200, json!({}));
+        let _: Value = client
+            .request(Method::GET, "subscribers?filter[status]=active#ignored")
+            .query(&[("limit", "5")])
+            .send()
+            .await
+            .unwrap();
+        mock.request()
+            .assert(Method::GET, "subscribers?filter[status]=active&limit=5");
+    }
+
+    #[tokio::test]
+    async fn data_does_not_mask_errors_inside_the_envelope() {
+        #[derive(Debug, Default, serde::Deserialize)]
+        #[serde(default)]
+        struct Lenient {
+            count: u64,
+        }
+
+        let (client, mock) = mock::client();
+        mock.respond(200, json!({"data": {"count": "not a number"}}))
+            .respond(200, json!({"count": 3}));
+
+        let err = client
+            .call(Method::GET, &["x"])
+            .data::<Lenient>()
+            .await
+            .unwrap_err();
+        assert!(matches!(err, crate::Error::Decode { .. }), "{err:?}");
+
+        let bare: Lenient = client.call(Method::GET, &["x"]).data().await.unwrap();
+        assert_eq!(bare.count, 3);
     }
 
     #[tokio::test]

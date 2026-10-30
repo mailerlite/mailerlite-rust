@@ -36,6 +36,7 @@ pub(crate) struct Inner {
     pub(crate) base_url: Url,
     /// Authorization (marked sensitive), Accept, User-Agent and the optional X-Version.
     pub(crate) headers: HeaderMap,
+    /// Per-request timeout, applied on top of the `reqwest::Client`'s own settings.
     pub(crate) timeout: Option<Duration>,
     #[cfg(test)]
     pub(crate) mock: Option<Arc<crate::http::mock::Mock>>,
@@ -53,7 +54,7 @@ impl MailerLite {
     pub fn builder(api_key: impl Into<String>) -> MailerLiteBuilder {
         MailerLiteBuilder {
             api_key: api_key.into(),
-            timeout: Some(DEFAULT_TIMEOUT),
+            timeout: TimeoutSetting::Default,
             api_version: None,
             user_agent: None,
             http: None,
@@ -76,7 +77,7 @@ impl fmt::Debug for MailerLite {
 #[must_use]
 pub struct MailerLiteBuilder {
     api_key: String,
-    timeout: Option<Duration>,
+    timeout: TimeoutSetting,
     api_version: Option<String>,
     user_agent: Option<String>,
     http: Option<reqwest::Client>,
@@ -84,16 +85,28 @@ pub struct MailerLiteBuilder {
     mock: Option<Arc<crate::http::mock::Mock>>,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum TimeoutSetting {
+    /// 30 seconds, unless a caller-supplied client brings its own settings.
+    Default,
+    Custom(Duration),
+    Disabled,
+}
+
 impl MailerLiteBuilder {
-    /// Total time allowed per request, including reading the body. Defaults to 30 seconds.
+    /// Total time allowed per request, including reading the body.
+    ///
+    /// Defaults to 30 seconds. With [`http_client`](Self::http_client), the default is not
+    /// applied and your client's own timeout is used, unless you call this explicitly.
     pub fn timeout(mut self, timeout: Duration) -> Self {
-        self.timeout = Some(timeout);
+        self.timeout = TimeoutSetting::Custom(timeout);
         self
     }
 
-    /// Disables the per-request timeout.
+    /// Disables the SDK's per-request timeout. A client passed to
+    /// [`http_client`](Self::http_client) keeps whatever timeout it was built with.
     pub fn no_timeout(mut self) -> Self {
-        self.timeout = None;
+        self.timeout = TimeoutSetting::Disabled;
         self
     }
 
@@ -151,6 +164,12 @@ impl MailerLiteBuilder {
 
         let base_url = Url::parse(BASE_URL)
             .map_err(|err| Error::Config(format!("invalid base URL: {err}")))?;
+        let timeout = match (self.timeout, self.http.is_some()) {
+            (TimeoutSetting::Custom(timeout), _) => Some(timeout),
+            (TimeoutSetting::Default, false) => Some(DEFAULT_TIMEOUT),
+            // Respect the caller's client configuration.
+            (TimeoutSetting::Default, true) | (TimeoutSetting::Disabled, _) => None,
+        };
         let http = match self.http {
             Some(http) => http,
             None => reqwest::Client::builder().build()?,
@@ -161,7 +180,7 @@ impl MailerLiteBuilder {
                 http,
                 base_url,
                 headers,
-                timeout: self.timeout,
+                timeout,
                 #[cfg(test)]
                 mock: self.mock,
             }),
@@ -192,6 +211,30 @@ mod tests {
         let client = builder.build().unwrap();
         assert!(!format!("{client:?}").contains("secret_api_key"));
         assert!(!format!("{:?}", client.inner.headers).contains("secret_api_key"));
+    }
+
+    #[test]
+    fn timeout_respects_caller_supplied_client() {
+        let timeout = |builder: MailerLiteBuilder| builder.build().unwrap().inner.timeout;
+        let custom = Duration::from_secs(120);
+
+        assert_eq!(timeout(MailerLite::builder("k")), Some(DEFAULT_TIMEOUT));
+        assert_eq!(timeout(MailerLite::builder("k").no_timeout()), None);
+        assert_eq!(
+            timeout(MailerLite::builder("k").timeout(custom)),
+            Some(custom)
+        );
+
+        let own = || reqwest::Client::builder().timeout(custom).build().unwrap();
+        assert_eq!(timeout(MailerLite::builder("k").http_client(own())), None);
+        assert_eq!(
+            timeout(
+                MailerLite::builder("k")
+                    .http_client(own())
+                    .timeout(Duration::from_secs(5))
+            ),
+            Some(Duration::from_secs(5))
+        );
     }
 
     #[test]

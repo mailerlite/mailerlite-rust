@@ -147,13 +147,10 @@ impl<'a> Fields<'a> {
         query: ListFields,
     ) -> impl futures_util::Stream<Item = Result<Field>> + 'a {
         let fields = *self;
-        crate::pagination::stream::pages(query.page.unwrap_or(1), move |page| {
-            let query = ListFields {
-                page: Some(page),
-                ..query.clone()
-            };
-            async move { fields.list(&query).await }
-        })
+        crate::pagination::stream::paged(
+            query,
+            move |query| async move { fields.list(&query).await },
+        )
     }
 
     /// `POST /fields`: creates a field (name at most 255 characters).

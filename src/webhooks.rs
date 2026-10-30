@@ -9,6 +9,8 @@
 //! Deliveries are retried three times (after 10, 100 and 1000 seconds) unless your endpoint
 //! answers `2xx` within 3 seconds.
 
+use std::fmt;
+
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
 
@@ -55,7 +57,10 @@ string_enum! {
 }
 
 /// A webhook subscription.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+///
+/// `Debug` output redacts [`secret`](Self::secret), so logging a webhook doesn't leak the
+/// key that signs its deliveries.
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct Webhook {
     /// Webhook id.
@@ -208,10 +213,55 @@ impl UpdateWebhook {
     }
 }
 
-#[cfg(feature = "stream")]
-#[derive(Serialize)]
-struct PageQuery {
-    page: u32,
+impl fmt::Debug for Webhook {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Webhook")
+            .field("id", &self.id)
+            .field("name", &self.name)
+            .field("url", &self.url)
+            .field("events", &self.events)
+            .field("enabled", &self.enabled)
+            .field("secret", &"<redacted>")
+            .field("created_at", &self.created_at)
+            .field("updated_at", &self.updated_at)
+            .field("batchable", &self.batchable)
+            .finish()
+    }
+}
+
+/// Query for [`Webhooks::list`]. The docs list no parameters, but the response is paginated
+/// and its `links` use `?page=N`.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize)]
+#[non_exhaustive]
+pub struct ListWebhooks {
+    /// Page size.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub limit: Option<u32>,
+    /// 1-based page number.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub page: Option<u32>,
+}
+
+impl ListWebhooks {
+    /// Default query.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Page size.
+    #[must_use]
+    pub fn limit(mut self, limit: u32) -> Self {
+        self.limit = Some(limit);
+        self
+    }
+
+    /// 1-based page number.
+    #[must_use]
+    pub fn page(mut self, page: u32) -> Self {
+        self.page = Some(page);
+        self
+    }
 }
 
 /// Webhook endpoints. Obtained with [`MailerLite::webhooks`].
@@ -229,22 +279,26 @@ impl MailerLite {
 }
 
 impl<'a> Webhooks<'a> {
-    /// `GET /webhooks`: the first page of webhooks.
-    pub async fn list(&self) -> Result<Page<Webhook>> {
-        self.client.call(Method::GET, &["webhooks"]).send().await
+    /// `GET /webhooks`: one page of webhooks.
+    pub async fn list(&self, query: &ListWebhooks) -> Result<Page<Webhook>> {
+        self.client
+            .call(Method::GET, &["webhooks"])
+            .query(query)
+            .send()
+            .await
     }
 
-    /// Every webhook, fetching pages lazily (`?page=N`).
+    /// Every webhook, fetching pages lazily.
     #[cfg(feature = "stream")]
-    pub fn list_all(&self) -> impl futures_util::Stream<Item = Result<Webhook>> + 'a {
-        let client = self.client;
-        crate::pagination::stream::pages(1, move |page| async move {
-            client
-                .call(Method::GET, &["webhooks"])
-                .query(&PageQuery { page })
-                .send::<Page<Webhook>>()
-                .await
-        })
+    pub fn list_all(
+        &self,
+        query: ListWebhooks,
+    ) -> impl futures_util::Stream<Item = Result<Webhook>> + 'a {
+        let webhooks = *self;
+        crate::pagination::stream::paged(
+            query,
+            move |query| async move { webhooks.list(&query).await },
+        )
     }
 
     /// `GET /webhooks/{id}`: one webhook.
@@ -307,9 +361,15 @@ mod tests {
         let (client, mock) = client();
         mock.respond(200, fixture("webhooks_list"));
 
-        let page = client.webhooks().list().await.unwrap();
+        let page = client
+            .webhooks()
+            .list(&ListWebhooks::new().limit(50).page(2))
+            .await
+            .unwrap();
 
-        mock.request().assert(Method::GET, "webhooks").no_body();
+        mock.request()
+            .assert(Method::GET, "webhooks?limit=50&page=2")
+            .no_body();
         assert_eq!(page.data.len(), 17);
         assert_eq!(page.data[13].events, [WebhookEvent::CampaignOpen]);
         assert_eq!(page.data[14].events, [WebhookEvent::CampaignClick]);
@@ -437,11 +497,27 @@ mod tests {
             json!({"data": [webhook], "meta": {"current_page": 2, "last_page": 2}}),
         );
 
-        let all: Vec<Webhook> = client.webhooks().list_all().try_collect().await.unwrap();
+        let all: Vec<Webhook> = client
+            .webhooks()
+            .list_all(ListWebhooks::new())
+            .try_collect()
+            .await
+            .unwrap();
 
         assert_eq!(all.len(), 2);
         let requests = mock.requests();
         requests[0].assert(Method::GET, "webhooks?page=1");
         requests[1].assert(Method::GET, "webhooks?page=2");
+    }
+
+    #[test]
+    fn debug_redacts_secret() {
+        let webhook: Webhook =
+            serde_json::from_value(fixture("webhooks_get")["data"].clone()).unwrap();
+        assert!(!webhook.secret.is_empty());
+
+        let debug = format!("{webhook:?}");
+        assert!(!debug.contains(&webhook.secret));
+        assert!(debug.contains("<redacted>"));
     }
 }

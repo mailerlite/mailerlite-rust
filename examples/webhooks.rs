@@ -9,7 +9,7 @@
 
 use mailerlite_rs::{
     MailerLite,
-    webhooks::{CreateWebhook, UpdateWebhook, WebhookEvent},
+    webhooks::{CreateWebhook, ListWebhooks, UpdateWebhook, WebhookEvent},
 };
 
 #[tokio::main]
@@ -44,7 +44,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .await?;
 
-    for webhook in webhooks.list().await? {
+    for webhook in webhooks.list(&ListWebhooks::new()).await? {
         println!(
             "{} -> {} ({} events)",
             webhook.id,

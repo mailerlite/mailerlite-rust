@@ -209,15 +209,23 @@ impl BatchResult {
     /// (single resources and lists) and decoding the bare body otherwise.
     ///
     /// This does not look at [`code`](Self::code): check [`is_success`](Self::is_success)
-    /// first. A body that does not match `T` becomes [`Error::Decode`].
+    /// first. A body that does not match `T` becomes [`Error::Decode`]. Use
+    /// [`decode_body`](Self::decode_body) for responses whose top level has its own `data`
+    /// key next to other fields (e.g. paginated lists or a forgotten subscriber).
     pub fn decode<T: DeserializeOwned>(&self) -> Result<T> {
-        let enveloped = match self.body.get("data") {
-            Some(data) => T::deserialize(data),
-            None => T::deserialize(&self.body),
-        };
-        enveloped
-            .or_else(|err| T::deserialize(&self.body).map_err(|_| err))
-            .map_err(|err| Error::decode(err, &serde_json::to_vec(&self.body).unwrap_or_default()))
+        match self.body.get("data") {
+            Some(data) => T::deserialize(data).map_err(|err| self.decode_error(err)),
+            None => self.decode_body(),
+        }
+    }
+
+    /// Decodes the whole body into `T` without unwrapping `data`.
+    pub fn decode_body<T: DeserializeOwned>(&self) -> Result<T> {
+        T::deserialize(&self.body).map_err(|err| self.decode_error(err))
+    }
+
+    fn decode_error(&self, err: serde_json::Error) -> Error {
+        Error::decode(err, &serde_json::to_vec(&self.body).unwrap_or_default())
     }
 }
 
@@ -338,5 +346,28 @@ mod tests {
         assert!(empty.is_success());
         empty.decode::<()>().unwrap();
         assert_eq!(empty.decode::<Option<Field>>().unwrap(), None);
+    }
+
+    #[test]
+    fn decode_does_not_mask_errors_inside_data() {
+        #[derive(Debug, Default, Deserialize)]
+        #[serde(default)]
+        struct Lenient {
+            count: u64,
+        }
+
+        let bad = BatchResult {
+            code: 200,
+            body: json!({"data": {"count": "nope"}}),
+        };
+        assert!(matches!(bad.decode::<Lenient>(), Err(Error::Decode { .. })));
+
+        let forgotten = BatchResult {
+            code: 200,
+            body: json!({"message": "done", "data": {"count": 1}}),
+        };
+        let whole: std::collections::BTreeMap<String, Value> = forgotten.decode_body().unwrap();
+        assert_eq!(whole["message"], "done");
+        assert_eq!(forgotten.decode::<Lenient>().unwrap().count, 1);
     }
 }

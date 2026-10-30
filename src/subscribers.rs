@@ -647,13 +647,8 @@ impl<'a> Subscribers<'a> {
         query: ListSubscribers,
     ) -> impl futures_util::Stream<Item = Result<Subscriber>> + 'a {
         let subscribers = *self;
-        let first = query.cursor.clone();
-        crate::pagination::stream::cursor(first, move |cursor| {
-            let query = ListSubscribers {
-                cursor,
-                ..query.clone()
-            };
-            async move { subscribers.list(&query).await }
+        crate::pagination::stream::cursored(query, move |query| async move {
+            subscribers.list(&query).await
         })
     }
 

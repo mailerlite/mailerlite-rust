@@ -25,7 +25,7 @@ All of these run in CI (`.github/workflows/main.yaml`) and must pass before comm
 | `src/client.rs` | `MailerLite` (`Arc<Inner>`, cheap `Clone`) and `MailerLiteBuilder` |
 | `src/http.rs` | Private request pipeline (`call`, `RawRequest`, `Response::data`), public `MailerLite::request` escape hatch, `#[cfg(test)] mod mock` |
 | `src/error.rs` | `Error`, `ApiError` (status, message, validation `errors`, `retry_after`) |
-| `src/pagination.rs` | `Page<T, A>`, `CursorPage<T>`, `stream::{pages, cursor}` for `list_all` |
+| `src/pagination.rs` | `Page<T, A>`, `CursorPage<T>`, `stream::{paged, cursored}` for `list_all` (with loop guards) |
 | `src/types.rs` | `Id`, `Timestamp`, `Rate`, `Sort`, `FieldValue`, `string_enum!`, lenient `de::*` deserializers |
 | `src/reports.rs` | E-commerce report types shared by subscribers/campaigns |
 | `src/<resource>.rs` | One file per API area: handle, request/query builders, models, tests |

@@ -59,8 +59,10 @@ pub async fn widgets(&self, id: impl AsRef<str>, query: &ListWidgets) -> Result<
 - Pick the terminal call by response shape: `.data()` (`{"data": T}` or bare `T`), `.send()` (whole
   body: lists, `{"total"}`, custom envelopes), `.send_empty()` (`204`), `.execute()` when the status
   code carries meaning (then `response.status` + `response.data()?`).
-- Lists: also add `list_all` behind `#[cfg(feature = "stream")]` using `pagination::stream::pages` or
-  `::cursor` (see `Groups::list_all` / `Subscribers::list_all`).
+- Lists: also add `list_all` behind `#[cfg(feature = "stream")]` using `pagination::stream::paged`
+  (page-number lists; add the query type to the `paged_query!` list in `src/pagination.rs`) or
+  `::cursored` (subscriber listings). See `Groups::list_all` / `Subscribers::list_all`. Both helpers
+  stop on repeated cursors or pages, so never hand-roll a pagination loop.
 - Never build paths with `format!`; pass segments so ids/emails are percent-encoded.
 
 ## 5. Test it

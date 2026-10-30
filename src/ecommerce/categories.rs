@@ -186,12 +186,8 @@ impl<'a> Categories<'a> {
         query: ListCategories,
     ) -> impl futures_util::Stream<Item = Result<Category>> + 'a {
         let categories = *self;
-        crate::pagination::stream::pages(query.page.unwrap_or(1), move |page| {
-            let query = ListCategories {
-                page: Some(page),
-                ..query.clone()
-            };
-            async move { categories.list(&query).await }
+        crate::pagination::stream::paged(query, move |query| async move {
+            categories.list(&query).await
         })
     }
 

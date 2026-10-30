@@ -336,13 +336,10 @@ impl<'a> Carts<'a> {
         query: ListCarts,
     ) -> impl futures_util::Stream<Item = Result<Cart>> + 'a {
         let carts = *self;
-        crate::pagination::stream::pages(query.page.unwrap_or(1), move |page| {
-            let query = ListCarts {
-                page: Some(page),
-                ..query.clone()
-            };
-            async move { carts.list(&query).await }
-        })
+        crate::pagination::stream::paged(
+            query,
+            move |query| async move { carts.list(&query).await },
+        )
     }
 
     /// `GET /ecommerce/shops/{shop_id}/carts?limit=0`: number of carts.
@@ -394,13 +391,10 @@ impl<'a> CartItems<'a> {
         query: ListCartItems,
     ) -> impl futures_util::Stream<Item = Result<CartItem>> + 'a {
         let items = *self;
-        crate::pagination::stream::pages(query.page.unwrap_or(1), move |page| {
-            let query = ListCartItems {
-                page: Some(page),
-                ..query.clone()
-            };
-            async move { items.list(&query).await }
-        })
+        crate::pagination::stream::paged(
+            query,
+            move |query| async move { items.list(&query).await },
+        )
     }
 
     /// `GET /ecommerce/shops/{shop_id}/carts/{cart_id}/items?limit=0`: number of items.

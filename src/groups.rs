@@ -217,13 +217,10 @@ impl<'a> Groups<'a> {
         query: ListGroups,
     ) -> impl futures_util::Stream<Item = Result<Group>> + 'a {
         let groups = *self;
-        crate::pagination::stream::pages(query.page.unwrap_or(1), move |page| {
-            let query = ListGroups {
-                page: Some(page),
-                ..query.clone()
-            };
-            async move { groups.list(&query).await }
-        })
+        crate::pagination::stream::paged(
+            query,
+            move |query| async move { groups.list(&query).await },
+        )
     }
 
     /// `POST /groups`: creates a group (name at most 255 characters).
@@ -274,12 +271,7 @@ impl<'a> Groups<'a> {
     ) -> impl futures_util::Stream<Item = Result<Subscriber>> + 'a {
         let groups = *self;
         let id = id.into();
-        let first = query.cursor.clone();
-        crate::pagination::stream::cursor(first, move |cursor| {
-            let query = ListSubscribers {
-                cursor,
-                ..query.clone()
-            };
+        crate::pagination::stream::cursored(query, move |query| {
             let id = id.clone();
             async move { groups.subscribers(&id, &query).await }
         })

@@ -327,13 +327,10 @@ impl<'a> Orders<'a> {
         query: ListOrders,
     ) -> impl futures_util::Stream<Item = Result<Order>> + 'a {
         let orders = *self;
-        crate::pagination::stream::pages(query.page.unwrap_or(1), move |page| {
-            let query = ListOrders {
-                page: Some(page),
-                ..query.clone()
-            };
-            async move { orders.list(&query).await }
-        })
+        crate::pagination::stream::paged(
+            query,
+            move |query| async move { orders.list(&query).await },
+        )
     }
 
     /// `GET /ecommerce/shops/{shop_id}/orders?limit=0`: number of orders.

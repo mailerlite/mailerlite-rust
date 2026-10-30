@@ -1368,13 +1368,10 @@ impl<'a> Campaigns<'a> {
         query: ListCampaigns,
     ) -> impl futures_util::Stream<Item = Result<Campaign>> + 'a {
         let campaigns = *self;
-        crate::pagination::stream::pages(query.page.unwrap_or(1), move |page| {
-            let query = ListCampaigns {
-                page: Some(page),
-                ..query.clone()
-            };
-            async move { campaigns.list(&query).await }
-        })
+        crate::pagination::stream::paged(
+            query,
+            move |query| async move { campaigns.list(&query).await },
+        )
     }
 
     /// `GET /campaigns/{id}`: one campaign.
@@ -1470,11 +1467,7 @@ impl<'a> Campaigns<'a> {
     ) -> impl futures_util::Stream<Item = Result<CampaignActivity>> + 'a {
         let campaigns = *self;
         let id = id.into();
-        crate::pagination::stream::pages(query.page.unwrap_or(1), move |page| {
-            let query = ListCampaignActivity {
-                page: Some(page),
-                ..query.clone()
-            };
+        crate::pagination::stream::paged(query, move |query| {
             let id = id.clone();
             async move { campaigns.subscriber_activity(&id, &query).await }
         })

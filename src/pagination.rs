@@ -252,15 +252,90 @@ impl<T, A> From<RawPage<T, A>> for Page<T, A> {
 
 #[cfg(feature = "stream")]
 pub(crate) mod stream {
-    use std::future::Future;
+    use std::{collections::HashSet, future::Future};
 
     use futures_util::{Stream, TryStreamExt, stream};
 
     use super::{CursorPage, Page};
-    use crate::Result;
+    use crate::{Result, subscribers::ListSubscribers};
 
-    /// Lazily walks a page-number paginated list, starting at `first_page`.
-    pub(crate) fn pages<T, A, F, Fut>(
+    /// A list query with a `page: Option<u32>` field.
+    pub(crate) trait PagedQuery: Clone {
+        fn page(&self) -> Option<u32>;
+        fn set_page(&mut self, page: u32);
+    }
+
+    macro_rules! paged_query {
+        ($($query:ty),+ $(,)?) => {$(
+            impl PagedQuery for $query {
+                fn page(&self) -> Option<u32> {
+                    self.page
+                }
+
+                fn set_page(&mut self, page: u32) {
+                    self.page = Some(page);
+                }
+            }
+        )+};
+    }
+
+    paged_query!(
+        crate::automations::ListAutomations,
+        crate::campaigns::ListCampaignActivity,
+        crate::campaigns::ListCampaigns,
+        crate::ecommerce::ListCartItems,
+        crate::ecommerce::ListCarts,
+        crate::ecommerce::ListCategories,
+        crate::ecommerce::ListCustomers,
+        crate::ecommerce::ListOrders,
+        crate::ecommerce::ListProducts,
+        crate::ecommerce::ListShops,
+        crate::fields::ListFields,
+        crate::forms::ListForms,
+        crate::groups::ListGroups,
+        crate::segments::ListSegments,
+        crate::webhooks::ListWebhooks,
+    );
+
+    /// Walks every page of a page-number list, starting at `query`'s page (default 1).
+    /// `fetch` receives `query` with the page to load.
+    pub(crate) fn paged<Q, T, A, F, Fut>(query: Q, mut fetch: F) -> impl Stream<Item = Result<T>>
+    where
+        Q: PagedQuery,
+        F: FnMut(Q) -> Fut,
+        Fut: Future<Output = Result<Page<T, A>>>,
+    {
+        let first = query.page().unwrap_or(1);
+        pages(first, move |page| {
+            let mut query = query.clone();
+            query.set_page(page);
+            fetch(query)
+        })
+    }
+
+    /// Walks every page of a subscriber listing, starting at `query`'s cursor.
+    /// `fetch` receives `query` with the cursor to load.
+    pub(crate) fn cursored<T, F, Fut>(
+        query: ListSubscribers,
+        mut fetch: F,
+    ) -> impl Stream<Item = Result<T>>
+    where
+        F: FnMut(ListSubscribers) -> Fut,
+        Fut: Future<Output = Result<CursorPage<T>>>,
+    {
+        let first = query.cursor.clone();
+        cursor(first, move |cursor| {
+            fetch(ListSubscribers {
+                cursor,
+                ..query.clone()
+            })
+        })
+    }
+
+    /// Lazily walks a page-number list. The next page is derived from the page *requested*
+    /// (not from `meta.current_page`), so a server that misreports its position can't make
+    /// the stream revisit pages; it stops at `meta.last_page` or on an empty page.
+    pub(super) fn pages<T, A, F, Fut>(
         first_page: u32,
         mut fetch: F,
     ) -> impl Stream<Item = Result<T>>
@@ -269,21 +344,23 @@ pub(crate) mod stream {
         Fut: Future<Output = Result<Page<T, A>>>,
     {
         stream::try_unfold(Some(first_page), move |next| {
-            let request = next.map(&mut fetch);
+            let request = next.map(|page| (page, fetch(page)));
             async move {
-                let Some(request) = request else {
+                let Some((requested, request)) = request else {
                     return Ok::<_, crate::Error>(None);
                 };
                 let page = request.await?;
-                let next = page.next_page();
+                let next = (!page.data.is_empty() && requested < page.meta.last_page)
+                    .then(|| requested.saturating_add(1));
                 Ok(Some((stream::iter(page.data.into_iter().map(Ok)), next)))
             }
         })
         .try_flatten()
     }
 
-    /// Lazily walks a cursor paginated list.
-    pub(crate) fn cursor<T, F, Fut>(
+    /// Lazily walks a cursor list. Stops when there is no next cursor, or when the API hands
+    /// back a cursor it already returned (which would otherwise loop forever).
+    pub(super) fn cursor<T, F, Fut>(
         first_cursor: Option<String>,
         mut fetch: F,
     ) -> impl Stream<Item = Result<T>>
@@ -291,16 +368,23 @@ pub(crate) mod stream {
         F: FnMut(Option<String>) -> Fut,
         Fut: Future<Output = Result<CursorPage<T>>>,
     {
+        let seen: HashSet<String> = first_cursor.iter().cloned().collect();
         // `None` = done; `Some(cursor)` = fetch with that cursor.
-        stream::try_unfold(Some(first_cursor), move |next| {
+        stream::try_unfold((Some(first_cursor), seen), move |(next, mut seen)| {
             let request = next.map(&mut fetch);
             async move {
                 let Some(request) = request else {
                     return Ok::<_, crate::Error>(None);
                 };
                 let page = request.await?;
-                let next = page.next_cursor().map(|cursor| Some(cursor.to_owned()));
-                Ok(Some((stream::iter(page.data.into_iter().map(Ok)), next)))
+                let next = page
+                    .next_cursor()
+                    .filter(|cursor| seen.insert((*cursor).to_owned()))
+                    .map(|cursor| Some(cursor.to_owned()));
+                Ok(Some((
+                    stream::iter(page.data.into_iter().map(Ok)),
+                    (next, seen),
+                )))
             }
         })
         .try_flatten()
@@ -396,5 +480,51 @@ mod tests {
         });
         let items: Vec<u32> = cursors.try_collect().await.unwrap();
         assert_eq!(items, [1, 2, 3]);
+    }
+
+    #[cfg(feature = "stream")]
+    #[tokio::test]
+    async fn streams_stop_on_misbehaving_servers() {
+        use std::sync::atomic::{AtomicU32, Ordering};
+
+        use futures_util::TryStreamExt;
+
+        // Every page claims to be page 1 of 3: the stream must still request 1, 2, 3 and stop.
+        let requested = AtomicU32::new(0);
+        let pages = stream::pages(1, |page| {
+            requested.fetch_add(1, Ordering::SeqCst);
+            async move {
+                Ok::<_, crate::Error>(
+                    serde_json::from_value::<Page<u32>>(json!({
+                        "data": [page],
+                        "meta": {"current_page": 1, "last_page": 3}
+                    }))
+                    .unwrap(),
+                )
+            }
+        });
+        let items: Vec<u32> = pages.try_collect().await.unwrap();
+        assert_eq!(items, [1, 2, 3]);
+        assert_eq!(requested.load(Ordering::SeqCst), 3);
+
+        // The API keeps handing back cursors already seen: stop instead of looping forever.
+        let cursors = stream::cursor(None, |cursor| async move {
+            let next = match cursor.as_deref() {
+                Some("a") => "b",
+                _ => "a",
+            };
+            Ok::<_, crate::Error>(
+                serde_json::from_value::<CursorPage<u32>>(
+                    json!({"data": [1], "meta": {"next_cursor": next}}),
+                )
+                .unwrap(),
+            )
+        });
+        let items: Vec<u32> = cursors.try_collect().await.unwrap();
+        assert_eq!(
+            items.len(),
+            3,
+            "first page, `a`, `b`, then `a` again is refused"
+        );
     }
 }
