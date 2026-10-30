@@ -524,7 +524,7 @@ mod tests {
     fn debug_redacts_secret() {
         let webhook: Webhook =
             serde_json::from_value(fixture("webhooks_get")["data"].clone()).unwrap();
-        assert!(!webhook.secret.is_empty());
+        assert_ne!(webhook.secret, "");
 
         let debug = format!("{webhook:?}");
         assert!(!debug.contains(&webhook.secret));

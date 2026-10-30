@@ -948,8 +948,8 @@ mod tests {
             .assert(Method::DELETE, "automations/100000000000000000")
             .no_body();
         assert_eq!(created.id, "100000000000000000");
-        assert!(created.steps.is_empty());
-        assert!(created.triggers.is_empty());
+        assert_eq!(created.steps, Vec::new());
+        assert_eq!(created.triggers, Vec::new());
         assert_eq!(created.trigger_data.repeatable, None);
         assert_eq!(created.stats.sent, 0);
         assert_eq!(created.stats.forward_rate.unwrap().string, "0%");

@@ -936,7 +936,7 @@ mod tests {
         mock.request()
             .assert(Method::GET, "subscribers/a%20b@example.com");
         assert_eq!(subscriber.id, "31897397363737859");
-        assert!(subscriber.groups.is_empty());
+        assert_eq!(subscriber.groups, Vec::new());
     }
 
     #[tokio::test]

@@ -44,13 +44,13 @@ fn decode_hex(hex: &str) -> Option<Vec<u8>> {
         }
     }
 
-    let bytes = hex.as_bytes();
-    if !bytes.len().is_multiple_of(2) {
+    let (pairs, rest) = hex.as_bytes().as_chunks::<2>();
+    if !rest.is_empty() {
         return None;
     }
-    bytes
-        .chunks_exact(2)
-        .map(|pair| Some(nibble(pair[0])? << 4 | nibble(pair[1])?))
+    pairs
+        .iter()
+        .map(|&[high, low]| Some(nibble(high)? << 4 | nibble(low)?))
         .collect()
 }
 

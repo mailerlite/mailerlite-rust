@@ -666,7 +666,7 @@ mod tests {
             Some("Product's short description.")
         );
         assert_eq!(product.categories[1].name, "Category 2");
-        assert!(product.variants.is_empty());
+        assert_eq!(product.variants, Vec::new());
         assert_eq!(product.product_type, None);
         assert_eq!(total, 123);
         let requests = mock.requests();
@@ -788,7 +788,7 @@ mod tests {
         assert_eq!(product.discounts[0].price_after_discount, Some(18.0));
         assert_eq!(product.settings["action"], "move_to_group");
         assert_eq!(product.has_checkout, Some(true));
-        assert!(product.categories.is_empty());
+        assert_eq!(product.categories, Vec::new());
         assert_eq!(
             product.created_at.as_ref().map(Timestamp::as_str),
             Some("2026-10-01 10:00:00")

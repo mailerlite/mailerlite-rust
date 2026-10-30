@@ -301,7 +301,7 @@ mod tests {
         assert_eq!(form.last_registration_at, None);
         assert!(!form.active);
         assert!(form.can.update);
-        assert!(form.warnings.is_empty());
+        assert_eq!(form.warnings, Vec::<Value>::new());
         assert_eq!(form.double_optin, None);
         assert_eq!(form.screenshot_url, None);
     }
