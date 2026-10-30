@@ -55,6 +55,8 @@ string_enum! {
         AddedToGroup => "added_to_group",
         /// Subscriber became active.
         Activated => "activated",
+        /// Filter only: every popup-form activity.
+        PopupForms => "popup_forms",
     }
 }
 
@@ -180,17 +182,13 @@ pub struct ListSubscribers {
     /// `active` on the API side.
     #[serde(rename = "filter[status]", skip_serializing_if = "Option::is_none")]
     pub status: Option<SubscriberStatus>,
-    /// Page size. API defaults: 25 for subscribers, segments and forms; 50 (at most 1000) for
-    /// group subscribers.
+    /// Page size. API defaults: 25 for subscribers and forms; 50 for group and segment
+    /// subscribers (at most 1000 for groups).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<u32>,
     /// Cursor from [`CursorPage::next_cursor`].
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cursor: Option<String>,
-    /// Segment subscribers only: the id of the last subscriber already fetched. Prefer
-    /// [`cursor`](Self::cursor), which every subscriber listing supports.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub after: Option<Id>,
     /// Embed each subscriber's groups (documented for `/subscribers` and group subscribers).
     #[serde(
         rename = "include",
@@ -230,13 +228,6 @@ impl ListSubscribers {
     #[must_use]
     pub fn cursor(mut self, cursor: impl Into<String>) -> Self {
         self.cursor = Some(cursor.into());
-        self
-    }
-
-    /// Segment subscribers only: continue after this subscriber id.
-    #[must_use]
-    pub fn after(mut self, subscriber_id: impl Into<Id>) -> Self {
-        self.after = Some(subscriber_id.into());
         self
     }
 
@@ -499,13 +490,12 @@ pub struct Activity {
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize)]
 #[non_exhaustive]
 pub struct ListActivity {
-    /// Only entries of this type.
-    ///
-    /// The API accepts the first ten [`ActivityType`] values here; `AddedToGroup` and
-    /// `Activated` only appear in responses.
+    /// Only entries of this type. Any [`ActivityType`] works, including the filter-only
+    /// [`ActivityType::PopupForms`] group.
     #[serde(rename = "filter[log_name]", skip_serializing_if = "Option::is_none")]
     pub log_name: Option<ActivityType>,
-    /// Page size (API default 100).
+    /// Entries per kind of activity (API default 100, at most 5000): the limit applies to
+    /// each kind separately, so a page can hold more than `limit` entries.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<u32>,
     /// 1-based page number.
@@ -576,9 +566,9 @@ pub struct ImportStatus {
     /// Rows that failed.
     #[serde(default)]
     pub errored: u64,
-    /// Progress in percent.
-    #[serde(default)]
-    pub percent: u8,
+    /// Progress in percent, with one decimal while running (e.g. `33.3`).
+    #[serde(default, deserialize_with = "de::number")]
+    pub percent: f64,
     /// `true` once the import finished.
     #[serde(default, deserialize_with = "de::null_default")]
     pub done: bool,
@@ -633,6 +623,15 @@ pub struct ImportStatus {
     /// Rows rejected because the address is banned.
     #[serde(default)]
     pub banned_import_emails_count: u64,
+    /// The account's subscriber limit, when the import is capped by it.
+    #[serde(default)]
+    pub subscriber_limit: Option<u64>,
+    /// Subscribers counted against [`subscriber_limit`](Self::subscriber_limit).
+    #[serde(default)]
+    pub subscriber_limit_count: Option<u64>,
+    /// `true` if the import stopped because a free account hit its subscriber limit.
+    #[serde(default, deserialize_with = "de::null_default")]
+    pub is_stopped_due_to_free_account_limit_exceeded: bool,
     /// Account the import belongs to.
     #[serde(default)]
     pub account_id: Option<Id>,
@@ -790,7 +789,8 @@ impl<'a> Subscribers<'a> {
     /// `GET /subscribers/{id}/activity-log`: the subscriber's activity.
     ///
     /// The API returns no pagination metadata for this list, so [`Page::next_page`] is always
-    /// `None`; request the next [`ListActivity::page`] until a page comes back empty.
+    /// `None`. Pages after the first repeat entries (the API skips without limiting), so raise
+    /// [`ListActivity::limit`] instead of paging.
     pub async fn activity(
         &self,
         id: impl AsRef<str>,
