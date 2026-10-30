@@ -1,0 +1,158 @@
+{
+  "data": [
+    {
+      "id": "63060835041281261",
+      "status": "Completed",
+      "date": "2022-08-10 14:13:08",
+      "reason": null,
+      "reason_description": "",
+      "stepRuns": [
+        {
+          "id": "63060835092661486",
+          "step_id": "63060773780325602",
+          "description": "Wait for 10 minutes",
+          "scheduled_for": "2022-08-10 14:12:11"
+        },
+        {
+          "id": "63062186887480569",
+          "step_id": "61226379035805534",
+          "description": "Send \"Hello\" email",
+          "scheduled_for": null
+        }
+      ],
+      "nextStep": {
+        "id": "76468141616531049",
+        "type": "condition",
+        "parent_id": "61226379035805534",
+        "complete": true,
+        "broken": false,
+        "yes_step_id": "76468160915572330",
+        "no_step_id": null,
+        "matching_type": "any",
+        "conditions": [
+          {
+            "type": "custom_fields",
+            "field_id": "5",
+            "action": "contains",
+            "action_value": "unknown",
+            "field": {
+              "id": "5",
+              "name": "City",
+              "type": "text"
+            }
+          }
+        ],
+        "created_at": "2022-07-21 07:54:02",
+        "updated_at": "2022-07-21 07:54:02",
+        "description": "Check some condition"
+      },
+      "currentStep": {
+        "id": "61226379035805534",
+        "type": "email",
+        "parent_id": "63060773780325602",
+        "name": "gfg",
+        "subject": "gfg",
+        "from": "dummy@mailerlite.io",
+        "from_name": "Dummy Testerson",
+        "email_id": "61226396694873374",
+        "email": {
+          "id": "61226396694873374",
+          "account_id": "1",
+          "emailable_id": "61041127433700472",
+          "emailable_type": "automations",
+          "type": "builder",
+          "from": "dummy@mailerlite.io",
+          "from_name": "Dummy Testerson",
+          "name": "Hello",
+          "subject": "Hello",
+          "plain_text": null,
+          "screenshot_url": null,
+          "preview_url": null,
+          "created_at": "2022-07-21 07:54:02",
+          "updated_at": "2022-08-10 14:13:08",
+          "is_designed": true,
+          "language_id": 4,
+          "is_winner": false,
+          "stats": {
+            "sent": 3,
+            "opens_count": 0,
+            "unique_opens_count": 0,
+            "open_rate": {
+              "float": 0,
+              "string": "0%"
+            },
+            "clicks_count": 0,
+            "unique_clicks_count": 0,
+            "click_rate": {
+              "float": 0,
+              "string": "0%"
+            },
+            "unsubscribes_count": 0,
+            "unsubscribe_rate": {
+              "float": 0,
+              "string": "0%"
+            },
+            "spam_count": 0,
+            "spam_rate": {
+              "float": 0,
+              "string": "0%"
+            },
+            "hard_bounces_count": 0,
+            "hard_bounce_rate": {
+              "float": 0,
+              "string": "0%"
+            },
+            "soft_bounces_count": 0,
+            "soft_bounce_rate": {
+              "float": 0,
+              "string": "0%"
+            },
+            "forwards_count": 0
+          },
+          "send_after": null,
+          "track_opens": true
+        },
+        "language_id": 4,
+        "complete": true,
+        "created_at": "2022-07-21 07:53:45",
+        "updated_at": "2022-08-10 13:50:40",
+        "track_opens": true,
+        "google_analytics": null,
+        "tracking_was_disabled": false,
+        "description": "Send \"gfg\" email"
+      }
+    }
+  ],
+  "links": {
+    "first": "https://connect.mailerlite.com/api/automations/{automation_id}/activity?page=1",
+    "last": "https://connect.mailerlite.com/api/automations/{automation_id}/activity?page=1",
+    "prev": null,
+    "next": null
+  },
+  "meta": {
+    "current_page": 1,
+    "from": 1,
+    "last_page": 1,
+    "links": [
+      {
+        "url": null,
+        "label": "&laquo; Previous",
+        "active": false
+      },
+      {
+        "url": "https://connect.mailerlite.com/api/automations/{automation_id}/activity?page=1",
+        "label": "1",
+        "active": true
+      },
+      {
+        "url": null,
+        "label": "Next &raquo;",
+        "active": false
+      }
+    ],
+    "path": "https://connect.mailerlite.com/api/automations/{automation_id}/activity",
+    "per_page": 10,
+    "to": 3,
+    "total": 3
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "data": {
+    "id": "100000000000000000",
+    "name": "Created_automation",
+    "enabled": false,
+    "trigger_data": {
+      "track_ecommerce": false
+    },
+    "warnings": [],
+    "stats": {
+      "completed_subscribers_count": 0,
+      "subscribers_in_queue_count": 0,
+      "bounce_rate": {
+        "float": 0,
+        "string": "0%"
+      },
+      "click_to_open_rate": {
+        "float": 0,
+        "string": "0%"
+      },
+      "sent": null,
+      "opens_count": null,
+      "unique_opens_count": null,
+      "open_rate": {
+        "float": 0,
+        "string": "0%"
+      },
+      "clicks_count": null,
+      "unique_clicks_count": null,
+      "click_rate": {
+        "float": 0,
+        "string": "0%"
+      },
+      "unsubscribes_count": null,
+      "unsubscribe_rate": {
+        "float": 0,
+        "string": "0%"
+      },
+      "spam_count": null,
+      "spam_rate": {
+        "float": 0,
+        "string": "0%"
+      },
+      "hard_bounces_count": null,
+      "hard_bounce_rate": {
+        "float": 0,
+        "string": "0%"
+      },
+      "soft_bounces_count": null,
+      "soft_bounce_rate": {
+        "float": 0,
+        "string": "0%"
+      },
+      "forward_rate": {
+        "float": 0,
+        "string": "0%"
+      },
+      "social_interactions_count": null,
+      "social_interaction_rate": {
+        "float": 0,
+        "string": "0%"
+      }
+    },
+    "created_at": "2024-08-01 00:00:00",
+    "has_banned_content": false,
+    "steps": []
+  }
+}

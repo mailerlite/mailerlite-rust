@@ -1,0 +1,172 @@
+{
+  "data": {
+    "id": "57444257882965766",
+    "name": "Automation 1",
+    "enabled": false,
+    "trigger_data": {
+      "track_ecommerce": false,
+      "repeatable": false,
+      "valid": true
+    },
+    "steps": [
+      {
+        "id": "57444257892403137",
+        "type": "delay",
+        "parent_id": null,
+        "unit": "minutes",
+        "complete": true,
+        "created_at": "2022-06-09 13:58:33",
+        "updated_at": "2022-06-09 13:58:33",
+        "value": "5",
+        "description": "Wait for 5 minutes"
+      },
+      {
+        "id": "57444261587584962",
+        "type": "email",
+        "parent_id": "57444257892403137",
+        "name": "mail",
+        "subject": "mail {$name}",
+        "from": "dummy@mailerlite.io",
+        "from_name": "Dummy Testerson",
+        "email_id": "57444261557176071",
+        "email": {
+          "id": "57444261557176071",
+          "account_id": "1",
+          "emailable_id": "57444257882965766",
+          "emailable_type": "automations",
+          "type": "builder",
+          "from": "dummy@mailerlite.io",
+          "from_name": "Dummy Testerson",
+          "name": "mail",
+          "subject": "mail {$name}",
+          "plain_text": null,
+          "screenshot_url": null,
+          "preview_url": null,
+          "created_at": "2022-06-09 13:58:36",
+          "updated_at": "2022-06-09 13:58:42",
+          "is_designed": true,
+          "language_id": 4,
+          "is_winner": false,
+          "stats": {
+            "sent": 0,
+            "opens_count": 0,
+            "unique_opens_count": 0,
+            "open_rate": {
+              "float": 0,
+              "string": "0%"
+            },
+            "clicks_count": 0,
+            "unique_clicks_count": 0,
+            "click_rate": {
+              "float": 0,
+              "string": "0%"
+            },
+            "unsubscribes_count": 0,
+            "unsubscribe_rate": {
+              "float": 0,
+              "string": "0%"
+            },
+            "spam_count": 0,
+            "spam_rate": {
+              "float": 0,
+              "string": "0%"
+            },
+            "hard_bounces_count": 0,
+            "hard_bounce_rate": {
+              "float": 0,
+              "string": "0%"
+            },
+            "soft_bounces_count": 0,
+            "soft_bounce_rate": {
+              "float": 0,
+              "string": "0%"
+            },
+            "forwards_count": 0
+          },
+          "send_after": null,
+          "track_opens": true
+        },
+        "language_id": 4,
+        "complete": true,
+        "created_at": "2022-06-09 13:58:36",
+        "updated_at": "2022-06-09 13:58:36",
+        "track_opens": true,
+        "google_analytics": null,
+        "tracking_was_disabled": false,
+        "description": "Send \"mail {$name}\" email"
+      }
+    ],
+    "triggers": [
+      {
+        "id": "80916950725690939",
+        "type": "subscriber_joins_group",
+        "group_ids": [
+          "80916981736277582"
+        ],
+        "groups": [
+          {
+            "id": "80916981736277582",
+            "name": "My Group",
+            "url": null
+          }
+        ],
+        "exclude_group_ids": [],
+        "excluded_groups": [],
+        "broken": false
+      }
+    ],
+    "complete": true,
+    "broken": false,
+    "warnings": [],
+    "emails_count": 1,
+    "first_email_screenshot_url": null,
+    "stats": {
+      "completed_subscribers_count": 0,
+      "subscribers_in_queue_count": 0,
+      "bounce_rate": {
+        "float": 0,
+        "string": "0%"
+      },
+      "click_to_open_rate": {
+        "float": 0,
+        "string": "0%"
+      },
+      "sent": 0,
+      "opens_count": 0,
+      "unique_opens_count": null,
+      "open_rate": {
+        "float": 0,
+        "string": "0%"
+      },
+      "clicks_count": 0,
+      "unique_clicks_count": null,
+      "click_rate": {
+        "float": 0,
+        "string": "0%"
+      },
+      "unsubscribes_count": 0,
+      "unsubscribe_rate": {
+        "float": 0,
+        "string": "0%"
+      },
+      "spam_count": 0,
+      "spam_rate": {
+        "float": 0,
+        "string": "0%"
+      },
+      "hard_bounces_count": 0,
+      "hard_bounce_rate": {
+        "float": 0,
+        "string": "0%"
+      },
+      "soft_bounces_count": 0,
+      "soft_bounce_rate": {
+        "float": 0,
+        "string": "0%"
+      }
+    },
+    "created_at": "2022-06-09 13:58:33",
+    "has_banned_content": false,
+    "qualified_subscribers_count": 63
+  }
+}

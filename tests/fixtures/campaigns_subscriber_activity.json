@@ -1,0 +1,80 @@
+{
+    "data": [
+        {
+          "id":"66201001018787256",
+          "opens_count":1,
+          "clicks_count":0,
+          "subscriber": {
+            "id":"56152210168350162",
+            "email":"dummy@mailerlite.com",
+            "status":"active",
+            "source":"import",
+            "sent":13,
+            "opens_count":1,
+            "clicks_count":0,
+            "open_rate":7.69,
+            "click_rate":0,
+            "ip_address":null,
+            "subscribed_at":"2022-05-26 07:42:00",
+            "unsubscribed_at":null,
+            "created_at":"2022-05-26 07:42:00",
+            "updated_at":"2022-09-14 05:44:16",
+            "fields": {
+              "name":null,
+              "last_name":null,
+              "company":null,
+              "country":null,
+              "city":null,
+              "phone":null,
+              "state":null,
+              "zip":null
+            },
+            "opted_in_at":null,
+            "optin_ip":null
+          }
+        }
+      ],
+    "links": {
+      "first":"https://connect.mailerlite.com/api/campaigns/66200823885989563/reports/subscriber-activity?page=1",
+      "last":"https://connect.mailerlite.com/api/campaigns/66200823885989563/reports/subscriber-activity?page=1",
+      "prev":null,
+      "next":null
+    },
+    "meta": {
+      "current_page":1,
+      "from":1,
+      "last_page":1,
+      "links": [
+        {
+          "url":null,
+          "label":"&laquo; Previous",
+          "active":false
+        },
+        {
+          "url":"https://connect.mailerlite.com/api/campaigns/66200823885989563/reports/subscriber-activity?page=1",
+          "label":"1",
+          "active":true
+        },
+        {
+          "url":null,
+          "label":"Next &raquo;",
+          "active":false
+        }
+      ],
+      "path":"https://connect.mailerlite.com/api/campaigns/66200823885989563/reports/subscriber-activity",
+      "per_page":50,
+      "to":1,
+      "total":1,
+      "aggregations": {
+        "sum":11,
+        "opened":1,
+        "unopened":10,
+        "clicked":0,
+        "unsubscribed":0,
+        "forwarded":0,
+        "hardbounced":0,
+        "softbounced":0,
+        "junk":0
+      }
+    }
+}

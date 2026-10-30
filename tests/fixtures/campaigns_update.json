@@ -1,0 +1,116 @@
+{
+  "data": {
+      "id": "1",
+      "account_id": "1",
+      "name": "Dummy campaign",
+      "type": "regular",
+      "status": "draft",
+      "missing_data": [],
+      "settings": {
+        "track_opens": true,
+        "use_google_analytics": false,
+        "ecommerce_tracking": false
+      },
+      "filter": [
+        [
+          {
+            "operator": "in_any",
+            "args": [
+               "groups",
+                  [
+                    "42"
+                  ]
+            ]
+          }
+        ]
+      ],
+      "filter_for_humans": [
+        [
+          "In any group: dummy group"
+        ]
+      ],
+      "delivery_schedule": "instant",
+      "language_id": "4",
+      "created_at": "2022-07-26 15:07:52",
+      "updated_at": "2022-07-26 15:12:17",
+      "scheduled_for": "2022-07-26 15:11:51",
+      "queued_at": "2022-07-26 15:12:04",
+      "started_at": "2022-07-26 15:12:04",
+      "finished_at": "2022-07-26 15:12:17",
+      "stopped_at": null,
+      "default_email_id": "61706700654118223",
+      "emails": [
+          {
+              "id": "1",
+              "account_id": "1",
+              "emailable_id": "12",
+              "emailable_type": "campaigns",
+              "type": "builder",
+              "from": "dummy@mailerlite.io",
+              "from_name": "Dummy Testerson",
+              "name": null,
+              "reply_to": "reply-to@mailerlite.io",
+              "subject": "hello",
+              "plain_text": "Hello,\n\nYou have received a newsletter from {$account}.\n\nHowever, your email software can't display HTML emails. You can view the newsletter by clicking here: {$url}\nYou're receiving this newsletter because you have shown interest in {$account}.\nNot interested anymore? Click here to unsubscribe:\n{$unsubscribe}",
+              "screenshot_url": null,
+              "preview_url": null,
+              "created_at": "2022-07-26 15:08:15",
+              "updated_at": "2022-07-26 15:15:29",
+              "is_designed": true,
+              "language_id": null,
+              "is_winner": false,
+              "stats": {
+                  "sent": 10,
+                  "opens_count": 0,
+                  "unique_opens_count": 0,
+                  "open_rate": {
+                      "float": 0,
+                      "string": "0%"
+                  },
+                  "clicks_count": 0,
+                  "unique_clicks_count": 0,
+                  "click_rate": {
+                      "float": 0,
+                      "string": "0%"
+                  },
+                  "unsubscribes_count": 0,
+                  "unsubscribe_rate": {
+                      "float": 0,
+                      "string": "0%"
+                  },
+                  "spam_count": 0,
+                  "spam_rate": {
+                      "float": 0,
+                      "string": "0%"
+                  },
+                  "hard_bounces_count": 0,
+                  "hard_bounce_rate": {
+                      "float": 0,
+                      "string": "0%"
+                  },
+                  "soft_bounces_count": 0,
+                  "soft_bounce_rate": {
+                      "float": 0,
+                      "string": "0%"
+                  },
+                  "forwards_count": 0
+              },
+              "send_after": null,
+              "track_opens": true
+          }
+      ],
+      "used_in_automations": false,
+      "type_for_humans": "Regular",
+      "is_stopped": false,
+      "has_winner": null,
+      "winner_version_for_human": null,
+      "winner_sending_time_for_humans": null,
+      "winner_selected_manually_at": null,
+      "uses_ecommerce": false,
+      "uses_survey": true,
+      "can_be_scheduled": false,
+      "warnings": [],
+      "initial_created_at": null,
+      "is_currently_sending_out": false
+  }
+}
