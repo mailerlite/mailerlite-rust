@@ -121,6 +121,18 @@ pub use types::{FieldValue, Id, Rate, Sort, Timestamp};
 /// revert it before committing.
 const BASE_URL: &str = "https://connect.mailerlite.com/api";
 
+// Clients, errors and responses are shared across tasks and threads; fail the build if a
+// change makes any of them `!Send` or `!Sync`.
+const _: () = {
+    const fn assert_send_sync<T: Send + Sync>() {}
+    assert_send_sync::<MailerLite>();
+    assert_send_sync::<MailerLiteBuilder>();
+    assert_send_sync::<Error>();
+    assert_send_sync::<Page<subscribers::Subscriber>>();
+    assert_send_sync::<CursorPage<subscribers::Subscriber>>();
+    assert_send_sync::<ecommerce::ShopScope<'static>>();
+};
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -133,5 +145,26 @@ mod tests {
         // The handle is a temporary; the future must not borrow it.
         let future = client.subscribers().list(&query);
         drop(future);
+    }
+
+    #[test]
+    fn futures_and_streams_are_send() {
+        fn assert_send<T: Send>(_: &T) {}
+
+        let client = MailerLite::new("key").unwrap();
+        let query = subscribers::ListSubscribers::new();
+        assert_send(&client.subscribers().list(&query));
+        assert_send(
+            &client
+                .subscribers()
+                .create(&subscribers::CreateSubscriber::new("a@b.c")),
+        );
+
+        let shop = client.ecommerce().shop("1");
+        let orders = ecommerce::ListOrders::new();
+        assert_send(&shop.orders().list(&orders));
+
+        #[cfg(feature = "stream")]
+        assert_send(&client.groups().list_all(groups::ListGroups::new()));
     }
 }
