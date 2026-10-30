@@ -47,7 +47,7 @@ reference implementations).
 
 ```rust
 /// `GET /things/{id}/widgets`: what it returns, and any surprising semantics.
-pub async fn widgets(&self, id: impl AsRef<str>, query: &ListWidgets) -> Result<Page<Widget>> {
+pub async fn widgets(self, id: impl AsRef<str>, query: &ListWidgets) -> Result<Page<Widget>> {
     self.client
         .call(Method::GET, &["things", id.as_ref(), "widgets"])
         .query(query)

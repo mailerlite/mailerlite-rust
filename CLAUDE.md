@@ -38,7 +38,10 @@ All of these run in CI (`.github/workflows/main.yaml`) and must pass before comm
 - **No panics in library code.** No `unwrap`/`expect`/`panic!`/indexing that can fail; clippy enforces it
   (tests are exempt). Every fallible path returns `crate::Result`.
 - **Resource handles** are `#[derive(Clone, Copy, Debug)] struct Xs<'a> { client: &'a MailerLite }`,
-  created by `impl MailerLite { pub fn xs(&self) -> Xs<'_> }` in the resource's own file.
+  created by `impl MailerLite { pub fn xs(&self) -> Xs<'_> }` in the resource's own file. Their methods
+  take `self` by value (handles are `Copy`), so returned futures don't borrow the handle.
+- **Lint suppressions** use `#[expect(clippy::lint, reason = "...")]` on the narrowest item, never
+  `#[allow]`, so they warn once they go stale.
 - **Requests**: build with `self.client.call(Method::X, &["segment", id.as_ref(), ...])`. Segments are
   percent-encoded individually, so never `format!` a path. Then `.query(&q)` / `.json(&body)` and:
   `.data()` to unwrap `{"data": ..}` (also accepts a bare body), `.send()` for the whole body,
