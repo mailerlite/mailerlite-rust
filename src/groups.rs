@@ -67,8 +67,8 @@ pub struct Group {
 string_enum! {
     /// Sort field for [`ListGroups`].
     ///
-    /// These are the values the live API accepts. The docs list `total`, which the API rejects
-    /// with `400` (verified 2026-10-30); use [`ActiveCount`](Self::ActiveCount) instead.
+    /// The API rejects `total` (listed in its docs) with `400`; use
+    /// [`ActiveCount`](Self::ActiveCount) to sort by size.
     pub enum GroupSort {
         /// Group id.
         Id => "id",

@@ -28,9 +28,8 @@ pub struct Order {
     /// Order total in the shop's currency.
     #[serde(default, deserialize_with = "de::number")]
     pub total: f64,
-    /// Order status. `None` when the API returns `null`, as it does for an order that was
-    /// just created without an explicit status (verified against the live API, 2026-10-30);
-    /// the docs say such orders default to `pending`.
+    /// Order status. `None` for an order created without an explicit status, which the API
+    /// returns as `null` (such orders are treated as `pending`).
     #[serde(default)]
     pub status: Option<OrderStatus>,
     /// The email that earned the order, or `None` if it is not attributed.
