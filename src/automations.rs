@@ -505,6 +505,140 @@ pub struct StepRun {
     pub scheduled_for: Option<Timestamp>,
 }
 
+string_enum! {
+    /// Reporting period for [`Automations::ecommerce_orders`].
+    pub enum TimeFrame {
+        /// The last 7 days.
+        Week => "week",
+        /// The last month.
+        Month => "month",
+        /// The last two months.
+        TwoMonths => "two_months",
+        /// The last three months.
+        ThreeMonths => "three_months",
+        /// The last six months.
+        SixMonths => "six_months",
+        /// The last year.
+        Year => "year",
+        /// The previous calendar year.
+        LastYear => "last_year",
+        /// Since the automation started.
+        AllTime => "all_time",
+        /// Your own dates; use [`ListAutomationOrders::custom`].
+        Custom => "custom",
+    }
+}
+
+/// Query for [`Automations::ecommerce_stats`] and [`Automations::email_ecommerce_stats`].
+///
+/// Without a period the whole history of the automation is reported.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize)]
+#[non_exhaustive]
+pub struct AutomationEcommerceStatsQuery {
+    /// First day, `YYYY-MM-DD`. Set together with `end_date` via
+    /// [`period`](Self::period).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub start_date: Option<String>,
+    /// Last day (inclusive), `YYYY-MM-DD`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub end_date: Option<String>,
+    /// Only orders from this shop.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub shop_id: Option<Id>,
+}
+
+impl AutomationEcommerceStatsQuery {
+    /// The whole history, all shops.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Reports on `start_date..=end_date` (`YYYY-MM-DD`). The API requires both or neither.
+    #[must_use]
+    pub fn period(mut self, start_date: impl Into<String>, end_date: impl Into<String>) -> Self {
+        self.start_date = Some(start_date.into());
+        self.end_date = Some(end_date.into());
+        self
+    }
+
+    /// Only orders from `shop_id`.
+    #[must_use]
+    pub fn shop(mut self, shop_id: impl Into<Id>) -> Self {
+        self.shop_id = Some(shop_id.into());
+        self
+    }
+}
+
+/// Query for [`Automations::ecommerce_orders`]. The time frame is required.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[non_exhaustive]
+pub struct ListAutomationOrders {
+    /// Reporting period.
+    pub time_frame: TimeFrame,
+    /// First day (`YYYY-MM-DD`); required with [`TimeFrame::Custom`].
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub time_frame_start: Option<String>,
+    /// Last day (`YYYY-MM-DD`); required with [`TimeFrame::Custom`].
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub time_frame_end: Option<String>,
+    /// Only orders from this shop.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ecommerce_shop_id: Option<Id>,
+    /// Page size (API default 10).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub limit: Option<u32>,
+    /// 1-based page number.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub page: Option<u32>,
+}
+
+impl ListAutomationOrders {
+    /// Orders in a preset `time_frame`. For your own dates use [`custom`](Self::custom).
+    #[must_use]
+    pub fn new(time_frame: TimeFrame) -> Self {
+        Self {
+            time_frame,
+            time_frame_start: None,
+            time_frame_end: None,
+            ecommerce_shop_id: None,
+            limit: None,
+            page: None,
+        }
+    }
+
+    /// Orders from `start` to `end` (`YYYY-MM-DD`).
+    #[must_use]
+    pub fn custom(start: impl Into<String>, end: impl Into<String>) -> Self {
+        Self {
+            time_frame_start: Some(start.into()),
+            time_frame_end: Some(end.into()),
+            ..Self::new(TimeFrame::Custom)
+        }
+    }
+
+    /// Only orders from `shop_id`.
+    #[must_use]
+    pub fn shop(mut self, shop_id: impl Into<Id>) -> Self {
+        self.ecommerce_shop_id = Some(shop_id.into());
+        self
+    }
+
+    /// Page size.
+    #[must_use]
+    pub fn limit(mut self, limit: u32) -> Self {
+        self.limit = Some(limit);
+        self
+    }
+
+    /// 1-based page number.
+    #[must_use]
+    pub fn page(mut self, page: u32) -> Self {
+        self.page = Some(page);
+        self
+    }
+}
+
 /// Automation endpoints. Obtained with [`MailerLite::automations`].
 #[derive(Clone, Copy, Debug)]
 pub struct Automations<'a> {
@@ -582,14 +716,14 @@ impl<'a> Automations<'a> {
             .await
     }
 
-    /// `GET /automations/{id}/monthly-totals/ecommerce`: monthly e-commerce totals.
+    /// `GET /automations/{id}/monthly-totals/ecommerce`: e-commerce totals of the automation.
     ///
     /// **Not in the public API docs**; kept from SDK v1, so the response is untyped and the
-    /// endpoint may change without notice.
+    /// endpoint may change without notice. The query follows the API's own validation rules.
     pub async fn ecommerce_stats(
         &self,
         id: impl AsRef<str>,
-        query: &[(&str, &str)],
+        query: &AutomationEcommerceStatsQuery,
     ) -> Result<Value> {
         self.client
             .call(
@@ -605,12 +739,13 @@ impl<'a> Automations<'a> {
     /// one automation email.
     ///
     /// **Not in the public API docs**; kept from SDK v1, so the response is untyped and the
-    /// endpoint may change without notice.
+    /// endpoint may change without notice. Takes the same query as
+    /// [`ecommerce_stats`](Self::ecommerce_stats).
     pub async fn email_ecommerce_stats(
         &self,
         id: impl AsRef<str>,
         email_id: impl AsRef<str>,
-        query: &[(&str, &str)],
+        query: &AutomationEcommerceStatsQuery,
     ) -> Result<Value> {
         self.client
             .call(
@@ -631,11 +766,26 @@ impl<'a> Automations<'a> {
     /// `GET /automations/{id}/order-activity`: orders attributed to the automation.
     ///
     /// **Not in the public API docs**; kept from SDK v1, so the response is untyped and the
-    /// endpoint may change without notice.
+    /// endpoint may change without notice. A time frame is required (see
+    /// [`ListAutomationOrders`]).
+    ///
+    /// ```no_run
+    /// # async fn run(client: mailerlite_rs::MailerLite) -> mailerlite_rs::Result<()> {
+    /// use mailerlite_rs::automations::{ListAutomationOrders, TimeFrame};
+    ///
+    /// let automations = client.automations();
+    /// let last_month = automations
+    ///     .ecommerce_orders("123", &ListAutomationOrders::new(TimeFrame::Month).limit(25))
+    ///     .await?;
+    /// let q1 = automations
+    ///     .ecommerce_orders("123", &ListAutomationOrders::custom("2026-01-01", "2026-03-31"))
+    ///     .await?;
+    /// # Ok(()) }
+    /// ```
     pub async fn ecommerce_orders(
         &self,
         id: impl AsRef<str>,
-        query: &[(&str, &str)],
+        query: &ListAutomationOrders,
     ) -> Result<Value> {
         self.client
             .call(Method::GET, &["automations", id.as_ref(), "order-activity"])
@@ -824,19 +974,31 @@ mod tests {
         let (client, mock) = client();
         mock.respond(200, json!({"data": []}))
             .respond(200, json!({"data": {}}))
+            .respond(200, json!({"data": []}))
             .respond(200, json!({"data": []}));
 
         let automations = client.automations();
         automations
-            .ecommerce_stats("1", &[("shop_id", "9")])
+            .ecommerce_stats("1", &AutomationEcommerceStatsQuery::new().shop("9"))
             .await
             .unwrap();
         automations
-            .email_ecommerce_stats("1", "2", &[("shop_id", "9")])
+            .email_ecommerce_stats(
+                "1",
+                "2",
+                &AutomationEcommerceStatsQuery::new().period("2026-01-01", "2026-01-31"),
+            )
             .await
             .unwrap();
         let orders = automations
-            .ecommerce_orders("1", &[("page", "2")])
+            .ecommerce_orders("1", &ListAutomationOrders::new(TimeFrame::Month).page(2))
+            .await
+            .unwrap();
+        automations
+            .ecommerce_orders(
+                "1",
+                &ListAutomationOrders::custom("2026-01-01", "2026-03-31").shop("9"),
+            )
             .await
             .unwrap();
 
@@ -847,9 +1009,16 @@ mod tests {
         );
         requests[1].assert(
             Method::GET,
-            "automations/1/emails/2/ecommerce-overview-stats?shop_id=9",
+            "automations/1/emails/2/ecommerce-overview-stats?start_date=2026-01-01&end_date=2026-01-31",
         );
-        requests[2].assert(Method::GET, "automations/1/order-activity?page=2");
+        requests[2].assert(
+            Method::GET,
+            "automations/1/order-activity?time_frame=month&page=2",
+        );
+        requests[3].assert(
+            Method::GET,
+            "automations/1/order-activity?time_frame=custom&time_frame_start=2026-01-01&time_frame_end=2026-03-31&ecommerce_shop_id=9",
+        );
         assert_eq!(orders, json!({"data": []}));
     }
 }
