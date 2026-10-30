@@ -1,4 +1,7 @@
 use automation::Automation;
+use automation_step::AutomationStep;
+use automation_template::AutomationTemplate;
+use automation_trigger::AutomationTrigger;
 use batch::Batch;
 use campaign::Campaign;
 use client::Client;
@@ -21,6 +24,9 @@ use timezone::Timezone;
 use webhook::Webhook;
 
 pub mod automation;
+pub mod automation_step;
+pub mod automation_template;
+pub mod automation_trigger;
 pub mod batch;
 pub mod campaign;
 pub mod client;
@@ -50,13 +56,26 @@ const BASE_PATH: &str = "https://connect.mailerlite.com/api/";
 #[derive(Debug, Clone)]
 pub struct MailerLite {
     client: Client,
+    base_url: String,
 }
 
 impl MailerLite {
     pub fn new(api_key: String) -> Self {
         Self {
             client: Client::new(api_key),
+            base_url: BASE_PATH.to_string(),
         }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn with_base_url(mut self, base_url: impl Into<String>) -> Self {
+        let mut base_url: String = base_url.into();
+        if !base_url.ends_with('/') {
+            base_url.push('/');
+        }
+        self.base_url = base_url;
+
+        self
     }
 
     pub fn subscriber(&self) -> Subscriber {
@@ -85,6 +104,18 @@ impl MailerLite {
 
     pub fn automation(&self) -> Automation {
         Automation::new(self.clone())
+    }
+
+    pub fn automation_trigger(&self) -> AutomationTrigger {
+        AutomationTrigger::new(self.clone())
+    }
+
+    pub fn automation_step(&self) -> AutomationStep {
+        AutomationStep::new(self.clone())
+    }
+
+    pub fn automation_template(&self) -> AutomationTemplate {
+        AutomationTemplate::new(self.clone())
     }
 
     pub fn webhook(&self) -> Webhook {
