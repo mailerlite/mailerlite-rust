@@ -498,6 +498,19 @@ pub(crate) mod de {
         deserializer.deserialize_any(ObjectVisitor)
     }
 
+    /// A struct PHP may send as `[]` when empty, or `null`: both decode as `T::default()`.
+    pub(crate) fn object_or_default<'de, D, T>(deserializer: D) -> Result<T, D::Error>
+    where
+        D: Deserializer<'de>,
+        T: de::DeserializeOwned + Default,
+    {
+        match Value::deserialize(deserializer)? {
+            Value::Null => Ok(T::default()),
+            Value::Array(items) if items.is_empty() => Ok(T::default()),
+            value => T::deserialize(value).map_err(de::Error::custom),
+        }
+    }
+
     /// `null` decodes as `T::default()` (serde's `default` only covers a *missing* key).
     pub(crate) fn null_default<'de, D, T>(deserializer: D) -> Result<T, D::Error>
     where

@@ -6,7 +6,7 @@ use serde_json::{Map, Value};
 
 use crate::{
     MailerLite, Page, Result,
-    campaigns::{Email, object_or_default},
+    campaigns::Email,
     subscribers::Subscriber,
     types::{Id, NameBody, Rate, Timestamp, de, string_enum},
 };
@@ -61,7 +61,7 @@ pub struct Automation {
     #[serde(default)]
     pub enabled: bool,
     /// Trigger settings.
-    #[serde(default, deserialize_with = "object_or_default")]
+    #[serde(default, deserialize_with = "de::object_or_default")]
     pub trigger_data: TriggerData,
     /// Workflow steps.
     #[serde(default, deserialize_with = "de::null_default")]

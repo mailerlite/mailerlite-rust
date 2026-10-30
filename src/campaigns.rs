@@ -2,7 +2,7 @@
 //! <https://developers.mailerlite.com/api/campaign-languages>
 
 use reqwest::Method;
-use serde::{Deserialize, Deserializer, Serialize, de::DeserializeOwned};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::{
@@ -183,7 +183,7 @@ pub struct Campaign {
     #[serde(default, deserialize_with = "de::null_default")]
     pub missing_data: Vec<Value>,
     /// Tracking settings.
-    #[serde(default, deserialize_with = "object_or_default")]
+    #[serde(default, deserialize_with = "de::object_or_default")]
     pub settings: CampaignSettings,
     /// Recipient filter in MailerLite's internal format: a list of OR-ed groups of AND-ed
     /// `{"operator": ..., "args": [...]}` rules. Kept as raw JSON; see
@@ -1331,19 +1331,6 @@ pub struct Language {
     /// Writing direction.
     #[serde(default)]
     pub direction: Option<TextDirection>,
-}
-
-/// An object PHP may send as `[]` when empty, or `null`: both decode as `T::default()`.
-pub(crate) fn object_or_default<'de, D, T>(deserializer: D) -> std::result::Result<T, D::Error>
-where
-    D: Deserializer<'de>,
-    T: DeserializeOwned + Default,
-{
-    match Value::deserialize(deserializer)? {
-        Value::Null => Ok(T::default()),
-        Value::Array(items) if items.is_empty() => Ok(T::default()),
-        value => T::deserialize(value).map_err(serde::de::Error::custom),
-    }
 }
 
 /// Campaign endpoints. Obtained with [`MailerLite::campaigns`].
