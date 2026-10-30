@@ -1,16 +1,21 @@
-use mailerlite_rs::{response::Response, MailerLite};
+//! Read attributed purchases for a subscriber in a shop.
+//!
+//! Required environment: `MAILERLITE_API_TOKEN`, `MAILERLITE_SHOP_ID`, `MAILERLITE_SUBSCRIBER_ID`.
+use mailerlite_rs::MailerLite;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let shop_id = std::env::var("MAILERLITE_SHOP_ID")?;
+    let subscriber_id = std::env::var("MAILERLITE_SUBSCRIBER_ID")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Subscriber ID");
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let response: Response = mailerlite.subscriber().ecommerce_stats(id, shop_id).await;
-
-    println!("{:#?}", response);
+    let response = mailerlite
+        .ecommerce()
+        .subscriber_stats(subscriber_id, shop_id)
+        .await?;
+    println!(
+        "Orders: {}; revenue: {}",
+        response.data.ecommerce.orders_count, response.data.ecommerce.revenue
+    );
+    Ok(())
 }

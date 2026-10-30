@@ -1,17 +1,16 @@
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
+//! Create an e-commerce shop.
+//!
+//! Required environment: `MAILERLITE_API_TOKEN`, `MAILERLITE_SHOP_URL`.
+use mailerlite_rs::MailerLite;
+use mailerlite_rs::resources::ecommerce::params::SaveShop;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let shop_url = std::env::var("MAILERLITE_SHOP_URL")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let data: Data = Data::new()
-        .add("name", "Dummy Shop")
-        .add("url", "https://shop.example.com")
-        .add("currency", "EUR");
-
-    let response: Response = mailerlite.ecommerce_shop().create(data.clone()).await;
-
-    println!("{:#?}", response);
+    let params = SaveShop::new("Example store", shop_url, "USD");
+    let response = mailerlite.ecommerce().create(params).await?;
+    println!("{}", response.data.id);
+    Ok(())
 }

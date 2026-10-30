@@ -1,22 +1,22 @@
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
+//! Create an e-commerce product.
+//!
+//! Required environment: `MAILERLITE_API_TOKEN`, `MAILERLITE_SHOP_ID`.
+use mailerlite_rs::MailerLite;
+use mailerlite_rs::resources::ecommerce::params::SaveProduct;
+use rust_decimal::Decimal;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let shop_id = std::env::var("MAILERLITE_SHOP_ID")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let data: Data = Data::new()
-        .add("name", "Dummy Product")
-        .add("price", "19.99")
-        .add("url", "https://shop.example.com/dummy-product");
-
-    let response: Response = mailerlite
-        .ecommerce_product()
-        .create(shop_id, data.clone())
-        .await;
-
-    println!("{:#?}", response);
+    let params = SaveProduct::new("Example product").price(Decimal::new(1999, 2));
+    let response = mailerlite
+        .ecommerce()
+        .shop(shop_id)
+        .products()
+        .create(params)
+        .await?;
+    println!("{}", response.data.id);
+    Ok(())
 }

@@ -1,23 +1,21 @@
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
+//! Add category membership to a product while preserving existing memberships.
+//!
+//! Required environment: `MAILERLITE_API_TOKEN`, `MAILERLITE_SHOP_ID`, `MAILERLITE_PRODUCT_ID`, `MAILERLITE_CATEGORY_ID`.
+use mailerlite_rs::MailerLite;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let shop_id = std::env::var("MAILERLITE_SHOP_ID")?;
+    let product_id = std::env::var("MAILERLITE_PRODUCT_ID")?;
+    let category_id = std::env::var("MAILERLITE_CATEGORY_ID")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let product_id: String = String::from("Your Product ID");
-
-    let data: Data = Data::new()
-        .add("categories[]", "Your Category ID")
-        .add("replace", "0");
-
-    let response: Response = mailerlite
-        .ecommerce_product()
-        .assign_categories(shop_id, product_id, data.clone())
-        .await;
-
-    println!("{:#?}", response);
+    let response = mailerlite
+        .ecommerce()
+        .shop(shop_id)
+        .products()
+        .assign_categories(product_id, vec![category_id], false)
+        .await?;
+    println!("{}", response.data.id);
+    Ok(())
 }

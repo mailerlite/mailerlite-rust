@@ -1,21 +1,21 @@
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
+//! Import e-commerce categories using a typed array payload.
+//!
+//! Required environment: `MAILERLITE_API_TOKEN`, `MAILERLITE_SHOP_ID`.
+use mailerlite_rs::MailerLite;
+use mailerlite_rs::resources::ecommerce::params::SaveCategory;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let shop_id = std::env::var("MAILERLITE_SHOP_ID")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let data: Data = Data::new()
-        .add("0[name]", "Dummy Category")
-        .add("0[exclude_from_automations]", "0");
-
-    let response: Response = mailerlite
-        .ecommerce_import()
-        .categories(shop_id, data.clone())
-        .await;
-
-    println!("{:#?}", response);
+    let entry = SaveCategory::new("Example category");
+    let response = mailerlite
+        .ecommerce()
+        .shop(shop_id)
+        .categories()
+        .import(vec![entry])
+        .await?;
+    println!("Returned {} entries", response.data.len());
+    Ok(())
 }
