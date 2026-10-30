@@ -32,6 +32,21 @@ impl<'a> Segments<'a> {
         Self { client }
     }
     /// List segments using page numbers.
+    ///
+    /// Only constructs a builder. See [`ListSegments::send`] for validation and errors.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let page = mailerlite.segments().list().limit(25).send().await?;
+    ///
+    /// println!("{} segments", page.data.data.len());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn list(&self) -> ListSegments<'a> {
         ListSegments {
             client: self.client,
@@ -40,6 +55,33 @@ impl<'a> Segments<'a> {
         }
     }
     /// Rename an existing segment.
+    ///
+    /// This write is never automatically retried. A failure after dispatch does not
+    /// prove the server left the resource unchanged.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::segments::UpdateSegment;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.segments()
+    ///     .update("123456789", UpdateSegment::new("Updated name")).await?;
+    ///
+    /// println!("{}", response.data.name);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::Config`] if the name is empty or exceeds 255 characters.
+    /// Returns [`crate::Error::Config`] for an empty ID or a dot path segment (`.` or `..`).
+    /// Rejected requests return [`crate::Error::Api`]. Transport failures, unexpected
+    /// response statuses or bodies, and execution deadlines return
+    /// [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn update(
         &self,
         id: impl AsRef<str>,
@@ -57,6 +99,29 @@ impl<'a> Segments<'a> {
             .await
     }
     /// Delete a segment.
+    ///
+    /// This write is never automatically retried. A failure after dispatch does not
+    /// prove the server left the resource unchanged.
+    /// Success returns an empty response.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// mailerlite.segments().delete("123456789").await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::Config`] for an empty ID or a dot path segment (`.` or `..`).
+    /// Rejected requests return [`crate::Error::Api`]. Transport failures, unexpected
+    /// response statuses or bodies, and execution deadlines return
+    /// [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn delete(&self, id: impl AsRef<str>) -> Result<Response<()>> {
         self.client
             .empty(
@@ -69,6 +134,23 @@ impl<'a> Segments<'a> {
             .await
     }
     /// List matching subscribers using opaque cursors.
+    ///
+    /// Returns a builder without making a request. See [`SubscriberMembers::send`]
+    /// for errors. Only group membership lists support `include_groups`.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let page = mailerlite.segments().subscribers("123456789")
+    ///     .limit(100).send().await?;
+    ///
+    /// println!("{} matching subscribers", page.data.data.len());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn subscribers(&self, id: impl Into<String>) -> SubscriberMembers<'a> {
         SubscriberMembers::new(
             self.client,
@@ -102,6 +184,28 @@ impl<'a> ListSegments<'a> {
         self
     }
     /// Fetch one page.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let page = mailerlite.segments().list().page(1).limit(25).send().await?;
+    ///
+    /// println!("Next page: {:?}", page.data.next_page());
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::Config`] if zero was supplied as the page number
+    /// or limit.
+    /// Rejected requests return [`crate::Error::Api`]. Transport failures, unexpected
+    /// response statuses or bodies, and execution deadlines return
+    /// [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn send(self) -> Result<Response<NumberedPage<Segment>>> {
         if let Some(e) = self.error {
             return Err(Error::Config(e));
@@ -117,6 +221,36 @@ impl<'a> ListSegments<'a> {
             .await
     }
     /// Lazily fetch segments as pages are consumed.
+    ///
+    /// Requires the `stream` feature; this example also uses `futures-util`.
+    /// Requests begin when polled, preserve filters, and never follow response links.
+    /// Dropping the stream stops further page fetches. Each page request has its
+    /// own operation deadline.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use futures_util::TryStreamExt;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let resource = mailerlite.segments();
+    /// let stream = resource.list().limit(25).into_stream();
+    /// tokio::pin!(stream);
+    ///
+    /// while let Some(segment) = stream.try_next().await? {
+    ///     println!("{}", segment.id);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Errors are yielded as stream items. Invalid parameters and request failures
+    /// follow [`Self::send`]. Unexpected current-page numbers yield [`crate::Error::Pagination`].
+    /// The stream terminates after an error; previously yielded items remain available.
+    /// Missing continuation metadata ends the stream normally.
     #[cfg(feature = "stream")]
     pub fn into_stream(self) -> impl futures_core::Stream<Item = Result<Segment>> + 'a {
         use futures_util::StreamExt;

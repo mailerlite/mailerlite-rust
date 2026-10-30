@@ -40,6 +40,21 @@ impl<'a> Groups<'a> {
         Self { client }
     }
     /// List groups using page numbers.
+    ///
+    /// This only creates a builder. See [`ListGroups::send`] for validation and errors.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let page = mailerlite.groups().list().limit(25).send().await?;
+    ///
+    /// println!("{} groups", page.data.data.len());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn list(&self) -> ListGroups<'a> {
         ListGroups {
             client: self.client,
@@ -48,6 +63,31 @@ impl<'a> Groups<'a> {
         }
     }
     /// Create a named group.
+    ///
+    /// This write is never automatically retried. A failure after dispatch does not
+    /// prove the server left the resource unchanged.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::groups::CreateGroup;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let group = mailerlite.groups().create(CreateGroup::new("Newsletter")).await?;
+    ///
+    /// println!("{}", group.data.id);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::Config`] if the name is empty or exceeds 255 characters.
+    /// Rejected requests return [`crate::Error::Api`]. Transport failures, unexpected
+    /// response statuses or bodies, and execution deadlines return
+    /// [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn create(&self, params: CreateGroup) -> Result<Response<Group>> {
         validate_name(&params.name)?;
         self.client
@@ -61,6 +101,33 @@ impl<'a> Groups<'a> {
             .await
     }
     /// Rename an existing group.
+    ///
+    /// This write is never automatically retried. A failure after dispatch does not
+    /// prove the server left the resource unchanged.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::groups::UpdateGroup;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let group = mailerlite.groups()
+    ///     .update("123456789", UpdateGroup::new("Weekly newsletter")).await?;
+    ///
+    /// println!("{}", group.data.name);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::Config`] if the name is empty or exceeds 255 characters.
+    /// Returns [`crate::Error::Config`] for an empty ID or a dot path segment (`.` or `..`).
+    /// Rejected requests return [`crate::Error::Api`]. Transport failures, unexpected
+    /// response statuses or bodies, and execution deadlines return
+    /// [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn update(
         &self,
         id: impl AsRef<str>,
@@ -78,6 +145,29 @@ impl<'a> Groups<'a> {
             .await
     }
     /// Delete a group.
+    ///
+    /// This write is never automatically retried. A failure after dispatch does not
+    /// prove the server left the resource unchanged.
+    /// Success returns an empty response.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// mailerlite.groups().delete("123456789").await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::Config`] for an empty ID or a dot path segment (`.` or `..`).
+    /// Rejected requests return [`crate::Error::Api`]. Transport failures, unexpected
+    /// response statuses or bodies, and execution deadlines return
+    /// [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn delete(&self, id: impl AsRef<str>) -> Result<Response<()>> {
         self.client
             .empty(
@@ -90,6 +180,23 @@ impl<'a> Groups<'a> {
             .await
     }
     /// List subscribers belonging to a group.
+    ///
+    /// No request is sent until the returned builder is consumed. Group pages allow
+    /// limits up to 1000; see [`SubscriberMembers::send`] for validation and errors.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let page = mailerlite.groups().subscribers("123456789")
+    ///     .limit(100).send().await?;
+    ///
+    /// println!("{} members", page.data.data.len());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn subscribers(&self, id: impl Into<String>) -> SubscriberMembers<'a> {
         SubscriberMembers::new(
             self.client,
@@ -98,6 +205,31 @@ impl<'a> Groups<'a> {
         )
     }
     /// Assign an existing subscriber to a group.
+    ///
+    /// This write is never automatically retried. A failure after dispatch does not
+    /// prove the server left the resource unchanged.
+    /// The arguments are group ID first, then subscriber ID.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.groups().assign("123456789", "987654321").await?;
+    ///
+    /// println!("Assigned to group {}", response.data.id);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::Config`] for an empty ID or a dot path segment (`.` or `..`). Both group and subscriber IDs are checked.
+    /// Rejected requests return [`crate::Error::Api`]. Transport failures, unexpected
+    /// response statuses or bodies, and execution deadlines return
+    /// [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn assign(
         &self,
         group_id: impl AsRef<str>,
@@ -119,6 +251,29 @@ impl<'a> Groups<'a> {
             .await
     }
     /// Unassign a subscriber from a group.
+    ///
+    /// This write is never automatically retried. A failure after dispatch does not
+    /// prove the server left the resource unchanged.
+    /// This removes group membership, rather than deleting the subscriber.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// mailerlite.groups().unassign("123456789", "987654321").await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::Config`] for an empty ID or a dot path segment (`.` or `..`). Both group and subscriber IDs are checked.
+    /// Rejected requests return [`crate::Error::Api`]. Transport failures, unexpected
+    /// response statuses or bodies, and execution deadlines return
+    /// [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn unassign(
         &self,
         group_id: impl AsRef<str>,
@@ -204,6 +359,32 @@ impl<'a> ListGroups<'a> {
         self
     }
     /// Fetch one page.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let groups = mailerlite.groups();
+    /// let first = groups.list().page(1).limit(25).send().await?;
+    ///
+    /// if let Some(page) = first.data.next_page() {
+    ///     let second = groups.list().page(page).limit(25).send().await?;
+    ///
+    ///     println!("{} groups on the next page", second.data.data.len());
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Config`] before dispatch if zero was supplied as the page
+    /// number or limit. API rejection, transport failure, unexpected responses,
+    /// and execution deadlines return [`Error::Api`], [`Error::Transport`],
+    /// [`Error::Decode`], or [`Error::Timeout`]. Missing continuation metadata is
+    /// not an error; [`NumberedPage::next_page`] then returns `None`.
     pub async fn send(self) -> Result<Response<NumberedPage<Group>>> {
         if let Some(e) = self.error {
             return Err(Error::Config(e));
@@ -219,6 +400,39 @@ impl<'a> ListGroups<'a> {
             .await
     }
     /// Lazily fetch groups as pages are consumed.
+    ///
+    /// Requires the `stream` feature. Requests begin on polling; filters are
+    /// preserved and response links are never followed. Dropping the stream
+    /// stops further requests. Each page has its own operation deadline.
+    ///
+    /// # Examples
+    ///
+    /// Add `futures-util` to your application's dependencies to consume the stream.
+    ///
+    /// ```no_run
+    /// use futures_util::TryStreamExt;
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let groups = mailerlite.groups();
+    /// let stream = groups.list().limit(25).into_stream();
+    /// tokio::pin!(stream);
+    ///
+    /// while let Some(group) = stream.try_next().await? {
+    ///     println!("{}", group.id);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Errors are yielded as stream items. Invalid builder parameters yield
+    /// [`Error::Config`] without dispatch. Page requests propagate the errors
+    /// described by [`Self::send`]. A reported current page that differs from the
+    /// requested page yields [`Error::Pagination`]. Missing continuation metadata
+    /// ends the stream normally. After an error the stream terminates; already
+    /// yielded items are not rolled back.
     #[cfg(feature = "stream")]
     pub fn into_stream(self) -> impl futures_core::Stream<Item = Result<Group>> + 'a {
         use futures_util::StreamExt;

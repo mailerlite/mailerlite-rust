@@ -159,6 +159,22 @@ impl<'a> Subscribers<'a> {
         Self { client }
     }
     /// List subscribers with cursor pagination.
+    ///
+    /// Returns a lazy builder; no request is sent until [`ListSubscribers::send`] or
+    /// stream consumption. See that method for validation and request errors.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let page = mailerlite.subscribers().list().limit(100).send().await?;
+    ///
+    /// println!("{} subscribers", page.data.data.len());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn list(&self) -> ListSubscribers<'a> {
         ListSubscribers {
             client: self.client,
@@ -167,6 +183,35 @@ impl<'a> Subscribers<'a> {
         }
     }
     /// Create or update a subscriber. This write is never automatically retried.
+    ///
+    /// The email address selects the subscriber. Supplied groups add membership;
+    /// omitted groups preserve it. Replaying an upsert is not guaranteed to be
+    /// free of side effects. Use [`Self::update`] to replace group membership.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::{MailerLite, resources::subscribers::UpsertSubscriber};
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.subscribers()
+    ///     .upsert(UpsertSubscriber::new("jane@example.com").field("name", "Jane"))
+    ///     .await?;
+    ///
+    /// println!("Subscriber ID: {}", response.data.id);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Serialize`] if parameters cannot be serialized, including
+    /// an unknown subscriber status. Email and account rules are validated by
+    /// MailerLite; rejected requests return [`Error::Api`]. For HTTP 422, inspect
+    /// [`crate::ApiError::validation_errors`]. Transport failures, malformed or
+    /// unexpected responses, and execution deadlines return [`Error::Transport`],
+    /// [`Error::Decode`], and [`Error::Timeout`] respectively.
+    /// A failure after dispatch does not prove the subscriber was unchanged.
     pub async fn upsert(&self, params: UpsertSubscriber) -> Result<Response<Subscriber>> {
         self.client
             .data(
@@ -179,6 +224,43 @@ impl<'a> Subscribers<'a> {
             .await
     }
     /// Update a subscriber by ID; supplied groups replace membership.
+    ///
+    /// Omitted groups preserve membership; an empty group list removes all
+    /// memberships. This write is never automatically retried. Use
+    /// [`Self::upsert`] when identifying the subscriber by email or adding groups.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::{Error, MailerLite, resources::subscribers::UpdateSubscriber};
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let update = UpdateSubscriber::new()
+    ///     .field("name", "Jane")
+    ///     .groups(["123456789"]); // Replaces existing memberships.
+    ///
+    /// match mailerlite.subscribers().update("31986843064993537", update).await {
+    ///     Ok(response) => println!("Updated {}", response.data.id),
+    ///     Err(Error::Api(error)) if error.is_validation() => {
+    ///         // Messages may contain submitted personal data; inspect deliberately.
+    ///         for field in error.validation_errors().keys() {
+    ///             eprintln!("Invalid field: {field}");
+    ///         }
+    ///     }
+    ///     Err(error) => return Err(error),
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Config`] for an empty ID or a dot path segment (`.` or
+    /// `..`), and [`Error::Serialize`] for an unserializable request, including an
+    /// unknown status. Server validation, missing resources, and other rejected
+    /// requests return [`Error::Api`]. HTTP execution may also return
+    /// [`Error::Transport`], [`Error::Decode`], or [`Error::Timeout`]. After a
+    /// transport failure or timeout, check the resource before repeating a write.
     pub async fn update(
         &self,
         id: impl AsRef<str>,
@@ -195,6 +277,27 @@ impl<'a> Subscribers<'a> {
             .await
     }
     /// Fetch by subscriber ID or email. The value is encoded as one path segment.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.subscribers().get("jane@example.com").await?;
+    ///
+    /// println!("{}", response.data.id);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::Config`] for an empty ID or a dot path segment (`.` or `..`).
+    /// Rejected requests return [`crate::Error::Api`]. Transport failures, unexpected
+    /// response statuses or bodies, and execution deadlines return
+    /// [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn get(&self, id_or_email: impl AsRef<str>) -> Result<Response<Subscriber>> {
         self.client
             .data(
@@ -207,6 +310,26 @@ impl<'a> Subscribers<'a> {
             .await
     }
     /// Fetch the total subscriber count.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.subscribers().count().await?;
+    ///
+    /// println!("{} subscribers", response.data.total);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Rejected requests return [`crate::Error::Api`]. Transport failures, unexpected
+    /// response statuses or bodies, and execution deadlines return
+    /// [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn count(&self) -> Result<Response<Count>> {
         self.client
             .request(
@@ -219,6 +342,23 @@ impl<'a> Subscribers<'a> {
             .await
     }
     /// List activity manually. The reference does not establish automatic continuation.
+    ///
+    /// Returns a manual-query builder without making a request. See
+    /// [`ListSubscriberActivity::send`] for errors. There is no automatic activity stream.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.subscribers().activity("123456789")
+    ///     .page(1).limit(25).send().await?;
+    ///
+    /// println!("{} activity entries", response.data.len());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn activity(&self, id: impl Into<String>) -> ListSubscriberActivity<'a> {
         ListSubscriberActivity {
             client: self.client,
@@ -228,6 +368,29 @@ impl<'a> Subscribers<'a> {
         }
     }
     /// Remove the subscriber while retaining their history for resubscription.
+    ///
+    /// This write is never automatically retried. A failure after dispatch does not
+    /// prove the server left the resource unchanged.
+    /// Success has an empty body. Use [`Self::forget`] for a complete forgetting request.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// mailerlite.subscribers().delete("123456789").await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::Config`] for an empty ID or a dot path segment (`.` or `..`).
+    /// Rejected requests return [`crate::Error::Api`]. Transport failures, unexpected
+    /// response statuses or bodies, and execution deadlines return
+    /// [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn delete(&self, id: impl AsRef<str>) -> Result<Response<()>> {
         self.client
             .empty(
@@ -240,6 +403,31 @@ impl<'a> Subscribers<'a> {
             .await
     }
     /// Request complete forgetting within the server's retention period.
+    ///
+    /// This write is never automatically retried. A failure after dispatch does not
+    /// prove the server left the resource unchanged.
+    /// The response acknowledges the request; it does not prove deletion has finished.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let receipt = mailerlite.subscribers().forget("123456789").await?;
+    ///
+    /// println!("Forgetting requested for {}", receipt.data.data.id);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::Config`] for an empty ID or a dot path segment (`.` or `..`).
+    /// Rejected requests return [`crate::Error::Api`]. Transport failures, unexpected
+    /// response statuses or bodies, and execution deadlines return
+    /// [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn forget(&self, id: impl AsRef<str>) -> Result<Response<ForgetSubscriber>> {
         self.client
             .request(
@@ -287,6 +475,38 @@ impl<'a> ListSubscribers<'a> {
         self
     }
     /// Fetch one page.
+    ///
+    /// Missing continuation metadata means no known next page; links are
+    /// retained for inspection and never followed directly.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let subscribers = mailerlite.subscribers();
+    /// let first = subscribers.list().limit(100).send().await?;
+    ///
+    /// if let Some(cursor) = first.data.next_cursor() {
+    ///     let second = subscribers.list()
+    ///         .limit(100)
+    ///         .cursor(cursor)
+    ///         .send()
+    ///         .await?;
+    ///
+    ///     println!("{} subscribers on the next page", second.data.data.len());
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Config`] before dispatch if a zero limit or unknown
+    /// status was supplied to the builder. API rejection, transport failure,
+    /// malformed responses, and execution deadlines return [`Error::Api`],
+    /// [`Error::Transport`], [`Error::Decode`], or [`Error::Timeout`].
     pub async fn send(self) -> Result<Response<CursorPage<Subscriber>>> {
         if let Some(e) = self.error {
             return Err(Error::Config(e));
@@ -302,6 +522,38 @@ impl<'a> ListSubscribers<'a> {
             .await
     }
     /// Lazily fetch subscribers while preserving filters.
+    ///
+    /// Requires the `stream` feature. The example also uses `futures-util`.
+    /// Requests begin when the stream is polled. It buffers approximately one
+    /// page and uses the configured endpoint, never server-provided links.
+    /// Dropping the stream stops fetching additional pages. The operation timeout
+    /// applies to each page request, not to consumption of the entire stream.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use futures_util::TryStreamExt;
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let subscribers = mailerlite.subscribers();
+    /// let stream = subscribers.list().limit(100).into_stream();
+    /// tokio::pin!(stream);
+    ///
+    /// while let Some(subscriber) = stream.try_next().await? {
+    ///     println!("{}", subscriber.id);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Errors are yielded as stream items. Invalid builder parameters yield
+    /// [`Error::Config`] without a request. Page requests can yield the same
+    /// errors as [`Self::send`]; a detected cursor cycle yields
+    /// [`Error::Pagination`]. The stream terminates after an error. Previously
+    /// yielded items remain available to the caller.
     #[cfg(feature = "stream")]
     pub fn into_stream(self) -> impl futures_core::Stream<Item = Result<Subscriber>> + 'a {
         use futures_util::StreamExt;
@@ -372,6 +624,33 @@ impl<'a> SubscriberMembers<'a> {
         self
     }
     /// Fetch one page.
+    ///
+    /// Group and segment accessors share this builder. The segment `after` parameter
+    /// is separate from the opaque `cursor`; preserve the same filters when continuing.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let page = mailerlite.groups().subscribers("123456789")
+    ///     .limit(100).include_groups().send().await?;
+    ///
+    /// println!("{} group members", page.data.data.len());
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::Config`] for an empty/dot resource ID, zero limit,
+    /// limits over 1000 on group membership lists, unknown subscriber status, or
+    /// using `include_groups` outside group lists or `after` outside segment lists.
+    /// Rejected requests return [`crate::Error::Api`]. Transport failures, unexpected
+    /// response statuses or bodies, and execution deadlines return
+    /// [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn send(self) -> Result<Response<CursorPage<Subscriber>>> {
         if let Some(e) = self.error {
             return Err(Error::Config(e));
@@ -382,6 +661,36 @@ impl<'a> SubscriberMembers<'a> {
             .await
     }
     /// Lazily fetch membership pages.
+    ///
+    /// Requires the `stream` feature; this example also uses `futures-util`.
+    /// Requests begin when polled, preserve filters, and never follow response links.
+    /// Dropping the stream stops further page fetches. Each page request has its
+    /// own operation deadline.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use futures_util::TryStreamExt;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let resource = mailerlite.groups();
+    /// let stream = resource.subscribers("123456789").limit(25).into_stream();
+    /// tokio::pin!(stream);
+    ///
+    /// while let Some(subscriber) = stream.try_next().await? {
+    ///     println!("{}", subscriber.id);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Errors are yielded as stream items. Invalid parameters and request failures
+    /// follow [`Self::send`]. Detected cursor cycles yield [`crate::Error::Pagination`].
+    /// The stream terminates after an error; previously yielded items remain available.
+    /// Missing continuation metadata ends the stream normally.
     #[cfg(feature = "stream")]
     pub fn into_stream(self) -> impl futures_core::Stream<Item = Result<Subscriber>> + 'a {
         use futures_util::StreamExt;
@@ -423,6 +732,33 @@ impl ListSubscriberActivity<'_> {
         self
     }
     /// Fetch activity entries without inventing pagination metadata.
+    ///
+    /// The result contains entries without continuation metadata. The reviewed
+    /// backend does not provide reliable exhaustive continuation, so this SDK exposes
+    /// manual requests rather than an automatic stream.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let entries = mailerlite.subscribers().activity("123456789")
+    ///     .page(1).limit(25).send().await?;
+    ///
+    /// println!("{} activity entries", entries.data.len());
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::Config`] for an empty/dot subscriber ID or if zero
+    /// was supplied as the page number or limit.
+    /// Rejected requests return [`crate::Error::Api`]. Transport failures, unexpected
+    /// response statuses or bodies, and execution deadlines return
+    /// [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn send(self) -> Result<Response<Vec<SubscriberActivity>>> {
         if let Some(e) = self.error {
             return Err(Error::Config(e));

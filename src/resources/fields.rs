@@ -45,6 +45,21 @@ impl<'a> Fields<'a> {
         Self { client }
     }
     /// List custom fields.
+    ///
+    /// Only constructs a builder. See [`ListFields::send`] for validation and errors.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let page = mailerlite.fields().list().limit(25).send().await?;
+    ///
+    /// println!("{} fields", page.data.data.len());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn list(&self) -> ListFields<'a> {
         ListFields {
             client: self.client,
@@ -53,6 +68,32 @@ impl<'a> Fields<'a> {
         }
     }
     /// Create a custom field.
+    ///
+    /// This write is never automatically retried. A failure after dispatch does not
+    /// prove the server left the resource unchanged.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::{models::fields::FieldType, resources::fields::CreateField};
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.fields()
+    ///     .create(CreateField::new("Company", FieldType::Text)).await?;
+    ///
+    /// println!("{}", response.data.id);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::Config`] if the name is empty or exceeds 255 characters.
+    /// Rejected requests return [`crate::Error::Api`]. Transport failures, unexpected
+    /// response statuses or bodies, and execution deadlines return
+    /// [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn create(&self, params: CreateField) -> Result<Response<Field>> {
         validate_name(&params.name)?;
         self.client
@@ -66,6 +107,33 @@ impl<'a> Fields<'a> {
             .await
     }
     /// Rename a custom field without changing its type.
+    ///
+    /// This write is never automatically retried. A failure after dispatch does not
+    /// prove the server left the resource unchanged.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::fields::UpdateField;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = mailerlite.fields()
+    ///     .update("123456789", UpdateField::new("Updated name")).await?;
+    ///
+    /// println!("{}", response.data.name);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::Config`] if the name is empty or exceeds 255 characters.
+    /// Returns [`crate::Error::Config`] for an empty ID or a dot path segment (`.` or `..`).
+    /// Rejected requests return [`crate::Error::Api`]. Transport failures, unexpected
+    /// response statuses or bodies, and execution deadlines return
+    /// [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn update(
         &self,
         id: impl AsRef<str>,
@@ -83,6 +151,29 @@ impl<'a> Fields<'a> {
             .await
     }
     /// Delete a custom field.
+    ///
+    /// This write is never automatically retried. A failure after dispatch does not
+    /// prove the server left the resource unchanged.
+    /// Success returns an empty response.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// mailerlite.fields().delete("123456789").await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::Config`] for an empty ID or a dot path segment (`.` or `..`).
+    /// Rejected requests return [`crate::Error::Api`]. Transport failures, unexpected
+    /// response statuses or bodies, and execution deadlines return
+    /// [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn delete(&self, id: impl AsRef<str>) -> Result<Response<()>> {
         self.client
             .empty(
@@ -154,6 +245,28 @@ impl<'a> ListFields<'a> {
         self
     }
     /// Fetch one page.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let page = mailerlite.fields().list().page(1).limit(25).send().await?;
+    ///
+    /// println!("Next page: {:?}", page.data.next_page());
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::Config`] if zero was supplied as the page number
+    /// or limit.
+    /// Rejected requests return [`crate::Error::Api`]. Transport failures, unexpected
+    /// response statuses or bodies, and execution deadlines return
+    /// [`crate::Error::Transport`], [`crate::Error::Decode`], or
+    /// [`crate::Error::Timeout`].
     pub async fn send(self) -> Result<Response<NumberedPage<Field>>> {
         if let Some(e) = self.error {
             return Err(Error::Config(e));
@@ -169,6 +282,36 @@ impl<'a> ListFields<'a> {
             .await
     }
     /// Lazily fetch fields as pages are consumed.
+    ///
+    /// Requires the `stream` feature; this example also uses `futures-util`.
+    /// Requests begin when polled, preserve filters, and never follow response links.
+    /// Dropping the stream stops further page fetches. Each page request has its
+    /// own operation deadline.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use futures_util::TryStreamExt;
+    ///
+    /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let resource = mailerlite.fields();
+    /// let stream = resource.list().limit(25).into_stream();
+    /// tokio::pin!(stream);
+    ///
+    /// while let Some(field) = stream.try_next().await? {
+    ///     println!("{}", field.id);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Errors are yielded as stream items. Invalid parameters and request failures
+    /// follow [`Self::send`]. Unexpected current-page numbers yield [`crate::Error::Pagination`].
+    /// The stream terminates after an error; previously yielded items remain available.
+    /// Missing continuation metadata ends the stream normally.
     #[cfg(feature = "stream")]
     pub fn into_stream(self) -> impl futures_core::Stream<Item = Result<Field>> + 'a {
         use futures_util::StreamExt;
