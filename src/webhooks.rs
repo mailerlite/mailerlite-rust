@@ -47,6 +47,10 @@ string_enum! {
         SubscriberDeleted => "subscriber.deleted",
         /// A subscriber's status became active.
         SubscriberActive => "subscriber.active",
+        /// A subscriber signed up through a form.
+        SubscriberAddedThroughForm => "subscriber.added_through_form",
+        /// A form was submitted.
+        SubscriberFormSubmitted => "subscriber.form_submitted",
         /// A campaign was sent.
         CampaignSent => "campaign.sent",
         /// A subscriber opened a campaign. Requires `batchable: true`.
@@ -151,6 +155,10 @@ impl CreateWebhook {
 }
 
 /// Body of [`Webhooks::update`]. Only the fields you set are changed.
+///
+/// If the webhook is (already) subscribed to [`WebhookEvent::CampaignOpen`],
+/// [`WebhookEvent::CampaignClick`] or [`WebhookEvent::SubscriberDeleted`], every update must
+/// include [`batchable(true)`](Self::batchable), even a rename; the API answers `422` otherwise.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize)]
 #[non_exhaustive]
 pub struct UpdateWebhook {
