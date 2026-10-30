@@ -5,10 +5,7 @@
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    MailerLite, Result,
-    types::{Id, de},
-};
+use crate::{MailerLite, Result, types::Id};
 
 /// A timezone MailerLite accepts.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -21,12 +18,12 @@ pub struct Timezone {
     /// Display name, e.g. `Europe/Vilnius (+03:00)`.
     #[serde(default)]
     pub name_for_humans: String,
-    /// UTC offset, e.g. `+03:00`.
-    #[serde(default, deserialize_with = "de::null_default")]
-    pub offset_name: String,
-    /// UTC offset in minutes, e.g. `180`.
-    #[serde(default, deserialize_with = "de::null_default")]
-    pub offset: i32,
+    /// UTC offset, e.g. `+03:00`; `None` if the API has none for this timezone.
+    #[serde(default)]
+    pub offset_name: Option<String>,
+    /// UTC offset in minutes, e.g. `180`; `None` if the API has none for this timezone.
+    #[serde(default)]
+    pub offset: Option<i32>,
 }
 
 /// Timezone endpoints. Obtained with [`MailerLite::timezones`].
@@ -68,7 +65,7 @@ mod tests {
         assert_eq!(timezone.id, "370");
         assert_eq!(timezone.name, "Europe/Vilnius");
         assert_eq!(timezone.name_for_humans, "Europe/Vilnius (+03:00)");
-        assert_eq!(timezone.offset_name, "+03:00");
-        assert_eq!(timezone.offset, 180);
+        assert_eq!(timezone.offset_name.as_deref(), Some("+03:00"));
+        assert_eq!(timezone.offset, Some(180));
     }
 }
