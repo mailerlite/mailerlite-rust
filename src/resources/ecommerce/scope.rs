@@ -1,5 +1,9 @@
 //! Internal paths and query state shared by shop-scoped resources.
-use crate::{MailerLite, Response, Result, http::OperationPolicy, response::Count};
+use crate::{
+    MailerLite, Response, Result,
+    http::{OperationPolicy, RequestBody},
+    response::Count,
+};
 use reqwest::Method;
 
 #[derive(Clone, Debug)]
@@ -24,7 +28,7 @@ impl<'a> Scope<'a> {
     pub(super) async fn data<T: serde::de::DeserializeOwned>(
         &self,
         method: Method,
-        body: Option<serde_json::Value>,
+        body: Option<&dyn RequestBody>,
     ) -> Result<Response<T>> {
         let path: Vec<&str> = self.path.iter().map(String::as_str).collect();
         let policy = if method == Method::GET {

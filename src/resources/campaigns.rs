@@ -1,10 +1,6 @@
 //! Campaign drafts, delivery, and subscriber reports.
 use crate::models::campaigns::{Campaign, CampaignActivity};
-use crate::{
-    Error, MailerLite, Response, Result,
-    http::{OperationPolicy, body},
-    pagination::NumberedPage,
-};
+use crate::{Error, MailerLite, Response, Result, http::OperationPolicy, pagination::NumberedPage};
 use reqwest::Method;
 /// CampaignStatus request value.
 #[derive(Debug, Clone, Copy, serde::Serialize)]
@@ -197,7 +193,7 @@ impl<'a> Campaigns<'a> {
                 Method::POST,
                 &["campaigns"],
                 &[],
-                Some(body(&params)?),
+                Some(&params),
                 OperationPolicy::WRITE,
             )
             .await
@@ -243,7 +239,7 @@ impl<'a> Campaigns<'a> {
                 Method::PUT,
                 &["campaigns", id.as_ref()],
                 &[],
-                Some(body(&params)?),
+                Some(&params),
                 OperationPolicy::WRITE,
             )
             .await
@@ -288,7 +284,7 @@ impl<'a> Campaigns<'a> {
                 Method::POST,
                 &["campaigns", id.as_ref(), "schedule"],
                 &[],
-                Some(body(&params)?),
+                Some(&params),
                 OperationPolicy::WRITE,
             )
             .await

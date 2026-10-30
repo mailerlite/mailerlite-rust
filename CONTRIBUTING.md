@@ -91,7 +91,9 @@ than adding unrelated types to the entry point:
 - `http/` separates URL construction in `endpoint.rs`, request execution in
   `execution.rs`, and typed/empty response decoding in `decoding.rs`. Request
   serialization and operation policy live in `request.rs`; retry and pacing
-  behavior remain in `retry.rs` and `rate_limit.rs`.
+  behavior remain in `retry.rs` and `rate_limit.rs`. `deadline.rs` shares one
+  budget from serialization through decoding, checking synchronous overruns
+  explicitly before dispatch and before returning a result.
 - `resources/ecommerce/` keeps shop management and nested resource accessors in
   `shops.rs`, with internal path and query state in `scope.rs`.
 - `pagination/` separates cursor pages, numbered pages, and navigation links into

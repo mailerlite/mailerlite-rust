@@ -1,5 +1,5 @@
 //! Execute requests with authentication, deadlines, pacing, and retry policy.
-use super::{OperationPolicy, endpoint::endpoint};
+use super::{OperationPolicy, RequestBody, deadline::Deadline, endpoint::endpoint};
 use crate::{
     ApiVersion, Error, MailerLite, ResponseMetadata, Result,
     error::{ApiError, DecodeError},
@@ -9,7 +9,6 @@ use reqwest::{
     header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE, HeaderMap, USER_AGENT},
 };
 use std::time::{Duration, SystemTime};
-use tokio::time::Instant;
 
 fn metadata(status: StatusCode, headers: &HeaderMap) -> ResponseMetadata {
     let integer = |name: &str| {
@@ -49,19 +48,12 @@ pub(super) async fn execute(
     method: Method,
     path: &[&str],
     query: &[(String, String)],
-    body: Option<serde_json::Value>,
+    body: Option<&dyn RequestBody>,
     policy: OperationPolicy,
+    deadline: Deadline,
 ) -> Result<(ResponseMetadata, Vec<u8>)> {
     let url = endpoint(&client.inner.base_url, path)?;
-    let deadline = Instant::now()
-        .checked_add(client.inner.operation_timeout)
-        .ok_or_else(|| Error::Config("operation timeout is too large".into()))?;
-    tokio::time::timeout_at(
-        deadline,
-        execute_until(client, method, url, query, body, policy, deadline),
-    )
-    .await
-    .map_err(|_| Error::Timeout)?
+    execute_until(client, method, url, query, body, policy, deadline).await
 }
 
 async fn execute_until(
@@ -69,18 +61,19 @@ async fn execute_until(
     method: Method,
     url: Url,
     query: &[(String, String)],
-    body: Option<serde_json::Value>,
+    body: Option<&dyn RequestBody>,
     policy: OperationPolicy,
-    deadline: Instant,
+    deadline: Deadline,
 ) -> Result<(ResponseMetadata, Vec<u8>)> {
     let inner = &client.inner;
-    let serialized = body
-        .map(|body| serde_json::to_vec(&body))
-        .transpose()
-        .map_err(Error::Serialize)?;
+    let serialized = body.map(|body| body.serialize()).transpose();
+    deadline.check()?;
+    let serialized = serialized?;
     let mut attempt = 0;
     loop {
+        deadline.check()?;
         inner.limiter.wait(policy.import).await;
+        deadline.check()?;
         let mut request = inner
             .http
             .request(method.clone(), url.clone())
@@ -99,6 +92,7 @@ async fn execute_until(
         if let Some(body) = &serialized {
             request = request.body(body.clone());
         }
+        deadline.check()?;
         let result = request.send().await;
         let mut response = match result {
             Ok(response) => response,
@@ -107,7 +101,7 @@ async fn execute_until(
                 if policy.read_only
                     && transient
                     && let Some(delay) = inner.retry.delay_for(attempt, None)
-                    && delay < deadline.saturating_duration_since(Instant::now())
+                    && delay < deadline.remaining()
                 {
                     tokio::time::sleep(delay).await;
                     attempt += 1;
@@ -158,7 +152,7 @@ async fn execute_until(
             if policy.read_only
                 && (meta.status.is_success() || inner.retry.permits_status(meta.status))
                 && let Some(delay) = inner.retry.delay_for(attempt, meta.retry_after)
-                && delay < deadline.saturating_duration_since(Instant::now())
+                && delay < deadline.remaining()
             {
                 tokio::time::sleep(delay).await;
                 attempt += 1;
@@ -183,7 +177,7 @@ async fn execute_until(
         if policy.read_only
             && inner.retry.permits_status(meta.status)
             && let Some(delay) = inner.retry.delay_for(attempt, meta.retry_after)
-            && delay < deadline.saturating_duration_since(Instant::now())
+            && delay < deadline.remaining()
         {
             tokio::time::sleep(delay).await;
             attempt += 1;

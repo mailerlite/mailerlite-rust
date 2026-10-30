@@ -176,8 +176,13 @@ follow arbitrary server-provided URLs with your credentials.
 | Subscriber-import pacing | 1 request / 12 seconds |
 
 The latest version policy omits `X-Version`, and automatic retries are disabled.
-The operation deadline includes pacing and retry waits. Import pacing applies
-to qualifying subscriber-import operations.
+The operation deadline covers request serialization, pacing, HTTP attempts,
+retry waits, and response decoding. Synchronous JSON work cannot be interrupted;
+an overrun returns `Error::Timeout` once that work finishes. Serialization that
+exhausts the budget prevents dispatch. Parameter construction and local
+validation before dispatch are outside the deadline. Each page or progress
+request gets its own budget; a timeout after dispatch does not roll back a write.
+Import pacing applies to qualifying subscriber-import operations.
 
 Use the builder to customize configuration or inject a reusable HTTP client:
 

@@ -6,7 +6,7 @@
 use super::automations::{ActivityStatus, Automations};
 use crate::{
     Error, Response, Result,
-    http::{OperationPolicy, body},
+    http::OperationPolicy,
     models::{Patch, automation_reports::*, automations::Automation, campaigns::CampaignEmail},
     pagination::NumberedPage,
 };
@@ -720,7 +720,7 @@ impl Automations<'_> {
                 Method::PUT,
                 &["automations", id.as_ref()],
                 &[],
-                Some(body(&params)?),
+                Some(&params),
                 OperationPolicy::WRITE,
             )
             .await
@@ -875,7 +875,7 @@ impl Automations<'_> {
                 Method::POST,
                 &["automations", id.as_ref(), "test"],
                 &[],
-                Some(body(&params)?),
+                Some(&params),
                 OperationPolicy::WRITE,
             )
             .await
@@ -926,7 +926,7 @@ impl Automations<'_> {
                 Method::POST,
                 &["automations", id.as_ref(), "add-subscribers"],
                 &[],
-                Some(body(&params)?),
+                Some(&params),
                 OperationPolicy::WRITE,
             )
             .await
@@ -991,7 +991,7 @@ impl Automations<'_> {
                 Method::POST,
                 &["automations", id.as_ref(), "readd"],
                 &[],
-                Some(body(&params)?),
+                Some(&params),
                 OperationPolicy::WRITE,
             )
             .await
@@ -1040,7 +1040,7 @@ impl Automations<'_> {
                 Method::POST,
                 &["automations", id.as_ref(), "activity", "add-to-group"],
                 &[],
-                Some(body(&params)?),
+                Some(&params),
                 OperationPolicy::WRITE,
             )
             .await
@@ -1093,7 +1093,7 @@ impl Automations<'_> {
                 Method::POST,
                 &["automations", id.as_ref(), "activity", "cancel-automation"],
                 &[],
-                Some(body(&params)?),
+                Some(&params),
                 OperationPolicy::WRITE,
             )
             .await
@@ -1146,7 +1146,7 @@ impl Automations<'_> {
                 Method::POST,
                 &["automations", id.as_ref(), "activity", "skip-delay"],
                 &[],
-                Some(body(&params)?),
+                Some(&params),
                 OperationPolicy::WRITE,
             )
             .await
@@ -1239,7 +1239,7 @@ impl Automations<'_> {
                     "content",
                 ],
                 &[],
-                Some(body(&params)?),
+                Some(&params),
                 OperationPolicy::WRITE,
             )
             .await

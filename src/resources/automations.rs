@@ -1,10 +1,6 @@
 //! Documented automation operations.
 use crate::models::automations::{Automation, AutomationActivity};
-use crate::{
-    Error, MailerLite, Response, Result,
-    http::{OperationPolicy, body},
-    pagination::NumberedPage,
-};
+use crate::{Error, MailerLite, Response, Result, http::OperationPolicy, pagination::NumberedPage};
 use reqwest::Method;
 /// ActivityStatus request value.
 #[derive(Debug, Clone, Copy, serde::Serialize)]
@@ -144,7 +140,7 @@ impl<'a> Automations<'a> {
                 Method::POST,
                 &["automations"],
                 &[],
-                Some(body(&params)?),
+                Some(&params),
                 OperationPolicy::WRITE,
             )
             .await

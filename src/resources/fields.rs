@@ -2,7 +2,7 @@
 use crate::resources::{groups::validate_name, subscribers::set};
 use crate::{
     Error, MailerLite, Response, Result,
-    http::{OperationPolicy, body},
+    http::OperationPolicy,
     models::fields::{Field, FieldType},
     pagination::NumberedPage,
 };
@@ -101,7 +101,7 @@ impl<'a> Fields<'a> {
                 Method::POST,
                 &["fields"],
                 &[],
-                Some(body(&params)?),
+                Some(&params),
                 OperationPolicy::WRITE.with_success_statuses(&[200]),
             )
             .await
@@ -145,7 +145,7 @@ impl<'a> Fields<'a> {
                 Method::PUT,
                 &["fields", id.as_ref()],
                 &[],
-                Some(body(&params)?),
+                Some(&params),
                 OperationPolicy::WRITE.with_success_statuses(&[200]),
             )
             .await

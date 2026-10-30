@@ -4,9 +4,7 @@ use crate::resources::{
     subscribers::{SubscriberMembers, set},
 };
 use crate::{
-    Error, MailerLite, Response, Result,
-    http::{OperationPolicy, body},
-    models::segments::Segment,
+    Error, MailerLite, Response, Result, http::OperationPolicy, models::segments::Segment,
     pagination::NumberedPage,
 };
 use reqwest::Method;
@@ -93,7 +91,7 @@ impl<'a> Segments<'a> {
                 Method::PUT,
                 &["segments", id.as_ref()],
                 &[],
-                Some(body(&params)?),
+                Some(&params),
                 OperationPolicy::WRITE.with_success_statuses(&[200]),
             )
             .await

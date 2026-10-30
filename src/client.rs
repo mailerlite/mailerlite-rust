@@ -2,11 +2,11 @@
 use crate::{
     ApiVersion, Error, Response, Result,
     config::MailerLiteBuilder,
-    http::{OperationPolicy, rate_limit::RateLimiter, retry::RetryPolicy},
+    http::{OperationPolicy, RequestBody, rate_limit::RateLimiter, retry::RetryPolicy},
     response::DataEnvelope,
 };
 use reqwest::{Method, Url, header::HeaderValue};
-use serde::{Serialize, de::DeserializeOwned};
+use serde::de::DeserializeOwned;
 use std::{fmt, sync::Arc, time::Duration};
 
 /// Reusable, cheaply cloneable asynchronous MailerLite API client.
@@ -123,7 +123,7 @@ impl MailerLite {
         method: Method,
         path: &[&str],
         query: &[(String, String)],
-        body: Option<serde_json::Value>,
+        body: Option<&dyn RequestBody>,
         policy: OperationPolicy,
     ) -> Result<Response<T>> {
         crate::http::request(self, method, path, query, body, policy).await
@@ -133,7 +133,7 @@ impl MailerLite {
         method: Method,
         path: &[&str],
         query: &[(String, String)],
-        body: Option<serde_json::Value>,
+        body: Option<&dyn RequestBody>,
         policy: OperationPolicy,
     ) -> Result<Response<T>> {
         self.request::<DataEnvelope<T>>(method, path, query, body, policy)
@@ -145,12 +145,9 @@ impl MailerLite {
         method: Method,
         path: &[&str],
         query: &[(String, String)],
-        body: Option<serde_json::Value>,
+        body: Option<&dyn RequestBody>,
         policy: OperationPolicy,
     ) -> Result<Response<()>> {
         crate::http::empty(self, method, path, query, body, policy).await
-    }
-    pub(crate) fn body<T: Serialize>(value: &T) -> Result<serde_json::Value> {
-        serde_json::to_value(value).map_err(Error::Serialize)
     }
 }

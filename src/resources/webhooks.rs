@@ -1,7 +1,7 @@
 //! Manage webhook subscriptions. Receiving and verifying callbacks is application-owned.
 use crate::{
     Error, MailerLite, Response, Result,
-    http::{OperationPolicy, body},
+    http::OperationPolicy,
     models::webhooks::{Webhook, WebhookEvent},
     pagination::NumberedPage,
 };
@@ -121,7 +121,7 @@ impl<'a> Webhooks<'a> {
                 Method::POST,
                 &["webhooks"],
                 &[],
-                Some(body(&params)?),
+                Some(&params),
                 OperationPolicy::WRITE.with_success_statuses(&[200]),
             )
             .await
@@ -172,7 +172,7 @@ impl<'a> Webhooks<'a> {
                 Method::PUT,
                 &["webhooks", id.as_ref()],
                 &[],
-                Some(body(&params)?),
+                Some(&params),
                 OperationPolicy::WRITE.with_success_statuses(&[200]),
             )
             .await

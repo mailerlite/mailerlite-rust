@@ -7,7 +7,7 @@ use crate::models::automation_configuration::{
 };
 use crate::{
     Error, MailerLite, Response, Result,
-    http::{OperationPolicy, body},
+    http::OperationPolicy,
     models::{
         Patch,
         automation_steps::{AbTestStats, StepRunCounts, StepSubscriber},
@@ -604,7 +604,7 @@ impl<'a> AutomationSteps<'a> {
                 Method::POST,
                 &["automations", automation.as_ref(), "steps"],
                 &[],
-                Some(body(&params)?),
+                Some(&params),
                 OperationPolicy::WRITE,
             )
             .await
@@ -656,7 +656,7 @@ impl<'a> AutomationSteps<'a> {
                 Method::PUT,
                 &["automations", automation.as_ref(), "steps", step.as_ref()],
                 &[],
-                Some(body(&params)?),
+                Some(&params),
                 OperationPolicy::WRITE,
             )
             .await
@@ -754,7 +754,7 @@ impl<'a> AutomationSteps<'a> {
                     "copy",
                 ],
                 &[],
-                Some(body(&params)?),
+                Some(&params),
                 OperationPolicy::WRITE,
             )
             .await
@@ -799,7 +799,7 @@ impl<'a> AutomationSteps<'a> {
                 Method::POST,
                 &["automations", automation.as_ref(), "steps", "reorder"],
                 &[],
-                Some(body(&params)?),
+                Some(&params),
                 OperationPolicy::WRITE,
             )
             .await
@@ -838,6 +838,10 @@ impl<'a> AutomationSteps<'a> {
         step: impl AsRef<str>,
         winner: AbWinner,
     ) -> Result<Response<AbTestStats>> {
+        #[derive(serde::Serialize)]
+        struct Payload {
+            ab_test_winner: AbWinner,
+        }
         self.client
             .data(
                 Method::PUT,
@@ -849,7 +853,9 @@ impl<'a> AutomationSteps<'a> {
                     "select-ab-test-winner",
                 ],
                 &[],
-                Some(serde_json::json!({"ab_test_winner":winner})),
+                Some(&Payload {
+                    ab_test_winner: winner,
+                }),
                 OperationPolicy::WRITE,
             )
             .await

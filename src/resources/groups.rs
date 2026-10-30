@@ -1,9 +1,7 @@
 //! Group operations and request parameters.
 use crate::resources::subscribers::{SubscriberMembers, set};
 use crate::{
-    Error, MailerLite, Response, Result,
-    http::{OperationPolicy, body},
-    models::groups::Group,
+    Error, MailerLite, Response, Result, http::OperationPolicy, models::groups::Group,
     pagination::NumberedPage,
 };
 use reqwest::Method;
@@ -95,7 +93,7 @@ impl<'a> Groups<'a> {
                 Method::POST,
                 &["groups"],
                 &[],
-                Some(body(&params)?),
+                Some(&params),
                 OperationPolicy::WRITE.with_success_statuses(&[201]),
             )
             .await
@@ -139,7 +137,7 @@ impl<'a> Groups<'a> {
                 Method::PUT,
                 &["groups", id.as_ref()],
                 &[],
-                Some(body(&params)?),
+                Some(&params),
                 OperationPolicy::WRITE.with_success_statuses(&[200]),
             )
             .await

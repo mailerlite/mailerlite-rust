@@ -2,7 +2,7 @@
 use super::{Carts, Categories, Customers, List, Orders, Products, Scope, params::SaveShop};
 use crate::{
     MailerLite, Response, Result,
-    http::{OperationPolicy, body},
+    http::OperationPolicy,
     models::ecommerce::{Settings, Shop},
     response::Count,
 };
@@ -121,7 +121,7 @@ impl<'a> Ecommerce<'a> {
                 Method::POST,
                 &["ecommerce", "shops"],
                 &[],
-                Some(body(&params)?),
+                Some(&params),
                 OperationPolicy::WRITE,
             )
             .await
@@ -166,7 +166,7 @@ impl<'a> Ecommerce<'a> {
                 Method::PUT,
                 &["ecommerce", "shops", id.as_ref()],
                 &[],
-                Some(body(&params)?),
+                Some(&params),
                 OperationPolicy::WRITE,
             )
             .await

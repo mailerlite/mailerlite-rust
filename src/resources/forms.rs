@@ -2,7 +2,7 @@
 use crate::models::{forms::Form, subscribers::Subscriber};
 use crate::{
     Error, MailerLite, Response, Result,
-    http::{OperationPolicy, body},
+    http::OperationPolicy,
     pagination::{CursorPage, NumberedPage},
 };
 use reqwest::Method;
@@ -135,7 +135,7 @@ impl<'a> Forms<'a> {
                 Method::PUT,
                 &["forms", id.as_ref()],
                 &[],
-                Some(body(&params)?),
+                Some(&params),
                 OperationPolicy::WRITE,
             )
             .await

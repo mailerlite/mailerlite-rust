@@ -1,6 +1,6 @@
 //! Shop-scoped products, categories, and product variants.
 use super::{List, Scope, params::*};
-use crate::{Response, Result, http::body, models::ecommerce::*, response::Count};
+use crate::{Response, Result, models::ecommerce::*, response::Count};
 use reqwest::Method;
 /// Shop-scoped products operations.
 #[derive(Clone, Debug)]
@@ -117,7 +117,7 @@ impl<'a> Products<'a> {
     /// deadlines return [`crate::Error::Transport`], [`crate::Error::Decode`], and
     /// [`crate::Error::Timeout`] respectively.
     pub async fn create(&self, params: SaveProduct) -> Result<Response<Product>> {
-        self.scope.data(Method::POST, Some(body(&params)?)).await
+        self.scope.data(Method::POST, Some(&params)).await
     }
     /// Update a resource using its documented write fields.
     ///
@@ -166,7 +166,7 @@ impl<'a> Products<'a> {
     ) -> Result<Response<Product>> {
         self.scope
             .child(id.as_ref())
-            .data(Method::PUT, Some(body(&params)?))
+            .data(Method::PUT, Some(&params))
             .await
     }
     /// Delete a resource and return the server's deleted-resource representation.
@@ -284,10 +284,14 @@ impl<'a> Products<'a> {
         id: impl AsRef<str>,
         enabled: bool,
     ) -> Result<Response<Product>> {
+        #[derive(serde::Serialize)]
+        struct Payload {
+            status: bool,
+        }
         self.scope
             .child(id.as_ref())
             .child("change-status")
-            .data(Method::PUT, Some(serde_json::json!({"status":enabled})))
+            .data(Method::PUT, Some(&Payload { status: enabled }))
             .await
     }
     /// Assign multiple categories; replace removes memberships absent from the list.
@@ -342,13 +346,21 @@ impl<'a> Products<'a> {
                 "at most 100 category IDs are allowed".into(),
             ));
         }
+        #[derive(serde::Serialize)]
+        struct Payload {
+            categories: Vec<String>,
+            replace: bool,
+        }
         self.scope
             .child(id.as_ref())
             .child("categories")
             .child("multiple")
             .data(
                 Method::PUT,
-                Some(serde_json::json!({"categories":categories,"replace":replace})),
+                Some(&Payload {
+                    categories,
+                    replace,
+                }),
             )
             .await
     }
@@ -418,7 +430,7 @@ impl<'a> Products<'a> {
     pub async fn import(&self, products: Vec<ImportProduct>) -> Result<Response<Vec<Product>>> {
         self.scope
             .child("import")
-            .data(Method::POST, Some(body(&products)?))
+            .data(Method::POST, Some(&products))
             .await
     }
 }
@@ -536,7 +548,7 @@ impl<'a> Categories<'a> {
     /// deadlines return [`crate::Error::Transport`], [`crate::Error::Decode`], and
     /// [`crate::Error::Timeout`] respectively.
     pub async fn create(&self, params: SaveCategory) -> Result<Response<Category>> {
-        self.scope.data(Method::POST, Some(body(&params)?)).await
+        self.scope.data(Method::POST, Some(&params)).await
     }
     /// Update a resource using its documented write fields.
     ///
@@ -584,7 +596,7 @@ impl<'a> Categories<'a> {
     ) -> Result<Response<Category>> {
         self.scope
             .child(id.as_ref())
-            .data(Method::PUT, Some(body(&params)?))
+            .data(Method::PUT, Some(&params))
             .await
     }
     /// Delete a resource and return the server's deleted-resource representation.
@@ -836,7 +848,7 @@ impl<'a> Categories<'a> {
     pub async fn import(&self, categories: Vec<SaveCategory>) -> Result<Response<Vec<Category>>> {
         self.scope
             .child("import")
-            .data(Method::POST, Some(body(&categories)?))
+            .data(Method::POST, Some(&categories))
             .await
     }
 }
@@ -937,7 +949,7 @@ impl Variants<'_> {
     /// deadlines return [`crate::Error::Transport`], [`crate::Error::Decode`], and
     /// [`crate::Error::Timeout`] respectively.
     pub async fn create(&self, variants: Vec<SaveVariant>) -> Result<Response<Product>> {
-        self.scope.data(Method::POST, Some(body(&variants)?)).await
+        self.scope.data(Method::POST, Some(&variants)).await
     }
     /// Update a variant and return its containing product.
     ///
@@ -997,7 +1009,7 @@ impl Variants<'_> {
     ) -> Result<Response<Product>> {
         self.scope
             .child(id.as_ref())
-            .data(Method::PUT, Some(body(&variant)?))
+            .data(Method::PUT, Some(&variant))
             .await
     }
     /// Delete a variant and return the product with its remaining variants.

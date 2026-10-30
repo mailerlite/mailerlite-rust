@@ -1,7 +1,7 @@
 //! Subscriber operations and typed parameters.
 use crate::{
     Error, MailerLite, Response, Result,
-    http::{OperationPolicy, body},
+    http::OperationPolicy,
     models::{
         GroupId,
         subscribers::{
@@ -218,7 +218,7 @@ impl<'a> Subscribers<'a> {
                 Method::POST,
                 &["subscribers"],
                 &[],
-                Some(body(&params)?),
+                Some(&params),
                 OperationPolicy::WRITE.with_success_statuses(&[200, 201]),
             )
             .await
@@ -271,7 +271,7 @@ impl<'a> Subscribers<'a> {
                 Method::PUT,
                 &["subscribers", id.as_ref()],
                 &[],
-                Some(body(&params)?),
+                Some(&params),
                 OperationPolicy::WRITE.with_success_statuses(&[200]),
             )
             .await

@@ -1,7 +1,7 @@
 //! Group subscriber imports and explicit bounded progress polling.
 use crate::{
     Error, MailerLite, Response, Result,
-    http::{OperationPolicy, body},
+    http::OperationPolicy,
     models::{
         ImportId,
         imports::{ImportReceipt, ImportReport},
@@ -126,7 +126,7 @@ impl<'a> Imports<'a> {
                 Method::POST,
                 &["groups", group.as_ref(), "import-subscribers"],
                 &[],
-                Some(body(&Payload { subscribers })?),
+                Some(&Payload { subscribers }),
                 OperationPolicy::IMPORT.with_success_statuses(&[200]),
             )
             .await?;

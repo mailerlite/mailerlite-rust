@@ -1,4 +1,5 @@
 //! Central HTTP execution, authentication, decoding, and policy enforcement.
+mod deadline;
 mod decoding;
 mod endpoint;
 mod execution;
@@ -7,4 +8,4 @@ mod request;
 pub mod retry;
 
 pub(crate) use decoding::{empty, request};
-pub(crate) use request::{OperationPolicy, body};
+pub(crate) use request::{OperationPolicy, RequestBody};

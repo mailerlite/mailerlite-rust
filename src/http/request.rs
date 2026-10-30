@@ -1,5 +1,5 @@
 //! Internal operation classification and request serialization.
-use crate::{MailerLite, Result};
+use crate::{Error, Result};
 
 /// Retry and local rate-limit policy attached to an operation.
 #[derive(Debug, Clone, Copy)]
@@ -34,7 +34,15 @@ impl OperationPolicy {
     };
 }
 
-/// Serialize a typed request before dispatch.
-pub(crate) fn body<T: serde::Serialize>(value: &T) -> Result<serde_json::Value> {
-    MailerLite::body(value)
+/// Borrow a typed payload until serialization inside the operation deadline.
+/// This object-safe adapter keeps bodyless requests simple without allocating
+/// an intermediate JSON tree or exposing a public serialization abstraction.
+pub(crate) trait RequestBody: Sync {
+    fn serialize(&self) -> Result<Vec<u8>>;
+}
+
+impl<T: serde::Serialize + Sync> RequestBody for T {
+    fn serialize(&self) -> Result<Vec<u8>> {
+        serde_json::to_vec(self).map_err(Error::Serialize)
+    }
 }

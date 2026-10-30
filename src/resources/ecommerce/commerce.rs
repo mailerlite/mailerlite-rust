@@ -1,6 +1,6 @@
 //! Shop-scoped customers, orders, carts, and cart items.
 use super::{List, Scope, params::*};
-use crate::{Response, Result, http::body, models::ecommerce::*, response::Count};
+use crate::{Response, Result, models::ecommerce::*, response::Count};
 use reqwest::Method;
 /// Shop-scoped customers operations.
 #[derive(Clone, Debug)]
@@ -117,7 +117,7 @@ impl<'a> Customers<'a> {
     /// deadlines return [`crate::Error::Transport`], [`crate::Error::Decode`], and
     /// [`crate::Error::Timeout`] respectively.
     pub async fn create(&self, params: SaveCustomer) -> Result<Response<Customer>> {
-        self.scope.data(Method::POST, Some(body(&params)?)).await
+        self.scope.data(Method::POST, Some(&params)).await
     }
     /// Update a resource using its documented write fields.
     ///
@@ -166,7 +166,7 @@ impl<'a> Customers<'a> {
     ) -> Result<Response<Customer>> {
         self.scope
             .child(id.as_ref())
-            .data(Method::PUT, Some(body(&params)?))
+            .data(Method::PUT, Some(&params))
             .await
     }
     /// Delete a resource and return the server's deleted-resource representation.
@@ -292,7 +292,7 @@ impl<'a> Customers<'a> {
     ) -> Result<Response<Vec<AcceptedCustomer>>> {
         self.scope
             .child("import")
-            .data(Method::POST, Some(body(&customers)?))
+            .data(Method::POST, Some(&customers))
             .await
     }
 }
@@ -424,7 +424,7 @@ impl<'a> Orders<'a> {
     /// deadlines return [`crate::Error::Transport`], [`crate::Error::Decode`], and
     /// [`crate::Error::Timeout`] respectively.
     pub async fn create(&self, params: CreateOrder) -> Result<Response<Order>> {
-        self.scope.data(Method::POST, Some(body(&params)?)).await
+        self.scope.data(Method::POST, Some(&params)).await
     }
     /// Update a resource using its documented write fields.
     ///
@@ -472,7 +472,7 @@ impl<'a> Orders<'a> {
     ) -> Result<Response<Order>> {
         self.scope
             .child(id.as_ref())
-            .data(Method::PUT, Some(body(&params)?))
+            .data(Method::PUT, Some(&params))
             .await
     }
     /// Delete a resource and return the server's deleted-resource representation.
@@ -613,7 +613,7 @@ impl<'a> Orders<'a> {
         }
         self.scope
             .child("import")
-            .data(Method::POST, Some(body(&Payload { orders })?))
+            .data(Method::POST, Some(&Payload { orders }))
             .await
     }
 }
@@ -735,7 +735,7 @@ impl<'a> Carts<'a> {
     pub async fn update(&self, id: impl AsRef<str>, params: UpdateCart) -> Result<Response<Cart>> {
         self.scope
             .child(id.as_ref())
-            .data(Method::PUT, Some(body(&params)?))
+            .data(Method::PUT, Some(&params))
             .await
     }
     /// Count resources without fetching a list.
@@ -915,7 +915,7 @@ impl<'a> CartItems<'a> {
     /// deadlines return [`crate::Error::Transport`], [`crate::Error::Decode`], and
     /// [`crate::Error::Timeout`] respectively.
     pub async fn create(&self, params: SaveCartItem) -> Result<Response<CartItem>> {
-        self.scope.data(Method::POST, Some(body(&params)?)).await
+        self.scope.data(Method::POST, Some(&params)).await
     }
     /// Update a resource using its documented write fields.
     ///
@@ -969,7 +969,7 @@ impl<'a> CartItems<'a> {
     ) -> Result<Response<CartItem>> {
         self.scope
             .child(id.as_ref())
-            .data(Method::PUT, Some(body(&params)?))
+            .data(Method::PUT, Some(&params))
             .await
     }
     /// Delete a resource and return the server's deleted-resource representation.

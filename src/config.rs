@@ -141,8 +141,16 @@ impl MailerLiteBuilder {
         self.request_timeout = timeout;
         self
     }
-    /// Set the complete deadline including rate-limit waits and retries.
+    /// Set the deadline from request serialization through response decoding,
+    /// including rate-limit waits, HTTP attempts, and retry delays.
     /// Defaults to 60 seconds.
+    ///
+    /// Synchronous serialization and decoding cannot be interrupted; if either
+    /// exceeds the budget, the operation returns [`Error::Timeout`] after that
+    /// work finishes. An expired serialization budget prevents HTTP dispatch.
+    /// Parameter construction and local validation before dispatch are outside
+    /// this deadline. Each page or import-progress request has its own deadline.
+    /// A timeout after dispatch does not mean the server rolled back a write.
     pub fn operation_timeout(mut self, timeout: Duration) -> Self {
         self.operation_timeout = timeout;
         self

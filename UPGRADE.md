@@ -92,6 +92,13 @@ The base URL must include the API prefix. Omit `.base_url(...)` to use
 when injecting a client: it disables redirects and underlying automatic retries.
 The SDK cannot inspect or override those policies on an arbitrary injected client.
 
+The operation timeout covers request serialization, pacing, HTTP attempts, retry
+waits, and response decoding. Synchronous JSON work is checked after it finishes;
+it cannot be interrupted mid-call. If serialization exhausts the budget, no
+request is sent. Parameter construction and local validation are outside this
+budget, and each page or progress request starts a new one. A timeout after
+dispatch does not imply that a write was rolled back.
+
 Like v1, v2 omits `X-Version` by default. `ApiVersion::Latest` selects the server's
 latest API behavior. To opt into a dated version, use `ApiVersion::pinned(...)`.
 `DEFAULT_API_VERSION` is a release reference date for explicit pinning, not the

@@ -4,7 +4,7 @@ use crate::models::automation_configuration::{
 };
 use crate::{
     Error, MailerLite, Response, Result,
-    http::{OperationPolicy, body},
+    http::OperationPolicy,
     models::automation_steps::StepSubscriber,
     models::automation_triggers::{AllTriggerRunCounts, Trigger, TriggerRunCounts, UpdatedTrigger},
     pagination::NumberedPage,
@@ -384,7 +384,7 @@ impl<'a> AutomationTriggers<'a> {
                 Method::POST,
                 &["automations", automation.as_ref(), "triggers"],
                 &[],
-                Some(body(&params)?),
+                Some(&params),
                 OperationPolicy::WRITE,
             )
             .await
@@ -435,7 +435,7 @@ impl<'a> AutomationTriggers<'a> {
                     trigger.as_ref(),
                 ],
                 &[],
-                Some(body(&params)?),
+                Some(&params),
                 OperationPolicy::WRITE,
             )
             .await

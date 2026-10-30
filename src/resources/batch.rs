@@ -1,8 +1,6 @@
 //! Submit bounded batches; write batches are never automatically replayed.
 use crate::{
-    Error, MailerLite, Response, Result,
-    http::{OperationPolicy, body},
-    models::batch::BatchResult,
+    Error, MailerLite, Response, Result, http::OperationPolicy, models::batch::BatchResult,
 };
 use reqwest::Method;
 use serde::Serialize;
@@ -103,7 +101,7 @@ impl BatchRequest {
     /// [`Error::Config`] when it serializes to an array, scalar, or null rather than an
     /// object. This validates only the outer shape, not endpoint-specific fields.
     pub fn body(mut self, value: impl Serialize) -> Result<Self> {
-        let value = body(&value)?;
+        let value = serde_json::to_value(&value).map_err(Error::Serialize)?;
         if !value.is_object() {
             return Err(Error::Config("batch body must be a JSON object".into()));
         }
@@ -190,7 +188,7 @@ impl<'a> Batch<'a> {
                 Method::POST,
                 &["batch"],
                 &[],
-                Some(body(&Payload { requests })?),
+                Some(&Payload { requests }),
                 policy.with_success_statuses(&[200]),
             )
             .await
