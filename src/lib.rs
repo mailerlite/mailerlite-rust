@@ -72,7 +72,7 @@
 //! | `rustls`            | yes     | TLS via rustls.                                          |
 //! | `native-tls`        |         | TLS via the platform's native stack.                     |
 //! | `stream`            | yes     | `list_all` helpers returning a `futures` `Stream`.       |
-//! | `webhook-signature` |         | [`webhook_signature::verify`] for incoming webhooks.     |
+//! | `webhook-signature` |         | `webhook_signature::verify` for incoming webhooks.       |
 //!
 //! Enable exactly one TLS feature; without one, requests fail because MailerLite is HTTPS-only.
 

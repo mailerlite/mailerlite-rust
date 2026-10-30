@@ -7,7 +7,7 @@
 //! * **page number** ([`Page`]): everything else.
 //!
 //! With the `stream` feature (on by default) list handles also expose `list_all`, which walks
-//! every page lazily and yields items as a [`futures_util::Stream`].
+//! every page lazily and yields items as a `futures_util::Stream`.
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
