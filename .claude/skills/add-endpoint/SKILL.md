@@ -5,7 +5,7 @@ description: Add or change a MailerLite API endpoint in the mailerlite-rs SDK â€
 
 # Add or change an endpoint
 
-Work through these steps in order. Read `CLAUDE.md` first if you haven't in this session, and
+Work through these steps in order. Read `AGENTS.md` first if you haven't in this session, and
 `reference.md` (next to this file) for the API's quirks.
 
 ## 1. Read the official docs for the endpoint

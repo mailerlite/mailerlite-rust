@@ -183,9 +183,10 @@ mailerlite-rs = { version = "2", default-features = false, features = ["native-t
 
 ## Contributing
 
-See [CLAUDE.md](CLAUDE.md) for the layout, conventions and checks, and
+See [AGENTS.md](AGENTS.md) for the layout, conventions and checks, and
 [`.claude/skills/add-endpoint`](.claude/skills/add-endpoint/SKILL.md) for the step-by-step recipe for
-adding an endpoint. Commits follow [Conventional Commits](https://www.conventionalcommits.org/);
+adding an endpoint. Both work with AI coding agents: Claude Code reads them through `CLAUDE.md` and
+`.claude/skills/`, Codex through `AGENTS.md` and `.agents/skills/`. Commits follow [Conventional Commits](https://www.conventionalcommits.org/);
 releases are automated with release-please.
 
 ## License
