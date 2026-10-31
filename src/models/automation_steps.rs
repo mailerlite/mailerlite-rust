@@ -1,5 +1,5 @@
 //! Automation step reports and subscriber executions verified against backend resources.
-use crate::models::groups::Rate;
+use crate::models::common::Rate;
 use serde::Deserialize;
 use std::collections::BTreeMap;
 

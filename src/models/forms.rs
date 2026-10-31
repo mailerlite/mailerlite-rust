@@ -20,7 +20,7 @@ pub struct Form {
     /// Number of times this form was opened.
     pub opens_count: Option<u64>,
     /// Conversion rate in the server-provided representation.
-    pub conversion_rate: Option<crate::models::campaigns::Rate>,
+    pub conversion_rate: Option<crate::models::common::Rate>,
     /// Most recent registration timestamp, when one is reported.
     pub last_registration_at: Option<String>,
     /// Whether the form is currently active.

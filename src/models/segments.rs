@@ -1,5 +1,5 @@
 //! Segment response models.
-use crate::models::{SegmentId, groups::Rate};
+use crate::models::{SegmentId, common::Rate};
 use serde::Deserialize;
 /// A dynamic subscriber segment.
 #[derive(Debug, Clone, Deserialize)]

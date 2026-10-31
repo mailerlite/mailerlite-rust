@@ -181,6 +181,11 @@ async fn email_unsubscribe_reasons_decodes_collection() {
         .await
         .unwrap();
     assert_eq!(response.metadata.status.as_u16(), 200);
+    assert_eq!(response.data.len(), 1);
+    let reason = &response.data[0];
+    assert_eq!(reason.label, "Too many emails");
+    assert_eq!(reason.count, 2);
+    assert_eq!(reason.percentage, 100.0);
 }
 
 #[tokio::test]

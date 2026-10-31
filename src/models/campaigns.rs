@@ -1,5 +1,8 @@
 //! Campaigns, messages, and engagement reports.
 use crate::models::CampaignId;
+
+pub use crate::models::common::Rate;
+
 /// Campaign returned by MailerLite.
 #[derive(Debug, Clone, serde::Deserialize)]
 #[non_exhaustive]
@@ -71,18 +74,6 @@ pub struct CampaignEmail {
     pub screenshot_url: Option<String>,
     /// Engagement statistics included for this email.
     pub stats: Option<EmailStats>,
-}
-/// A fractional rate paired with the server's formatted percentage.
-///
-/// `float` is suitable for calculations; `string` is the display representation.
-/// Formatting and rounding come from the server, so the string need not preserve
-/// every digit of the numeric value.
-#[derive(Debug, Clone, serde::Deserialize)]
-pub struct Rate {
-    /// Fractional rate before percentage conversion; `0.25` represents 25%.
-    pub float: f64,
-    /// Server-formatted percentage including `%`, such as `"25%"`.
-    pub string: String,
 }
 /// EmailStats returned by MailerLite.
 #[derive(Debug, Clone, serde::Deserialize)]

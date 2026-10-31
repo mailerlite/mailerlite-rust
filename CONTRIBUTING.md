@@ -220,6 +220,12 @@ including re-exports from private implementation modules. Preserve existing
 public import paths when reorganizing files. Adding a public item to an
 implementation module must not silently export it through a wildcard.
 
+Define shared wire representations once and re-export them where existing public
+paths need to remain available. Verify that their wire types and units agree
+before consolidating them; similar field names alone do not establish the same
+contract. For example, `models::common::Rate` stores a fractional `float` and a
+formatted percentage, while automation report rates contain only a string.
+
 The SDK intentionally exposes these dependency types and traits:
 
 | Dependency family | Public use | Convenience export |

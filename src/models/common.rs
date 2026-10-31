@@ -3,6 +3,20 @@
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
 
+/// A fractional rate paired with the server's formatted percentage.
+///
+/// `float` is suitable for calculations; `string` is the display representation.
+/// The SDK preserves both values without rescaling or recomputing them. Formatting
+/// and rounding come from the server, so the string need not preserve every digit
+/// of the numeric value.
+#[derive(Debug, Clone, Deserialize)]
+pub struct Rate {
+    /// Fractional rate before percentage conversion; `0.25` represents 25%.
+    pub float: f64,
+    /// Server-formatted percentage including `%`, such as `"25%"`.
+    pub string: String,
+}
+
 /// An optional update that distinguishes omission from an explicit JSON null.
 ///
 /// Only use this type for fields whose endpoint documents null semantics. Fields
@@ -87,7 +101,7 @@ impl fmt::Debug for SecretString {
     reason = "Tests assert fixture and operation outcomes"
 )]
 mod tests {
-    use super::{Patch, SecretString};
+    use super::{Patch, Rate, SecretString};
     use serde::{Deserialize, Serialize};
     use serde_json::json;
 
@@ -95,6 +109,25 @@ mod tests {
     struct Update {
         #[serde(default, skip_serializing_if = "Patch::is_unset")]
         name: Patch<String>,
+    }
+
+    #[test]
+    fn rate_preserves_fraction_and_server_rounded_display() {
+        let rate: Rate = serde_json::from_str(r#"{"float":0.123456,"string":"12.35%"}"#).unwrap();
+
+        assert_eq!(rate.float, 0.123456);
+        assert_eq!(rate.string, "12.35%");
+    }
+
+    #[test]
+    fn rate_public_paths_share_the_same_type() {
+        let rate: crate::models::campaigns::Rate =
+            serde_json::from_str(r#"{"float":0.25,"string":"25%"}"#).unwrap();
+        let rate: crate::models::groups::Rate = rate;
+        let rate: Rate = rate;
+
+        assert_eq!(rate.float, 0.25);
+        assert_eq!(rate.string, "25%");
     }
 
     #[test]

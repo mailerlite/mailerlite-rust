@@ -1,14 +1,9 @@
 //! Group response models.
 use crate::models::GroupId;
 use serde::Deserialize;
-/// Numeric and human-readable percentage supplied together by MailerLite.
-#[derive(Debug, Clone, Deserialize)]
-pub struct Rate {
-    /// Numeric percentage.
-    pub float: f64,
-    /// Formatted percentage.
-    pub string: String,
-}
+
+pub use crate::models::common::Rate;
+
 /// A subscriber group.
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]

@@ -136,9 +136,14 @@ async fn assign_multiple_categories_preserves_replace_flag() {
         200,
     )
     .await;
-    p.assign_categories("2", vec!["3".into()], true)
+    let response = p
+        .assign_categories("2", vec!["3".into()], true)
         .await
         .unwrap();
+
+    assert_eq!(response.data.id.as_str(), "2");
+    assert_eq!(response.data.name, "Product");
+    assert_eq!(response.data.price, Some(Decimal::new(1234, 2)));
 }
 
 #[tokio::test]
@@ -156,7 +161,13 @@ async fn list_products_in_category() {
         200,
     )
     .await;
-    c.products("3").send().await.unwrap();
+    let response = c.products("3").send().await.unwrap();
+
+    assert_eq!(response.data.data.len(), 1);
+    let product = &response.data.data[0];
+    assert_eq!(product.id.as_str(), "2");
+    assert_eq!(product.name, "Product");
+    assert_eq!(product.price, Some(Decimal::new(1234, 2)));
 }
 
 #[tokio::test]
@@ -174,7 +185,11 @@ async fn assign_product_to_category() {
         200,
     )
     .await;
-    c.assign("3", "2").await.unwrap();
+    let response = c.assign("3", "2").await.unwrap();
+
+    assert_eq!(response.data.id.as_str(), "2");
+    assert_eq!(response.data.name, "Product");
+    assert_eq!(response.data.price, Some(Decimal::new(1234, 2)));
 }
 
 #[tokio::test]
@@ -192,5 +207,9 @@ async fn unassign_product_from_category() {
         200,
     )
     .await;
-    c.unassign("3", "2").await.unwrap();
+    let response = c.unassign("3", "2").await.unwrap();
+
+    assert_eq!(response.data.id.as_str(), "2");
+    assert_eq!(response.data.name, "Product");
+    assert_eq!(response.data.price, Some(Decimal::new(1234, 2)));
 }
