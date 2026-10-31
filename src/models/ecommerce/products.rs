@@ -7,6 +7,7 @@ use std::collections::BTreeMap;
 
 /// Product returned by the e-commerce API.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct Product {
     /// Id.
     #[serde(deserialize_with = "wire::id")]
@@ -62,6 +63,7 @@ pub struct Product {
 
 /// ProductVariant returned by the e-commerce API.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct ProductVariant {
     /// Id.
     #[serde(deserialize_with = "wire::id")]
@@ -83,6 +85,7 @@ pub struct ProductVariant {
 
 /// Discount returned by the e-commerce API.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct Discount {
     /// Id.
     #[serde(deserialize_with = "wire::id")]

@@ -6,6 +6,7 @@ use std::fmt;
 
 /// Subscriber membership change and the affected group.
 #[derive(Clone, Deserialize)]
+#[non_exhaustive]
 pub struct GroupEvent {
     /// Subscriber whose membership changed.
     pub subscriber: WebhookSubscriber,
@@ -22,6 +23,7 @@ impl fmt::Debug for GroupEvent {
 
 /// Group identity included in membership events.
 #[derive(Clone, Deserialize)]
+#[non_exhaustive]
 pub struct WebhookGroup {
     /// Stable group identifier.
     pub id: GroupId,

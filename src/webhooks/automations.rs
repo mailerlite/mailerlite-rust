@@ -6,6 +6,7 @@ use std::fmt;
 
 /// Subscriber execution event and its automation.
 #[derive(Clone, Deserialize)]
+#[non_exhaustive]
 pub struct AutomationEvent {
     /// Subscriber that entered or completed the automation.
     pub subscriber: WebhookSubscriber,
@@ -22,6 +23,7 @@ impl fmt::Debug for AutomationEvent {
 
 /// Automation identity included in execution events.
 #[derive(Clone, Deserialize)]
+#[non_exhaustive]
 pub struct WebhookAutomation {
     /// Stable automation identifier.
     pub id: AutomationId,

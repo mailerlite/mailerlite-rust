@@ -23,7 +23,40 @@ impl FieldType {
     }
 }
 /// A custom field definition.
+///
+/// This server-owned record may gain fields. Deserialize a response fixture and
+/// use `..` when destructuring it:
+///
+/// # Examples
+///
+/// ```
+/// use mailerlite_rs::models::fields::Field;
+///
+/// # fn main() -> serde_json::Result<()> {
+/// let field: Field = serde_json::from_str(
+///     r#"{"id":"123","name":"Company","key":"company","type":"text"}"#,
+/// )?;
+/// let Field { name, .. } = field;
+///
+/// assert_eq!(name, "Company");
+/// # Ok(())
+/// # }
+/// ```
+///
+/// External struct literals are intentionally unsupported:
+///
+/// ```compile_fail,E0639
+/// use mailerlite_rs::models::fields::Field;
+///
+/// let field = Field {
+///     id: "123".into(),
+///     name: "Company".into(),
+///     key: "company".into(),
+///     field_type: "text".into(),
+/// };
+/// ```
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct Field {
     /// Field identifier.
     pub id: FieldId,

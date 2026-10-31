@@ -5,6 +5,7 @@ use serde::Deserialize;
 
 /// Category returned by the e-commerce API.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct Category {
     /// Id.
     #[serde(deserialize_with = "wire::id")]

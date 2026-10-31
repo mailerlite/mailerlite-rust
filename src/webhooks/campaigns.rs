@@ -6,6 +6,7 @@ use std::fmt;
 
 /// Campaign fields flattened beside the `event` discriminator.
 #[derive(Clone, Deserialize)]
+#[non_exhaustive]
 pub struct CampaignSentEvent {
     /// Campaign whose sending completed.
     #[serde(flatten)]
@@ -21,6 +22,7 @@ impl fmt::Debug for CampaignSentEvent {
 
 /// A subscriber opened an email belonging to a campaign.
 #[derive(Clone, Deserialize)]
+#[non_exhaustive]
 pub struct CampaignOpenEvent {
     /// Subscriber who opened the email.
     pub subscriber: WebhookSubscriber,
@@ -37,6 +39,7 @@ impl fmt::Debug for CampaignOpenEvent {
 
 /// A subscriber clicked a campaign link.
 #[derive(Clone, Deserialize)]
+#[non_exhaustive]
 pub struct CampaignClickEvent {
     /// Subscriber who clicked the link.
     pub subscriber: WebhookSubscriber,
@@ -55,6 +58,7 @@ impl fmt::Debug for CampaignClickEvent {
 
 /// Campaign identity and delivery summary used by webhook events.
 #[derive(Clone, Deserialize)]
+#[non_exhaustive]
 pub struct WebhookCampaign {
     /// Stable campaign identifier.
     pub id: CampaignId,

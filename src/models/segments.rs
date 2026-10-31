@@ -3,6 +3,7 @@ use crate::models::{SegmentId, groups::Rate};
 use serde::Deserialize;
 /// A dynamic subscriber segment.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct Segment {
     /// Segment identifier.
     pub id: SegmentId,

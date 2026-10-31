@@ -6,6 +6,7 @@ use serde::Deserialize;
 
 /// EcommerceStats returned by the e-commerce API.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct EcommerceStats {
     /// Orders count.
     pub orders_count: u64,
@@ -21,6 +22,7 @@ pub struct EcommerceStats {
 
 /// StatsReport returned by the e-commerce API.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct StatsReport {
     /// Ecommerce.
     pub ecommerce: EcommerceStats,
@@ -32,6 +34,7 @@ pub struct StatsReport {
 
 /// StatsPoint returned by the e-commerce API.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct StatsPoint {
     /// Date.
     pub date: String,
@@ -49,6 +52,7 @@ pub struct StatsPoint {
 
 /// ReportOrder returned by the e-commerce API.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct ReportOrder {
     /// Subscriber.
     pub subscriber: ReportSubscriber,
@@ -65,6 +69,7 @@ pub struct ReportOrder {
 
 /// ReportSubscriber returned by the e-commerce API.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct ReportSubscriber {
     /// Id.
     #[serde(deserialize_with = "wire::id")]

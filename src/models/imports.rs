@@ -10,6 +10,7 @@ pub struct ImportReceipt {
 }
 /// Progress of a subscriber import.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct ImportReport {
     /// Import identifier.
     pub id: ImportId,
@@ -99,6 +100,7 @@ pub struct ImportReport {
 
 /// One sampled import log row, whose ID is distinct from a subscriber ID.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct ImportLogSample {
     /// Opaque import-log identifier, preserving large values and leading zeroes.
     pub id: String,
@@ -108,6 +110,7 @@ pub struct ImportLogSample {
 
 /// Progress of assigning imported column values to subscriber groups.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct ImportColumnGroups {
     /// Whether mapping awaits review.
     pub awaits_review: bool,
@@ -123,6 +126,7 @@ pub struct ImportColumnGroups {
 
 /// Totals recorded when an import's column-to-group mapping is applied.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct ImportColumnGroupStats {
     /// Number of groups created by the mapping.
     pub created: u64,
@@ -134,6 +138,7 @@ pub struct ImportColumnGroupStats {
 
 /// Additional details of a Mailchimp-source import.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct MailchimpImportMetadata {
     /// Requested segment-migration mode.
     pub mailchimp_segment_option: Option<String>,
@@ -151,6 +156,7 @@ pub struct MailchimpImportMetadata {
 
 /// A segment that could not be recreated during migration.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct SkippedImportSegment {
     /// Source segment name.
     pub name: String,

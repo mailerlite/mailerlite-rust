@@ -2,6 +2,7 @@
 use crate::models::AutomationId;
 /// Automation returned by MailerLite.
 #[derive(Debug, Clone, serde::Deserialize)]
+#[non_exhaustive]
 pub struct Automation {
     /// Whether a template-based automation is still being built.
     pub building_in_progress: Option<bool>,
@@ -32,6 +33,7 @@ pub struct Automation {
 }
 /// TriggerData returned by MailerLite.
 #[derive(Debug, Clone, serde::Deserialize)]
+#[non_exhaustive]
 pub struct TriggerData {
     /// Whether a test workflow is still being processed.
     pub test_workflow_in_progress: Option<bool>,
@@ -73,6 +75,7 @@ pub struct TriggerData {
 }
 /// AutomationStep returned by MailerLite.
 #[derive(Debug, Clone, serde::Deserialize)]
+#[non_exhaustive]
 pub struct AutomationStep {
     /// Id.
     pub id: String,
@@ -103,6 +106,7 @@ pub struct AutomationStep {
 pub type AutomationTrigger = crate::models::automation_triggers::Trigger;
 /// AutomationStats returned by MailerLite.
 #[derive(Debug, Clone, serde::Deserialize)]
+#[non_exhaustive]
 pub struct AutomationStats {
     /// Completed subscribers count.
     pub completed_subscribers_count: Option<u64>,
@@ -117,6 +121,7 @@ pub struct AutomationStats {
 }
 /// AutomationActivity returned by MailerLite.
 #[derive(Debug, Clone, serde::Deserialize)]
+#[non_exhaustive]
 pub struct AutomationActivity {
     /// Id.
     pub id: String,
@@ -140,6 +145,7 @@ pub struct AutomationActivity {
 }
 /// StepRun returned by MailerLite.
 #[derive(Debug, Clone, serde::Deserialize)]
+#[non_exhaustive]
 pub struct StepRun {
     /// Id.
     pub id: String,
@@ -153,6 +159,7 @@ pub struct StepRun {
 
 /// Shared re-entry settings returned with automation trigger data.
 #[derive(Debug, Clone, serde::Deserialize)]
+#[non_exhaustive]
 pub struct RepeatableSettings {
     /// Re-entry mode, retaining future server values.
     pub mode: String,

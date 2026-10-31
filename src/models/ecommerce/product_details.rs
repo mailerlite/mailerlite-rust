@@ -30,6 +30,7 @@ impl<'de> Deserialize<'de> for ProductAssetType {
 
 /// A digital product asset returned by MailerLite.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct ProductAsset {
     /// Asset identifier, preserved as text even when encoded as an integer.
     #[serde(deserialize_with = "wire::id")]
@@ -48,6 +49,7 @@ pub struct ProductAsset {
 
 /// Aggregate completed orders for a product in an internal-shop listing.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct ProductOrderStats {
     /// Number of completed orders; the backend also encodes this as digit text.
     #[serde(deserialize_with = "wire::unsigned")]
@@ -63,6 +65,7 @@ pub struct ProductOrderStats {
 ///
 /// The backend embeds its model here, rather than the `/timezones` resource.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct ProductTimezone {
     /// Timezone identifier.
     #[serde(deserialize_with = "wire::id")]
@@ -82,6 +85,7 @@ pub struct ProductTimezone {
 /// fields fail decoding. Request settings live in
 /// [`crate::resources::ecommerce::params::ProductSettings`].
 #[derive(Debug, Clone, Default, Deserialize)]
+#[non_exhaustive]
 pub struct ProductSettings {
     /// Action applied to the subscriber after purchase.
     pub action: Option<String>,

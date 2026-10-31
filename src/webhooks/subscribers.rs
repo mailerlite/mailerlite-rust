@@ -8,6 +8,7 @@ use std::{collections::BTreeMap, fmt};
 
 /// Subscriber fields flattened beside the `event` discriminator.
 #[derive(Clone, Deserialize)]
+#[non_exhaustive]
 pub struct SubscriberEvent {
     /// Subscriber affected by this event.
     #[serde(flatten)]
@@ -23,6 +24,7 @@ impl fmt::Debug for SubscriberEvent {
 
 /// Deletion event with a nested subscriber resource.
 #[derive(Clone, Deserialize)]
+#[non_exhaustive]
 pub struct DeletedSubscriberEvent {
     /// Subscriber deleted or scheduled for forgetting.
     pub subscriber: WebhookSubscriber,
@@ -37,6 +39,7 @@ impl fmt::Debug for DeletedSubscriberEvent {
 
 /// Subscriber representation delivered in webhook payloads.
 #[derive(Clone, Deserialize)]
+#[non_exhaustive]
 pub struct WebhookSubscriber {
     /// Stable subscriber identifier, retaining leading zeroes.
     pub id: SubscriberId,
@@ -87,6 +90,7 @@ impl fmt::Debug for WebhookSubscriber {
 
 /// Optional subscriber location included by the backend webhook resource.
 #[derive(Clone, Deserialize)]
+#[non_exhaustive]
 pub struct WebhookLocation {
     /// Location identifier.
     pub id: String,

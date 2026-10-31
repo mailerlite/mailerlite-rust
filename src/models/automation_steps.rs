@@ -15,6 +15,7 @@ pub enum StepValue {
 
 /// Subscriber counts for an automation step.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct StepRunCounts {
     /// Step identifier.
     pub step_id: String,
@@ -26,6 +27,7 @@ pub struct StepRunCounts {
 
 /// Traffic allocation to one A/B path.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct SplitPercentage {
     /// Human-readable label, such as `A`.
     pub label: String,
@@ -37,6 +39,7 @@ pub struct SplitPercentage {
 
 /// Engagement statistics for a single A/B path.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct AbPathStats {
     /// Subscribers allocated to this path.
     pub subscribers: u64,
@@ -56,6 +59,7 @@ pub struct AbPathStats {
 
 /// A/B step results returned by `AbTestStatsResource`.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct AbTestStats {
     /// Step identifier.
     pub step_id: String,
@@ -81,6 +85,7 @@ pub struct AbTestStats {
 
 /// Subscriber identity associated with a step or trigger execution row.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct StepSubscriberIdentity {
     /// Subscriber identifier.
     pub id: String,
@@ -90,6 +95,7 @@ pub struct StepSubscriberIdentity {
 
 /// A subscriber execution returned by `AutomationStepSubscribersResource`.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct StepSubscriber {
     /// Execution row identifier, distinct from the subscriber identifier.
     pub id: String,

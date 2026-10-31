@@ -94,6 +94,7 @@ impl<'de> Deserialize<'de> for WebhookEvent {
 }
 /// A registered webhook. Debug output redacts its signing secret.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct Webhook {
     /// Webhook identifier.
     pub id: WebhookId,

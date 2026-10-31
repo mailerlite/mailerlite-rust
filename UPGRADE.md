@@ -416,6 +416,70 @@ typed setters. Response extensions are explicit and redacted from debug output.
 
 ## Typed response models and incoming webhooks
 
+Server-owned resource, report, activity, webhook-delivery, and enriched response
+configuration structs are `#[non_exhaustive]`. They can gain fields in future
+SDK releases. Read fields directly, or include `..` when destructuring. External
+struct literals (including `..Default::default()`) no longer compile for these
+types. Existing `Default` implementations still work and public fields remain
+writable. Deserialize sanitized JSON when building response fixtures:
+
+```rust
+use mailerlite_rs::models::fields::Field;
+
+fn field_fixture() -> serde_json::Result<Field> {
+    serde_json::from_str(
+        r#"{"id":"123","name":"Company","key":"company","type":"text"}"#,
+    )
+}
+
+fn field_name(field: Field) -> String {
+    let Field { name, .. } = field;
+    name
+}
+```
+
+`SubscriberStatus` and `WebformActivity` now join the existing non-exhaustive
+response enums. Add a fallback arm to matches. `WebformActivity::Form` and
+`WebformActivity::Site` also require `..` in patterns because their fields may
+grow:
+
+```rust
+use mailerlite_rs::models::subscribers::{SubscriberStatus, WebformActivity};
+
+fn status_label(status: &SubscriberStatus) -> &str {
+    match status {
+        SubscriberStatus::Active => "active",
+        SubscriberStatus::Unsubscribed => "unsubscribed",
+        SubscriberStatus::Unconfirmed => "unconfirmed",
+        SubscriberStatus::Bounced => "bounced",
+        SubscriberStatus::Junk => "junk",
+        SubscriberStatus::Unknown(value) => value,
+        _ => "unrecognized SDK status",
+    }
+}
+
+fn form_id(activity: &WebformActivity) -> Option<&str> {
+    match activity {
+        WebformActivity::Form { form_id, .. } => Some(form_id),
+        _ => None,
+    }
+}
+```
+
+This is a Rust source compatibility policy, not relaxed JSON validation.
+`SubscriberStatus::Unknown` still preserves future server strings and rejects
+them in requests. Unknown `webform_type` values still fail decoding. No new
+wire values, fallback variants, or default fields are introduced by the
+attribute.
+
+Request parameters and configuration remain constructible. Finite representations
+such as `Patch`, `FieldValue`, configuration IDs/scalars, weekdays, and
+array-versus-map enums remain exhaustively matchable. Reusable response/page and
+batch envelopes, HTTP/pagination metadata, import receipts, fixed rates/counts,
+and shared request `RelatedObject` values also retain their construction APIs.
+Treat changes to those closed shapes as compatibility changes rather than
+assuming fields or variants can be freely added.
+
 - `Form.double_optin` is `Option<bool>`.
 - `ImportReport` exposes outcome samples/counts and named metadata rather than raw JSON indexing. Sample IDs identify import-log rows.
 - `SubscriberActivity.properties` is `ActivityProperties`; match the known

@@ -262,6 +262,7 @@ impl TriggerConfiguration {
 
 /// Known type-specific trigger response settings.
 #[derive(Debug, Clone, Default, Deserialize)]
+#[non_exhaustive]
 pub struct TriggerProperties {
     /// Resolved segment; an empty array from the backend means no segment.
     #[serde(default, deserialize_with = "empty_segment")]
@@ -393,6 +394,7 @@ fn empty_segment<'de, D: serde::Deserializer<'de>>(
 
 /// One human-readable rule shown for an automatically generated segment.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct SegmentDisplayRule {
     /// Icon name.
     pub icon: String,

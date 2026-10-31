@@ -1,4 +1,15 @@
 //! Typed response models and shared values used by MailerLite resources.
+//!
+//! Server-owned resource, report, activity, and enriched configuration records
+//! are non-exhaustive so future SDK versions can expose additional fields.
+//! Read fields directly or destructure with `..`; deserialize sanitized JSON
+//! to construct response fixtures outside this crate.
+//!
+//! Request configuration, fixed scalar representations, and small reusable
+//! envelopes remain constructible. Examples include [`Patch`],
+//! [`subscribers::FieldValue`], [`imports::ImportReceipt`], and batch results.
+//! Non-exhaustiveness affects Rust construction and matching, not JSON decoding:
+//! unknown server values still follow each model's documented Serde behavior.
 
 pub mod automation_configuration;
 pub mod automation_reports;

@@ -555,6 +555,7 @@ impl StepConfiguration {
 
 /// Field display value in an internal notification action.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct NotificationField {
     /// Field key.
     pub id: String,
@@ -564,6 +565,7 @@ pub struct NotificationField {
 
 /// Known type-specific fields emitted by step resources.
 #[derive(Debug, Clone, Default, Deserialize)]
+#[non_exhaustive]
 pub struct StepProperties {
     /// Backend `type_count` value, when applicable to this step type.
     #[serde(skip_serializing_if = "Option::is_none")]

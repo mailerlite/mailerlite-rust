@@ -22,6 +22,7 @@ pub struct AutomationReportRate {
 
 /// Engagement and deliverability statistics.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct AutomationEmailReport {
     /// Engagement counts and rates.
     pub engagement: AutomationEngagement,
@@ -31,6 +32,7 @@ pub struct AutomationEmailReport {
 
 /// Automation engagement statistics.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct AutomationEngagement {
     /// Sent.
     pub sent: u64,
@@ -60,6 +62,7 @@ pub struct AutomationEngagement {
 
 /// Automation delivery statistics.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct AutomationDeliverability {
     /// Sent.
     pub sent: u64,
@@ -87,6 +90,7 @@ pub struct AutomationDeliverability {
 
 /// Attributed e-commerce totals.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct AutomationEcommerceMetrics {
     /// Number of orders.
     pub orders_count: u64,
@@ -102,6 +106,7 @@ pub struct AutomationEcommerceMetrics {
 
 /// E-commerce performance for one email.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct AutomationEmailEcommerceReport {
     /// Attributed e-commerce totals.
     pub ecommerce: AutomationEcommerceMetrics,
@@ -109,6 +114,7 @@ pub struct AutomationEmailEcommerceReport {
 
 /// E-commerce performance for an automation.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct AutomationEcommerceReport {
     /// Attributed e-commerce totals.
     pub ecommerce: AutomationEcommerceMetrics,
@@ -118,6 +124,7 @@ pub struct AutomationEcommerceReport {
 
 /// Highest-revenue email and its attribution statistics.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct AutomationBestPerformingEmail {
     /// Email identifier.
     pub email_id: String,
@@ -143,6 +150,7 @@ pub struct AutomationBestPerformingEmail {
 
 /// A subscriber-provided unsubscribe reason.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct AutomationUnsubscribeReason {
     /// Reason label.
     pub label: String,
@@ -154,6 +162,7 @@ pub struct AutomationUnsubscribeReason {
 
 /// An order attributed to an automation email.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct AutomationReportOrder {
     /// Customer subscriber identity.
     pub subscriber: ReportSubscriber,

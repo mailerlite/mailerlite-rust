@@ -6,6 +6,7 @@ use serde::Deserialize;
 
 /// Cart returned by the e-commerce API.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct Cart {
     /// Id.
     #[serde(deserialize_with = "wire::id")]
@@ -27,6 +28,7 @@ pub struct Cart {
 
 /// CartItem returned by the e-commerce API.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct CartItem {
     /// Id.
     #[serde(deserialize_with = "wire::id")]

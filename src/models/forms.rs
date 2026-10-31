@@ -2,6 +2,7 @@
 use crate::models::FormId;
 /// Form returned by MailerLite.
 #[derive(Debug, Clone, serde::Deserialize)]
+#[non_exhaustive]
 pub struct Form {
     /// Id.
     pub id: FormId,

@@ -3,6 +3,7 @@ use serde::Deserialize;
 
 /// A trigger with its type-specific configuration preserved.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct Trigger {
     /// String-preserved trigger identifier.
     pub id: String,
@@ -22,6 +23,7 @@ pub struct Trigger {
 
 /// Result of replacing a trigger's configuration.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct UpdatedTrigger {
     /// Refreshed trigger configuration.
     pub trigger: Trigger,
@@ -33,6 +35,7 @@ pub struct UpdatedTrigger {
 
 /// Execution counts for one trigger.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct TriggerRunCounts {
     /// Finished automation executions.
     pub completed_runs: u64,
@@ -42,6 +45,7 @@ pub struct TriggerRunCounts {
 
 /// A trigger identifier together with its execution counts.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct TriggerCounts {
     /// Trigger identifier.
     pub id: String,
@@ -52,6 +56,7 @@ pub struct TriggerCounts {
 
 /// Execution counts for an automation's hidden manual trigger.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct ManualRunCounts {
     /// Active manual executions.
     pub in_progress_runs: u64,
@@ -61,6 +66,7 @@ pub struct ManualRunCounts {
 
 /// Counts for an automation's triggers and optional manual trigger.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct AllTriggerRunCounts {
     /// Visible triggers and their counts.
     pub triggers: Vec<TriggerCounts>,

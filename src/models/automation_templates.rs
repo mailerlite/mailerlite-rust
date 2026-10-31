@@ -3,6 +3,7 @@ use serde::Deserialize;
 
 /// A reusable automation workflow template.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct AutomationTemplate {
     /// Template identifier.
     pub id: String,
@@ -25,6 +26,7 @@ pub struct AutomationTemplate {
 
 /// Reusable workflow stored by the template service.
 #[derive(Debug, Clone, Default, Deserialize)]
+#[non_exhaustive]
 pub struct TemplateWorkflow {
     /// Shared trigger state in the template.
     pub trigger_data: Option<crate::models::automations::TriggerData>,
@@ -37,6 +39,7 @@ pub struct TemplateWorkflow {
 }
 /// A stored template step, distinct from a fully enriched API step response.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct TemplateStep {
     /// Template-local identifier.
     pub id: String,
@@ -54,6 +57,7 @@ pub struct TemplateStep {
 }
 /// Known stored configuration fields plus explicit future extensions.
 #[derive(Debug, Clone, Default, Deserialize)]
+#[non_exhaustive]
 pub struct TemplateStepData {
     /// Internal step/email name.
     pub name: Option<String>,

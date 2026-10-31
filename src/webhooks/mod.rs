@@ -5,6 +5,10 @@
 //! `verify_signature` before deserializing them. Deserialization alone does not
 //! authenticate a delivery. Unknown event names remain explicitly inspectable;
 //! malformed payloads for known events return a decoding error.
+//!
+//! Delivery records are non-exhaustive: use `..` in struct patterns and
+//! deserialize JSON to create fixtures. The reusable [`WebhookBatch`] envelope
+//! remains constructible with a struct literal.
 
 mod automations;
 mod campaigns;

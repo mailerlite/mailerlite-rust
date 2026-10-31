@@ -9,6 +9,7 @@ use std::{collections::BTreeMap, fmt};
 
 /// A subscriber activity entry with kind-specific properties.
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct SubscriberActivity {
     /// Activity identifier, retained exactly as supplied.
     pub id: String,
@@ -187,6 +188,7 @@ impl fmt::Debug for UnknownActivityProperties {
 
 /// Context for a campaign send, open, or click.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct CampaignEmailActivity {
     /// Campaign identifier.
     pub campaign_id: String,
@@ -204,6 +206,7 @@ pub struct CampaignEmailActivity {
 
 /// Context for an automation email send, open, or click.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct AutomationEmailActivity {
     /// Automation identifier.
     pub automation_id: String,
@@ -223,6 +226,7 @@ pub struct AutomationEmailActivity {
 
 /// Group involved in an addition/removal activity.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct GroupActivity {
     /// Group identifier.
     pub group_id: String,
@@ -232,6 +236,7 @@ pub struct GroupActivity {
 
 /// Origin and destination of a group move.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct MovedGroupActivity {
     /// Origin group identifier.
     pub from_group_id: String,
@@ -245,6 +250,7 @@ pub struct MovedGroupActivity {
 
 /// Subscriber import that added the subscriber.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct ImportActivity {
     /// Import identifier.
     pub import_id: String,
@@ -252,6 +258,7 @@ pub struct ImportActivity {
 
 /// Ecommerce import source.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct EcommerceImportActivity {
     /// Shop identifier.
     pub ecommerce_shop_id: String,
@@ -259,6 +266,7 @@ pub struct EcommerceImportActivity {
 
 /// Email address before and after a change.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct EmailChangeActivity {
     /// Previous email address.
     pub old: String,
@@ -268,6 +276,7 @@ pub struct EmailChangeActivity {
 
 /// Old and new scalar values of a subscriber custom field.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct FieldChange {
     /// Previous field value, including explicit null.
     pub old: FieldValue,
@@ -277,6 +286,7 @@ pub struct FieldChange {
 
 /// Context of a one-to-one email.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct OneToOneEmailActivity {
     /// Email identifier.
     pub email_id: String,
@@ -286,6 +296,7 @@ pub struct OneToOneEmailActivity {
 
 /// Forwarding recipient and original message.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct ForwardEmailActivity {
     /// Recipient of the forwarded message.
     pub forward_email: ForwardRecipient,
@@ -295,6 +306,7 @@ pub struct ForwardEmailActivity {
 
 /// Recipient of a forwarded message.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct ForwardRecipient {
     /// Recipient name, when supplied.
     pub to_name: Option<String>,
@@ -304,6 +316,7 @@ pub struct ForwardRecipient {
 
 /// Original message referenced by a forwarding activity.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct ForwardedEmail {
     /// Email subject.
     pub subject: Option<String>,
@@ -327,6 +340,7 @@ fn nested_identifier<'de, D: Deserializer<'de>>(d: D) -> Result<String, D::Error
 
 /// Bounce or spam-complaint context.
 #[derive(Clone, Deserialize)]
+#[non_exhaustive]
 pub struct DeliveryIssueActivity {
     /// Email subject.
     pub subject: Option<String>,
@@ -349,6 +363,7 @@ impl fmt::Debug for DeliveryIssueActivity {
 
 /// Survey questions and the subscriber's answers.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct SurveyActivity {
     /// Survey identifier.
     pub survey_id: String,
@@ -360,6 +375,7 @@ pub struct SurveyActivity {
 
 /// A question from a survey activity snapshot.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct ActivitySurveyQuestion {
     /// Question identifier.
     pub id: String,
@@ -369,6 +385,7 @@ pub struct ActivitySurveyQuestion {
 
 /// An answer from a survey activity snapshot.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct ActivitySurveyAnswer {
     /// Answer identifier.
     pub id: String,
@@ -380,6 +397,7 @@ pub struct ActivitySurveyAnswer {
 
 /// A prize issued by a form.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct FormPrizeActivity {
     /// Form identifier.
     pub form_id: String,
@@ -393,6 +411,7 @@ pub struct FormPrizeActivity {
 
 /// Internal-shop product associated with a purchase.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct ProductPurchaseActivity {
     /// Product identifier; the resource casts missing product IDs to empty text.
     pub product_id: String,
@@ -404,6 +423,7 @@ pub struct ProductPurchaseActivity {
 
 /// Marketing preference values before and after an update.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct MarketingPreferencesActivity {
     /// Previous preference value.
     pub from: FieldValue,
@@ -412,10 +432,32 @@ pub struct MarketingPreferencesActivity {
 }
 
 /// Form or site through which confirmation or activation occurred.
+///
+/// Match with a wildcard for future SDK variants and `..` inside known variants
+/// for future fields. Unknown `webform_type` values still fail decoding; this
+/// attribute does not add an unknown-value fallback to the wire schema.
+///
+/// # Examples
+///
+/// Known variant patterns must allow additional fields:
+///
+/// ```compile_fail,E0638
+/// use mailerlite_rs::models::subscribers::WebformActivity;
+///
+/// fn form_id(activity: &WebformActivity) -> Option<&str> {
+///     match activity {
+///         WebformActivity::Form { form_id, form_name: _ } => Some(form_id),
+///         // Use `WebformActivity::Form { form_id, .. }` instead.
+///         _ => None,
+///     }
+/// }
+/// ```
 #[derive(Debug, Clone, Deserialize)]
 #[serde(tag = "webform_type", rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum WebformActivity {
     /// A form confirmed the subscription.
+    #[non_exhaustive]
     Form {
         /// Form identifier.
         form_id: String,
@@ -423,6 +465,7 @@ pub enum WebformActivity {
         form_name: String,
     },
     /// A site confirmed the subscription.
+    #[non_exhaustive]
     Site {
         /// Site identifier.
         site_id: String,

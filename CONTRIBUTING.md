@@ -154,6 +154,30 @@ operations. Known discriminators should select typed variants. Malformed known
 payloads must fail decoding; future variants and genuinely open fields need
 explicit extension boundaries.
 
+Treat server-owned resource, report, activity, webhook-delivery, and enriched
+response configuration structs as extensible records: use `#[non_exhaustive]`
+so new fields do not require downstream struct literals to change. Evolving
+response enums need the same annotation; apply it to struct-like response
+variants when their fields can grow. Retain explicit unknown-value variants
+where supported by the wire contract. The attribute alone does not make Serde
+accept unknown discriminators or malformed fields.
+
+Keep request parameter/configuration models and finite representation enums
+constructible and exhaustively matchable. These include `Patch`, `FieldValue`,
+configuration IDs/scalars, weekdays, and array-versus-map representations.
+Also retain construction of reusable envelopes (`Response`, pages, batch
+results), metadata, import receipts, and fixed scalar wrappers such as rates
+and counts. Shared `RelatedObject` remains constructible because request
+conditions use it. Evolve those closed contracts deliberately rather than
+adding fields or variants as routine compatible changes.
+
+For non-exhaustive response fixtures, deserialize small sanitized JSON values;
+read fields directly or destructure with `..`. Check construction and matching
+contracts from a downstream crate or rustdoc: unit tests inside the defining
+crate do not enforce `non_exhaustive` restrictions. Adding the attribute to an
+already published type is itself a source-breaking change; this policy is part
+of the 2.0 redesign and must not be applied casually in a minor release.
+
 When adding a dependency, explain its purpose, feature impact, and Rust 1.88
 compatibility in the pull request. Keep optional functionality optional. Do not
 raise the MSRV or change default features incidentally.

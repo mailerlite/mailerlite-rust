@@ -2,6 +2,7 @@
 use crate::models::CampaignId;
 /// Campaign returned by MailerLite.
 #[derive(Debug, Clone, serde::Deserialize)]
+#[non_exhaustive]
 pub struct Campaign {
     /// Id.
     pub id: CampaignId,
@@ -39,6 +40,7 @@ pub struct Campaign {
 }
 /// CampaignSettings returned by MailerLite.
 #[derive(Debug, Clone, serde::Deserialize)]
+#[non_exhaustive]
 pub struct CampaignSettings {
     /// Track opens.
     pub track_opens: Option<bool>,
@@ -49,6 +51,7 @@ pub struct CampaignSettings {
 }
 /// CampaignEmail returned by MailerLite.
 #[derive(Debug, Clone, serde::Deserialize)]
+#[non_exhaustive]
 pub struct CampaignEmail {
     /// Id.
     pub id: String,
@@ -79,6 +82,7 @@ pub struct Rate {
 }
 /// EmailStats returned by MailerLite.
 #[derive(Debug, Clone, serde::Deserialize)]
+#[non_exhaustive]
 pub struct EmailStats {
     /// Sent.
     pub sent: Option<u64>,
@@ -115,6 +119,7 @@ pub struct EmailStats {
 }
 /// CampaignActivity returned by MailerLite.
 #[derive(Debug, Clone, serde::Deserialize)]
+#[non_exhaustive]
 pub struct CampaignActivity {
     /// Id.
     pub id: String,

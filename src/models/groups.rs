@@ -11,6 +11,7 @@ pub struct Rate {
 }
 /// A subscriber group.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct Group {
     /// Group identifier.
     pub id: GroupId,

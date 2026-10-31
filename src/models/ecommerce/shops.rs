@@ -5,6 +5,7 @@ use serde::Deserialize;
 
 /// Shop returned by the e-commerce API.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct Shop {
     /// Id.
     #[serde(deserialize_with = "wire::id")]

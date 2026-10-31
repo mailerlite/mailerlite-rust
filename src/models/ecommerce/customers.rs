@@ -6,6 +6,7 @@ use serde::Deserialize;
 
 /// Customer returned by the e-commerce API.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct Customer {
     /// Id.
     #[serde(deserialize_with = "wire::id")]
@@ -27,6 +28,7 @@ pub struct Customer {
 
 /// AcceptedCustomer returned by the e-commerce API.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct AcceptedCustomer {
     /// Email.
     pub email: String,

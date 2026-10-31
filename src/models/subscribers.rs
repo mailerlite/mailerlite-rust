@@ -6,7 +6,32 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::BTreeMap;
 
 /// A subscriber status, including future values returned by the server.
+///
+/// Include a wildcard when matching: new SDK variants can be added independently
+/// of [`Self::Unknown`], which retains unrecognized values received from the API.
+/// Known variants can still be constructed and submitted in requests.
+///
+/// # Examples
+///
+/// Exhaustively listing today's variants is rejected outside this crate:
+///
+/// ```compile_fail,E0004
+/// use mailerlite_rs::models::subscribers::SubscriberStatus;
+///
+/// fn label(status: &SubscriberStatus) -> &str {
+///     match status {
+///         SubscriberStatus::Active => "active",
+///         SubscriberStatus::Unsubscribed => "unsubscribed",
+///         SubscriberStatus::Unconfirmed => "unconfirmed",
+///         SubscriberStatus::Bounced => "bounced",
+///         SubscriberStatus::Junk => "junk",
+///         SubscriberStatus::Unknown(value) => value,
+///         // Add a `_` arm to handle future SDK variants.
+///     }
+/// }
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum SubscriberStatus {
     /// Receives campaigns.
     Active,
@@ -99,6 +124,7 @@ impl From<u64> for FieldValue {
 }
 /// Subscriber returned by MailerLite.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct Subscriber {
     /// Stable subscriber identifier.
     pub id: SubscriberId,

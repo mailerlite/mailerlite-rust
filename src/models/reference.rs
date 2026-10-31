@@ -1,6 +1,7 @@
 //! Reference data for scheduling and localization.
 /// Timezone returned by MailerLite.
 #[derive(Debug, Clone, serde::Deserialize)]
+#[non_exhaustive]
 pub struct Timezone {
     /// Id.
     pub id: String,
@@ -15,6 +16,7 @@ pub struct Timezone {
 }
 /// CampaignLanguage returned by MailerLite.
 #[derive(Debug, Clone, serde::Deserialize)]
+#[non_exhaustive]
 pub struct CampaignLanguage {
     /// Id.
     pub id: String,

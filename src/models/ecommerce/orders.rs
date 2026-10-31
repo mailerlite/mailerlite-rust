@@ -6,6 +6,7 @@ use serde::Deserialize;
 
 /// Order returned by the e-commerce API.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct Order {
     /// Id.
     #[serde(deserialize_with = "wire::id")]
@@ -35,6 +36,7 @@ pub struct Order {
 
 /// Attribution returned by the e-commerce API.
 #[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
 pub struct Attribution {
     /// Email id.
     pub email_id: String,
