@@ -3,12 +3,6 @@ use crate::{Error, MailerLite, Result, http::retry::RetryPolicy, models::SecretS
 use reqwest::{Url, header::HeaderValue};
 use std::{fmt, time::Duration};
 
-/// Release reference date available for explicit API version pinning.
-///
-/// Despite its historical name, this date is not applied by default:
-/// [`ApiVersion::Latest`] is the default version policy.
-pub const DEFAULT_API_VERSION: &str = "2026-10-30";
-
 /// Whether requests use a pinned date or the server's latest version.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub enum ApiVersion {

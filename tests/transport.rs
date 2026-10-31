@@ -5,8 +5,7 @@
 )]
 mod support;
 use mailerlite_rs::{
-    ApiVersion, DEFAULT_API_VERSION, Error, MailerLite, RetryPolicy,
-    resources::subscribers::UpsertSubscriber,
+    ApiVersion, Error, MailerLite, RetryPolicy, resources::subscribers::UpsertSubscriber,
 };
 use serde_json::json;
 use std::{
@@ -28,7 +27,7 @@ async fn injected_http_client_preserves_base_prefix_auth_version_and_encoded_ids
     let http = MailerLite::http_client_builder().build().unwrap();
     let builder = MailerLite::builder("private-test-token")
         .base_url(format!("{}/proxy/api/", server.uri()))
-        .api_version(ApiVersion::pinned(DEFAULT_API_VERSION).unwrap())
+        .api_version(ApiVersion::pinned("2026-10-30").unwrap())
         .http_client(http)
         .rate_limit_intervals(Duration::ZERO, Duration::ZERO);
     assert!(!format!("{builder:?}").contains("private-test-token"));
@@ -41,7 +40,7 @@ async fn injected_http_client_preserves_base_prefix_auth_version_and_encoded_ids
         .and(header("authorization", "Bearer private-test-token"))
         .and(header("accept", "application/json"))
         .and(header("content-type", "application/json"))
-        .and(header("x-version", DEFAULT_API_VERSION))
+        .and(header("x-version", "2026-10-30"))
         .and(header(
             "user-agent",
             concat!("mailerlite-rs/", env!("CARGO_PKG_VERSION")),

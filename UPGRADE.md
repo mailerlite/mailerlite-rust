@@ -79,7 +79,7 @@ connections, pacing, and server cooldowns.
 Use the builder for timeouts, API version pinning, or an injected HTTP client:
 
 ```rust
-use mailerlite_rs::{ApiVersion, DEFAULT_API_VERSION, MailerLite};
+use mailerlite_rs::{ApiVersion, MailerLite};
 use std::time::Duration;
 
 fn configured_client(token: String) -> mailerlite_rs::Result<MailerLite> {
@@ -90,7 +90,7 @@ fn configured_client(token: String) -> mailerlite_rs::Result<MailerLite> {
     MailerLite::builder(token)
         .http_client(http)
         // Optional: pin a date instead of using the latest version.
-        .api_version(ApiVersion::pinned(DEFAULT_API_VERSION)?)
+        .api_version(ApiVersion::pinned("2026-10-30")?)
         .request_timeout(Duration::from_secs(30))
         .operation_timeout(Duration::from_secs(60))
         .build()
@@ -119,8 +119,7 @@ dispatch does not imply that a write was rolled back.
 
 Like v1, v2 omits `X-Version` by default. `ApiVersion::Latest` selects the server's
 latest API behavior. To opt into a dated version, use `ApiVersion::pinned(...)`.
-`DEFAULT_API_VERSION` is a release reference date for explicit pinning, not the
-default policy; the configuration example above deliberately opts into it.
+Choose the date explicitly, as in the configuration example above.
 
 Automatic retries remain **disabled by default**. Opt in with
 `.retry_policy(RetryPolicy::safe_reads().max_retries(2))`, importing

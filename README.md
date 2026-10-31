@@ -217,8 +217,6 @@ reqwest client. The current SDK uses reqwest 0.13.
 
 To pin API behavior, import `mailerlite_rs::ApiVersion` and add
 `.api_version(ApiVersion::pinned("2026-10-30")?)` to the builder.
-`DEFAULT_API_VERSION` is available as a release reference date for explicit
-pinning; it is not applied automatically.
 
 ### Retries and rate limits
 
