@@ -62,8 +62,11 @@ See the [README](../README.md) for configuration, pagination, and webhook
 verification. Resource rustdoc describes supported operations and their limitations.
 
 The `configuration` example builds an injected HTTP client with the SDK's
-redirect and retry defaults. It requires `MAILERLITE_API_TOKEN` and
-`MAILERLITE_API_VERSION`, your chosen `YYYY-MM-DD` date for explicit pinning.
+redirect and retry defaults. It requires `MAILERLITE_API_TOKEN` and uses
+`ApiVersion::Latest` by default. Optionally set `MAILERLITE_API_VERSION` to your
+chosen `YYYY-MM-DD` date for explicit pinning. Empty or whitespace-only values
+also use `Latest`. Surrounding whitespace is trimmed before pinning; other
+invalid supplied values are errors.
 Choose that date using MailerLite's [versioning guidance](https://developers.mailerlite.com/getting-started#versioning).
 
 The `group_import` example polls for up to five minutes. A timeout stops waiting,

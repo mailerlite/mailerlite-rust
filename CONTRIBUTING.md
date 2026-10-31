@@ -146,7 +146,13 @@ depends on information that would be lost in the wire representation.
 Document collection setters that merge entries instead. Preserve unrelated
 entries, including explicit nulls, and define how overlapping keys behave.
 For example, booking availability merges weekdays with the last call winning
-for each day. Test both call orders, repeated keys, and empty input.
+for each typed `BookingWeekday` key, and provides an explicit whole-map replacement
+method. Prefer enum keys for closed sets of request values. Test both call
+orders, wire names, repeated keys, replacement, and empty input. Distinguish
+changes to a request builder from guarantees about persisted server state.
+An empty merge must preserve omission on a fresh builder as well as existing
+entries; emitting an empty object can change server state. Test that separately
+from an explicit empty replacement.
 
 Mark lazy request-builder types `#[must_use]` with a message directing callers
 to `.send().await`, and client configuration builders with a message directing

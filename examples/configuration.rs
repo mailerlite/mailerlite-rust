@@ -1,13 +1,20 @@
 //! Configure and inject a reusable HTTP client.
 //!
-//! Requires `MAILERLITE_API_TOKEN` and `MAILERLITE_API_VERSION` (your chosen `YYYY-MM-DD` date).
+//! Requires `MAILERLITE_API_TOKEN`. Uses `ApiVersion::Latest` unless the optional
+//! `MAILERLITE_API_VERSION` is set to your chosen `YYYY-MM-DD` date. Empty or
+//! whitespace-only values also use `Latest`. Surrounding whitespace is trimmed.
 //! Makes no API request. MailerLite recommends the date when you implement the integration:
 //! <https://developers.mailerlite.com/getting-started#versioning>.
 use mailerlite_rs::{ApiVersion, MailerLite, RetryPolicy};
 use std::time::Duration;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let version_date = std::env::var("MAILERLITE_API_VERSION")?;
+    let api_version = match std::env::var("MAILERLITE_API_VERSION") {
+        Ok(date) if date.trim().is_empty() => ApiVersion::Latest,
+        Ok(date) => ApiVersion::pinned(date.trim())?,
+        Err(std::env::VarError::NotPresent) => ApiVersion::Latest,
+        Err(error) => return Err(error.into()),
+    };
 
     let http = MailerLite::http_client_builder()
         .connect_timeout(Duration::from_secs(5))
@@ -15,8 +22,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mailerlite = MailerLite::builder(std::env::var("MAILERLITE_API_TOKEN")?)
         .http_client(http)
-        // Optional: pin your chosen date instead of using the latest version.
-        .api_version(ApiVersion::pinned(version_date)?)
+        .api_version(api_version)
         .request_timeout(Duration::from_secs(30))
         .operation_timeout(Duration::from_secs(60))
         // Optional: enable retries for safe reads (disabled by default).

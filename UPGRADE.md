@@ -527,10 +527,6 @@ assuming fields or variants can be freely added.
 - `EcommerceStats.conversion_rate` is `Option<String>` because shop and subscriber
   reports may omit it. Use `.as_deref()` to inspect a returned rate; absence is
   distinct from a reported zero rate.
-- `models::common::Rate` pairs a fractional `float` (`0.25` means 25%) with the
-  server's formatted percentage `string`. `models::campaigns::Rate` and
-  `models::groups::Rate` re-export this same type, so both import paths remain
-  available. Automation report rates retain their string-only representation.
 - `ImportReport` exposes outcome samples/counts and named metadata rather than raw JSON indexing. Sample IDs identify import-log rows.
 - `SubscriberActivity.properties` is `ActivityProperties`; match the known
   variants, or explicitly inspect an unknown future payload. Provider-specific
@@ -539,9 +535,6 @@ assuming fields or variants can be freely added.
   under `models::ecommerce`. Request settings remain separate under
   `resources::ecommerce::params`. JSON URL assets use `SaveProductAsset::url`;
   uploading file bytes requires a separate multipart contract.
-  `ProductSettings::custom_availability_days` merges the supplied weekdays into
-  the request builder, preserving other days set with `unavailable_day`. For
-  overlapping days, the last call wins; an empty map preserves existing entries.
 - Step and trigger response properties, shared trigger state, and template
   workflows expose concrete fields. Stored configuration identifiers can
   preserve either the original integer or string representation.

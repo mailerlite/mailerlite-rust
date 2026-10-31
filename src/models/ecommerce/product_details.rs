@@ -5,6 +5,10 @@ use serde::{Deserialize, Deserializer};
 use std::collections::BTreeMap;
 
 /// Weekday names mapped to start/end times, or null for unavailable days.
+///
+/// Keys preserve the server's spelling. To reuse this schedule in a request,
+/// parse them as [`crate::resources::ecommerce::params::BookingWeekday`]; its
+/// example preserves both time ranges and unavailable-day nulls.
 pub type BookingAvailability = BTreeMap<String, Option<[String; 2]>>;
 
 /// Kind of downloadable product asset.
