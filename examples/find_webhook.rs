@@ -1,14 +1,14 @@
-use mailerlite_rs::{response::Response, MailerLite};
+//! Fetch a webhook. Requires MAILERLITE_API_TOKEN and MAILERLITE_WEBHOOK_ID.
+use mailerlite_rs::MailerLite;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let id = std::env::var("MAILERLITE_WEBHOOK_ID")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let response = mailerlite.webhooks().get(id).await?;
 
-    let id: String = String::from("Your Webhook ID");
+    println!("{}: {}", response.data.id, response.data.url);
 
-    let response: Response = mailerlite.webhook().find(id).await;
-
-    println!("{:#?}", response);
+    Ok(())
 }

@@ -1,14 +1,17 @@
-use mailerlite_rs::{response::Response, MailerLite};
+//! Copy an automation.
+//! The copy starts inactive; poll it until building_in_progress clears before editing.
+//!
+//! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_AUTOMATION_ID`.
+use mailerlite_rs::MailerLite;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let id = std::env::var("MAILERLITE_AUTOMATION_ID")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let response = mailerlite.automations().copy(id).await?;
 
-    let id: String = String::from("Your Automation ID");
+    println!("Automation {}: {}", response.data.id, response.data.name);
 
-    let response: Response = mailerlite.automation().copy(id).await;
-
-    println!("{:#?}", response);
+    Ok(())
 }

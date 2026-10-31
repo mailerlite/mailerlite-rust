@@ -1,19 +1,24 @@
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
+//! Create a regular campaign draft for a recipient group; this does not send it.
+//!
+//! Required environment variables: `MAILERLITE_API_TOKEN`, `MAILERLITE_SENDER_EMAIL`, `MAILERLITE_SENDER_NAME`, `MAILERLITE_GROUP_ID`.
+use mailerlite_rs::{
+    MailerLite,
+    resources::campaigns::{CreateCampaign, Email},
+};
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let sender = std::env::var("MAILERLITE_SENDER_EMAIL")?;
+    let sender_name = std::env::var("MAILERLITE_SENDER_NAME")?;
+    let group = std::env::var("MAILERLITE_GROUP_ID")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let email = Email::new("Monthly newsletter", sender_name, sender);
+    let params = CreateCampaign::new("Monthly newsletter", email).groups([group]);
 
-    let data: Data = Data::new()
-        .add("name", "Regular Campaign")
-        .add("type", "regular")
-        .add("emails[0][subject]", "Test Subject")
-        .add("emails[0][from_name]", "John Doe")
-        .add("emails[0][from]", "john@gmail.com");
+    let response = mailerlite.campaigns().create(params).await?;
 
-    let response: Response = mailerlite.campaign().create(data.clone()).await;
+    println!("Draft {}: {}", response.data.id, response.data.name);
 
-    println!("{:#?}", response);
+    Ok(())
 }

@@ -1,22 +1,22 @@
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
+//! Enroll subscribers; this can send email.
+//!
+//! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_AUTOMATION_ID`, `MAILERLITE_SUBSCRIBER_EMAIL`, `MAILERLITE_GROUP_ID`, `MAILERLITE_STEP_ID`.
+use mailerlite_rs::MailerLite;
+use mailerlite_rs::resources::automation_actions::AddAutomationSubscribers;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let id = std::env::var("MAILERLITE_AUTOMATION_ID")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let params = AddAutomationSubscribers::new()
+        .email(std::env::var("MAILERLITE_SUBSCRIBER_EMAIL")?)
+        .group(std::env::var("MAILERLITE_GROUP_ID")?)
+        .step_id(std::env::var("MAILERLITE_STEP_ID")?);
 
-    let id: String = String::from("Your Automation ID");
+    let response = mailerlite.automations().add_subscribers(id, params).await?;
 
-    let data: Data = Data::new()
-        .add("emails[0]", "dummy@example.com")
-        .add("groups[0]", "Your Group ID")
-        .add("step_id", "Your Step ID");
+    println!("HTTP {}", response.metadata.status);
 
-    let response: Response = mailerlite
-        .automation()
-        .add_subscribers(id, data.clone())
-        .await;
-
-    println!("{:#?}", response);
+    Ok(())
 }

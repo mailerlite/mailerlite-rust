@@ -1,21 +1,24 @@
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+//! Read automation email monthly totals.
+//!
+//! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_AUTOMATION_ID`, `MAILERLITE_START_DATE`, `MAILERLITE_END_DATE`.
+use mailerlite_rs::MailerLite;
+use mailerlite_rs::resources::automation_actions::AutomationReportQuery;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let id = std::env::var("MAILERLITE_AUTOMATION_ID")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let params = AutomationReportQuery::new()
+        .start_date(std::env::var("MAILERLITE_START_DATE")?)
+        .end_date(std::env::var("MAILERLITE_END_DATE")?);
 
-    let id: String = String::from("Your Automation ID");
+    let response = mailerlite.automations().email_stats(id, params).await?;
 
-    let parameter: Parameter = Parameter::new()
-        .add("start_date", "2026-01-01")
-        .add("end_date", "2026-01-31");
+    println!(
+        "Sent: {}; open rate: {}",
+        response.data.engagement.sent, response.data.engagement.open_rate.string
+    );
 
-    let response: Response = mailerlite
-        .automation()
-        .email_stats(id, parameter.clone())
-        .await;
-
-    println!("{:#?}", response);
+    Ok(())
 }

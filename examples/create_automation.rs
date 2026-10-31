@@ -1,14 +1,22 @@
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
+//! Create a disabled automation draft.
+//!
+//! Required environment variables: `MAILERLITE_API_TOKEN`, `MAILERLITE_AUTOMATION_NAME`.
+use mailerlite_rs::{MailerLite, resources::automations::CreateAutomation};
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let name = std::env::var("MAILERLITE_AUTOMATION_NAME")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let response = mailerlite
+        .automations()
+        .create(CreateAutomation::new(name))
+        .await?;
 
-    let data: Data = Data::new().add("name", "Dummy Automation");
+    println!(
+        "Draft automation {}: {}",
+        response.data.id, response.data.name
+    );
 
-    let response: Response = mailerlite.automation().create(data.clone()).await;
-
-    println!("{:#?}", response);
+    Ok(())
 }

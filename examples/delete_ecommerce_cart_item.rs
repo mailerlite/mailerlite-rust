@@ -1,21 +1,24 @@
-use mailerlite_rs::{response::Response, MailerLite};
+//! Delete an e-commerce cart item and display the returned ID.
+//!
+//! Required environment: `MAILERLITE_API_TOKEN`, `MAILERLITE_SHOP_ID`, `MAILERLITE_CART_ID`, `MAILERLITE_CART_ITEM_ID`.
+use mailerlite_rs::MailerLite;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let shop_id = std::env::var("MAILERLITE_SHOP_ID")?;
+    let cart_id = std::env::var("MAILERLITE_CART_ID")?;
+    let cart_item_id = std::env::var("MAILERLITE_CART_ITEM_ID")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let response = mailerlite
+        .ecommerce()
+        .shop(shop_id)
+        .carts()
+        .items(cart_id)
+        .delete(cart_item_id)
+        .await?;
 
-    let shop_id: String = String::from("Your Shop ID");
+    println!("{}", response.data.id);
 
-    let cart_id: String = String::from("Your Cart ID");
-
-    let item_id: String = String::from("Your Item ID");
-
-    let response: Response = mailerlite
-        .ecommerce_cart_item()
-        .delete(shop_id, cart_id, item_id)
-        .await;
-
-    println!("{:#?}", response);
+    Ok(())
 }

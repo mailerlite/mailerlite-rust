@@ -1,16 +1,21 @@
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
+//! Schedule an existing campaign draft for a future date.
+//!
+//! Required environment variables: `MAILERLITE_API_TOKEN`, `MAILERLITE_CAMPAIGN_ID`,
+//! and `MAILERLITE_SEND_DATE` (YYYY-MM-DD, in the future).
+use mailerlite_rs::{MailerLite, resources::campaigns::ScheduleCampaign};
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let campaign = std::env::var("MAILERLITE_CAMPAIGN_ID")?;
+    let date = std::env::var("MAILERLITE_SEND_DATE")?; // YYYY-MM-DD, in the future.
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let result = mailerlite
+        .campaigns()
+        .schedule(campaign, ScheduleCampaign::scheduled(date, "10", "00"))
+        .await?;
 
-    let id: String = String::from("Your Campaign ID");
+    println!("Campaign {}: {}", result.data.id, result.data.status);
 
-    let data: Data = Data::new().add("delivery", "instant");
-
-    let response: Response = mailerlite.campaign().schedule(id, data.clone()).await;
-
-    println!("{:#?}", response);
+    Ok(())
 }

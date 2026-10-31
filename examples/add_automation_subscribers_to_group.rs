@@ -1,21 +1,28 @@
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
+//! Assign selected automation subscribers to groups.
+//!
+//! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_AUTOMATION_ID`, `MAILERLITE_GROUP_ID`.
+use mailerlite_rs::MailerLite;
+use mailerlite_rs::resources::automation_actions::{
+    AddAutomationSubscribersToGroup, AutomationActivityFilter,
+};
+use mailerlite_rs::resources::automations::ActivityStatus;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let id = std::env::var("MAILERLITE_AUTOMATION_ID")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let params = AddAutomationSubscribersToGroup::new(
+        std::env::var("MAILERLITE_GROUP_ID")?,
+        AutomationActivityFilter::new(ActivityStatus::Active),
+    );
 
-    let id: String = String::from("Your Automation ID");
+    let response = mailerlite
+        .automations()
+        .add_subscribers_to_group(id, params)
+        .await?;
 
-    let data: Data = Data::new()
-        .add("destination_groups[0]", "Your Group ID")
-        .add("filter[status]", "active");
+    println!("HTTP {}", response.metadata.status);
 
-    let response: Response = mailerlite
-        .automation()
-        .add_subscribers_to_group(id, data.clone())
-        .await;
-
-    println!("{:#?}", response);
+    Ok(())
 }

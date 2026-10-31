@@ -1,14 +1,25 @@
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+//! List the first page of draft campaigns.
+//!
+//! Required environment variables: `MAILERLITE_API_TOKEN`.
+use mailerlite_rs::{MailerLite, resources::campaigns::CampaignStatus};
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let response = mailerlite
+        .campaigns()
+        .list()
+        .status(CampaignStatus::Draft)
+        .limit(25)
+        .send()
+        .await?;
 
-    let parameter: Parameter = Parameter::new().add("filter[status]", "sent");
+    println!("Next page: {:?}", response.data.next_page());
 
-    let response: Response = mailerlite.campaign().get(parameter.clone()).await;
+    for campaign in response.data.data {
+        println!("{}: {} ({})", campaign.id, campaign.name, campaign.status);
+    }
 
-    println!("{:#?}", response);
+    Ok(())
 }

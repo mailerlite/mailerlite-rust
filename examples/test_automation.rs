@@ -1,16 +1,20 @@
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
+//! Send every sendable automation email to a verified recipient on an active account.
+//! The server allows 10 requests per hour; success confirms background job acceptance.
+//!
+//! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_AUTOMATION_ID`, `MAILERLITE_SUBSCRIBER_EMAIL`.
+use mailerlite_rs::MailerLite;
+use mailerlite_rs::resources::automation_actions::TestAutomation;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let id = std::env::var("MAILERLITE_AUTOMATION_ID")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let params = TestAutomation::new(std::env::var("MAILERLITE_SUBSCRIBER_EMAIL")?);
 
-    let id: String = String::from("Your Automation ID");
+    let response = mailerlite.automations().test(id, params).await?;
 
-    let data: Data = Data::new().add("email", "dummy@example.com");
+    println!("HTTP {}", response.metadata.status);
 
-    let response: Response = mailerlite.automation().test(id, data.clone()).await;
-
-    println!("{:#?}", response);
+    Ok(())
 }

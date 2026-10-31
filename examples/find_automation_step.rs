@@ -1,19 +1,20 @@
-use mailerlite_rs::{response::Response, MailerLite};
+//! Fetch an automation step.
+//!
+//! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_AUTOMATION_ID`, `MAILERLITE_STEP_ID`.
+use mailerlite_rs::MailerLite;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let automation_id = std::env::var("MAILERLITE_AUTOMATION_ID")?;
+    let step_id = std::env::var("MAILERLITE_STEP_ID")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let response = mailerlite
+        .automation_steps()
+        .get(automation_id, step_id)
+        .await?;
 
-    let automation_id: String = String::from("Your Automation ID");
+    println!("{}: {}", response.data.id, response.data.kind);
 
-    let step_id: String = String::from("Your Step ID");
-
-    let response: Response = mailerlite
-        .automation_step()
-        .find(automation_id, step_id)
-        .await;
-
-    println!("{:#?}", response);
+    Ok(())
 }

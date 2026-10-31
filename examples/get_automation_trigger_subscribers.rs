@@ -1,23 +1,27 @@
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+//! Read subscribers associated with an automation trigger.
+//!
+//! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_AUTOMATION_ID`, `MAILERLITE_TRIGGER_ID`.
+use mailerlite_rs::MailerLite;
+use mailerlite_rs::resources::automation_triggers::TriggerSubscriberStatus;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let automation_id = std::env::var("MAILERLITE_AUTOMATION_ID")?;
+    let trigger_id = std::env::var("MAILERLITE_TRIGGER_ID")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let response = mailerlite
+        .automation_triggers()
+        .subscribers(
+            automation_id,
+            trigger_id,
+            TriggerSubscriberStatus::Completed,
+        )
+        .limit(10)
+        .send()
+        .await?;
 
-    let automation_id: String = String::from("Your Automation ID");
+    println!("HTTP {}", response.metadata.status);
 
-    let trigger_id: String = String::from("Your Trigger ID");
-
-    let parameter: Parameter = Parameter::new()
-        .add("status", "completed")
-        .add("limit", "10");
-
-    let response: Response = mailerlite
-        .automation_trigger()
-        .subscribers(automation_id, trigger_id, parameter.clone())
-        .await;
-
-    println!("{:#?}", response);
+    Ok(())
 }

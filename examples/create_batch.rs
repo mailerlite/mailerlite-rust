@@ -1,17 +1,28 @@
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
+//! Submit a batch and inspect individual results. Requires MAILERLITE_API_TOKEN.
+use mailerlite_rs::{
+    MailerLite,
+    resources::batch::{BatchMethod, BatchRequest},
+};
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let response = mailerlite
+        .batch()
+        .send(vec![
+            BatchRequest::new(BatchMethod::Get, "api/groups?limit=25")?,
+            BatchRequest::new(BatchMethod::Get, "api/fields?limit=25")?,
+        ])
+        .await?;
 
-    let data: Data = Data::new()
-        .add("requests[0][method]", "POST")
-        .add("requests[0][path]", "api/subscribers")
-        .add("requests[0][body][email]", "dummy@example.com");
+    for (index, item) in response.data.responses.iter().enumerate() {
+        println!(
+            "Operation {index}: HTTP {}, success={}",
+            item.code,
+            item.is_success()
+        );
+    }
 
-    let response: Response = mailerlite.batch().create(data.clone()).await;
-
-    println!("{:#?}", response);
+    Ok(())
 }

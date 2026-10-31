@@ -1,21 +1,28 @@
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
+//! Re-enroll selected subscribers.
+//!
+//! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_AUTOMATION_ID`.
+use mailerlite_rs::MailerLite;
+use mailerlite_rs::resources::automation_actions::{
+    AutomationActivityFilter, ReaddAutomationSubscribers, ReaddDestination,
+};
+use mailerlite_rs::resources::automations::ActivityStatus;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let id = std::env::var("MAILERLITE_AUTOMATION_ID")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let params = ReaddAutomationSubscribers::new(
+        ReaddDestination::LastCompletedStep,
+        AutomationActivityFilter::new(ActivityStatus::Completed),
+    );
 
-    let id: String = String::from("Your Automation ID");
+    let response = mailerlite
+        .automations()
+        .readd_subscribers(id, params)
+        .await?;
 
-    let data: Data = Data::new()
-        .add("readd_subscribers_to", "last_completed_step")
-        .add("filter[status]", "completed");
+    println!("HTTP {}", response.metadata.status);
 
-    let response: Response = mailerlite
-        .automation()
-        .readd_subscribers(id, data.clone())
-        .await;
-
-    println!("{:#?}", response);
+    Ok(())
 }

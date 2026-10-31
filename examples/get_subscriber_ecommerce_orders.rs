@@ -1,21 +1,24 @@
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+//! List attributed orders for a subscriber in a shop.
+//!
+//! Required environment: `MAILERLITE_API_TOKEN`, `MAILERLITE_SHOP_ID`, `MAILERLITE_SUBSCRIBER_ID`.
+use mailerlite_rs::MailerLite;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let shop_id = std::env::var("MAILERLITE_SHOP_ID")?;
+    let subscriber_id = std::env::var("MAILERLITE_SUBSCRIBER_ID")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let response = mailerlite
+        .ecommerce()
+        .subscriber_orders(subscriber_id, shop_id)
+        .limit(25)
+        .send()
+        .await?;
 
-    let id: String = String::from("Your Subscriber ID");
+    for order in response.data.data {
+        println!("{}: {}", order.updated_at, order.total);
+    }
 
-    let shop_id: String = String::from("Your Shop ID");
-
-    let parameter: Parameter = Parameter::new().add("page", "1");
-
-    let response: Response = mailerlite
-        .subscriber()
-        .ecommerce_orders(id, shop_id, parameter.clone())
-        .await;
-
-    println!("{:#?}", response);
+    Ok(())
 }

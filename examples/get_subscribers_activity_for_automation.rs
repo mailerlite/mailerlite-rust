@@ -1,19 +1,23 @@
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+//! List completed subscriber executions for an automation.
+//!
+//! Required environment variables: `MAILERLITE_API_TOKEN`, `MAILERLITE_AUTOMATION_ID`.
+use mailerlite_rs::{MailerLite, resources::automations::ActivityStatus};
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let id = std::env::var("MAILERLITE_AUTOMATION_ID")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let response = mailerlite
+        .automations()
+        .activity(id, ActivityStatus::Completed)
+        .limit(10)
+        .send()
+        .await?;
 
-    let id: String = String::from("Your Automation ID");
+    for activity in response.data.data {
+        println!("{}: {} ({:?})", activity.id, activity.status, activity.date);
+    }
 
-    let parameter: Parameter = Parameter::new().add("filter[status]", "completed");
-
-    let response: Response = mailerlite
-        .automation()
-        .subscribers_activity(id, parameter.clone())
-        .await;
-
-    println!("{:#?}", response);
+    Ok(())
 }

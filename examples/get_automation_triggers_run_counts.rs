@@ -1,17 +1,19 @@
-use mailerlite_rs::{response::Response, MailerLite};
+//! Read run counts for all automation triggers.
+//!
+//! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_AUTOMATION_ID`.
+use mailerlite_rs::MailerLite;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let automation_id = std::env::var("MAILERLITE_AUTOMATION_ID")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let automation_id: String = String::from("Your Automation ID");
-
-    let response: Response = mailerlite
-        .automation_trigger()
+    let response = mailerlite
+        .automation_triggers()
         .run_counts(automation_id)
-        .await;
+        .await?;
 
-    println!("{:#?}", response);
+    println!("HTTP {}", response.metadata.status);
+
+    Ok(())
 }

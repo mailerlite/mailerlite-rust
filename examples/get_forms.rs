@@ -1,16 +1,22 @@
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+//! List the first page of embedded forms.
+//!
+//! Required environment variables: `MAILERLITE_API_TOKEN`.
+use mailerlite_rs::{MailerLite, resources::forms::FormType};
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let response = mailerlite
+        .forms()
+        .list(FormType::Embedded)
+        .limit(25)
+        .send()
+        .await?;
 
-    let form_type: String = String::from("Your Form Type");
+    for form in response.data.data {
+        println!("{}: {}", form.id, form.name);
+    }
 
-    let parameter: Parameter = Parameter::new().add("sort", "created_at");
-
-    let response: Response = mailerlite.form().get(form_type, parameter.clone()).await;
-
-    println!("{:#?}", response);
+    Ok(())
 }

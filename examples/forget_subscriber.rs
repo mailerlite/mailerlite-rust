@@ -1,14 +1,17 @@
-use mailerlite_rs::{response::Response, MailerLite};
+//! Schedule a subscriber's data for complete forgetting.
+//!
+//! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_SUBSCRIBER_ID`.
+
+use mailerlite_rs::MailerLite;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let id = std::env::var("MAILERLITE_SUBSCRIBER_ID")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let receipt = mailerlite.subscribers().forget(id).await?;
 
-    let id: String = String::from("Your Subscriber ID");
+    println!("{}", receipt.data.message);
 
-    let response: Response = mailerlite.subscriber().forget(id).await;
-
-    println!("{:#?}", response);
+    Ok(())
 }

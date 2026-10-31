@@ -1,19 +1,22 @@
-use mailerlite_rs::{response::Response, MailerLite};
+//! Delete an e-commerce category and display the returned ID.
+//!
+//! Required environment: `MAILERLITE_API_TOKEN`, `MAILERLITE_SHOP_ID`, `MAILERLITE_CATEGORY_ID`.
+use mailerlite_rs::MailerLite;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let shop_id = std::env::var("MAILERLITE_SHOP_ID")?;
+    let category_id = std::env::var("MAILERLITE_CATEGORY_ID")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let response = mailerlite
+        .ecommerce()
+        .shop(shop_id)
+        .categories()
+        .delete(category_id)
+        .await?;
 
-    let shop_id: String = String::from("Your Shop ID");
+    println!("{}", response.data.id);
 
-    let category_id: String = String::from("Your Category ID");
-
-    let response: Response = mailerlite
-        .ecommerce_category()
-        .delete(shop_id, category_id)
-        .await;
-
-    println!("{:#?}", response);
+    Ok(())
 }

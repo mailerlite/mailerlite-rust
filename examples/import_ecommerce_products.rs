@@ -1,22 +1,25 @@
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
+//! Import e-commerce products using a typed array payload.
+//!
+//! Required environment: `MAILERLITE_API_TOKEN`, `MAILERLITE_SHOP_ID`.
+use mailerlite_rs::resources::ecommerce::params::{ImportProduct, SaveProduct};
+use mailerlite_rs::{Decimal, MailerLite};
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let shop_id = std::env::var("MAILERLITE_SHOP_ID")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let entry =
+        ImportProduct::new(SaveProduct::new("Example product").price(Decimal::new(1999, 2)));
 
-    let shop_id: String = String::from("Your Shop ID");
+    let response = mailerlite
+        .ecommerce()
+        .shop(shop_id)
+        .products()
+        .import(vec![entry])
+        .await?;
 
-    let data: Data = Data::new()
-        .add("0[name]", "Dummy Product")
-        .add("0[price]", "19.99")
-        .add("0[url]", "https://shop.example.com/dummy-product");
+    println!("Returned {} entries", response.data.len());
 
-    let response: Response = mailerlite
-        .ecommerce_import()
-        .products(shop_id, data.clone())
-        .await;
-
-    println!("{:#?}", response);
+    Ok(())
 }

@@ -1,20 +1,32 @@
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
+//! Replace the name, subject, and sender of an existing draft campaign.
+//!
+//! Required environment variables: `MAILERLITE_API_TOKEN`, `MAILERLITE_CAMPAIGN_ID`, `MAILERLITE_SENDER_EMAIL`, `MAILERLITE_SENDER_NAME`.
+//! Also required: `MAILERLITE_CAMPAIGN_NAME`, `MAILERLITE_CAMPAIGN_SUBJECT`.
+use mailerlite_rs::{
+    MailerLite,
+    resources::campaigns::{Email, UpdateCampaign},
+};
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let id = std::env::var("MAILERLITE_CAMPAIGN_ID")?;
+    let sender = std::env::var("MAILERLITE_SENDER_EMAIL")?;
+    let sender_name = std::env::var("MAILERLITE_SENDER_NAME")?;
+    let name = std::env::var("MAILERLITE_CAMPAIGN_NAME")?;
+    let subject = std::env::var("MAILERLITE_CAMPAIGN_SUBJECT")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let email = Email::new(subject, sender_name, sender);
 
-    let id: String = String::from("Your Campaign ID");
+    let response = mailerlite
+        .campaigns()
+        .update(id, UpdateCampaign::new(name, email))
+        .await?;
 
-    let data: Data = Data::new()
-        .add("name", "Regular Campaign")
-        .add("emails[0][subject]", "Test Subject")
-        .add("emails[0][from_name]", "John Doe")
-        .add("emails[0][from]", "john@gmail.com");
+    println!(
+        "Updated campaign {}: {}",
+        response.data.id, response.data.name
+    );
 
-    let response: Response = mailerlite.campaign().update(id, data.clone()).await;
-
-    println!("{:#?}", response);
+    Ok(())
 }

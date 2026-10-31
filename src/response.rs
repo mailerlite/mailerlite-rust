@@ -1,91 +1,50 @@
-use reqwest::{Response as reqwestResponse, StatusCode};
-use serde_json::{json, Value};
-
-#[derive(Debug)]
-pub struct Response {
-    pub status_code: StatusCode,
-    pub content: Value,
+//! Successful responses and HTTP metadata.
+use serde::Deserialize;
+use std::time::Duration;
+/// A decoded API result with its HTTP metadata.
+#[derive(Debug, Clone)]
+pub struct Response<T> {
+    /// Endpoint-specific response data.
+    pub data: T,
+    /// HTTP status and rate-limit information.
+    pub metadata: ResponseMetadata,
 }
-
-impl Response {
-    pub async fn new(response: reqwestResponse) -> Self {
-        let status_code: StatusCode = response.status().clone();
-
-        let content: Value = match status_code {
-            StatusCode::OK
-            | StatusCode::CREATED
-            | StatusCode::ACCEPTED
-            | StatusCode::UNPROCESSABLE_ENTITY => response
-                .json::<Value>()
-                .await
-                .expect("Failed to parse response body"),
-            _ => json!({
-                "message": StatusCode::from_u16(status_code.as_u16())
-                    .expect("Failed to parse status code")
-                    .canonical_reason(),
-            }),
-        };
-
-        Self {
-            status_code,
-            content,
+impl<T> Response<T> {
+    /// Transform response data, retaining metadata.
+    pub fn map<U>(self, f: impl FnOnce(T) -> U) -> Response<U> {
+        Response {
+            data: f(self.data),
+            metadata: self.metadata,
         }
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::client::Client;
-    use mockito::{Mock, Server, ServerGuard};
-
-    #[tokio::test]
-    async fn response_new() {
-        let mut server: ServerGuard = Server::new_async().await;
-        let mock: Mock = server
-            .mock("GET", "/200")
-            .with_status(200)
-            .with_header("Accept", "application/json")
-            .with_header("Content-Type", "application/json")
-            .with_header("Authorization", "Bearer api_key")
-            .with_body(r#"{"message": "Hello world"}"#)
-            .create();
-
-        let response: Response = Response::new(
-            Client::new("api_key".to_string())
-                .request
-                .get(format!("{}/200", server.url()))
-                .send()
-                .await
-                .expect("Failed to send request"),
-        )
-        .await;
-
-        mock.assert();
-        assert_eq!(response.status_code, 200);
-        assert_eq!(response.content, json!({"message": "Hello world"}));
-
-        let mock: Mock = server
-            .mock("DELETE", "/204")
-            .with_status(204)
-            .with_header("Accept", "application/json")
-            .with_header("Content-Type", "application/json")
-            .with_header("Authorization", "Bearer api_key")
-            .with_body(r#"{"message": "No Content"}"#)
-            .create();
-
-        let response: Response = Response::new(
-            Client::new("api_key".to_string())
-                .request
-                .delete(format!("{}/204", server.url()))
-                .send()
-                .await
-                .expect("Failed to send request"),
-        )
-        .await;
-
-        mock.assert();
-        assert_eq!(response.status_code, 204);
-        assert_eq!(response.content, json!({"message": "No Content"}));
+/// Selected response headers.
+#[derive(Debug, Clone)]
+pub struct ResponseMetadata {
+    /// HTTP status.
+    pub status: reqwest::StatusCode,
+    /// Server-reported limit.
+    pub rate_limit: Option<u64>,
+    /// Remaining requests.
+    pub rate_remaining: Option<u64>,
+    /// Minimum retry delay.
+    pub retry_after: Option<Duration>,
+    /// Server correlation identifier.
+    pub request_id: Option<String>,
+}
+impl ResponseMetadata {
+    /// Server-directed retry delay.
+    pub fn retry_after(&self) -> Option<Duration> {
+        self.retry_after
     }
+}
+#[derive(Deserialize)]
+pub(crate) struct DataEnvelope<T> {
+    pub data: T,
+}
+/// Response when querying an endpoint with `limit=0`.
+#[derive(Debug, Clone, Deserialize)]
+pub struct Count {
+    /// Total matching resources.
+    pub total: u64,
 }
