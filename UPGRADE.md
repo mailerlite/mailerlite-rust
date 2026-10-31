@@ -106,6 +106,9 @@ and a 16 MiB response-body limit. Configure these with `.request_timeout(...)`,
 `.operation_timeout(...)`, and `.max_response_bytes(...)`. Local pacing is one
 global request per 500 ms and one qualifying subscriber import per 12 seconds;
 client clones share that pacing and server-directed cooldowns.
+Shared cooldowns from 429 or 503 responses are capped at five minutes per response.
+Automatic retries still honor the full `Retry-After` value, and error metadata
+preserves it for application-controlled scheduling of later requests.
 
 The operation timeout covers request serialization, pacing, HTTP attempts, retry
 waits, and response decoding. Synchronous JSON work is checked after it finishes;

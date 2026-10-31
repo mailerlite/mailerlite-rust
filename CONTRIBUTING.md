@@ -265,8 +265,11 @@ consumer's import paths. Update this table when the public boundary changes.
    return a resource; a successful HTTP response can represent pending work.
 4. Classify retry safety explicitly. Retries are disabled by default. Opt-in
    retries apply only to reviewed reads; writes and batches are never replayed
-   automatically. Honor `Retry-After` within the operation deadline. Do not
-   assume every GET is free of side effects.
+   automatically. Automatic retries must honor the full `Retry-After` within
+   the operation deadline. Shared server cooldowns are capped at five minutes
+   per response so excessive values cannot permanently block later operations;
+   preserve the original delay in response metadata. Do not assume every GET
+   is free of side effects.
 5. Use the default `ApiVersion::Latest` policy, which omits `X-Version`, unless
    the caller explicitly pins a version. Resource code must not override the
    configured version. Preserve connection reuse, pacing, and credential

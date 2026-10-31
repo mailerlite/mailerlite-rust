@@ -235,6 +235,13 @@ outcome before submitting it again.
 Clones share pacing and server cooldowns. Independently created clients and
 separate processes do not coordinate account-wide limits.
 
+Each 429 or 503 response can impose a shared cooldown of at most five minutes,
+so an excessive `Retry-After` cannot permanently block the client. This limits
+waiting for later caller-initiated operations. Automatic retries still honor the
+full header value; if that delay exceeds the operation deadline, the API error
+is returned without retrying. Error metadata retains the original delay so your
+application can decide when to submit another request.
+
 ## Handling errors
 
 Operations return `mailerlite_rs::Result<T>`. Match `Error::Api` for HTTP failures

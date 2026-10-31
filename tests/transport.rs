@@ -420,6 +420,74 @@ async fn assert_clones_respect_server_cooldown(retry_after: &str) {
 }
 
 #[tokio::test]
+async fn default_client_recovers_after_oversized_429_cooldown() {
+    assert_client_recovers_after_cooldown(429, u64::MAX, RetryPolicy::none()).await;
+}
+
+#[tokio::test]
+async fn default_client_recovers_after_oversized_503_cooldown() {
+    assert_client_recovers_after_cooldown(503, u64::MAX, RetryPolicy::none()).await;
+}
+
+#[tokio::test]
+async fn retry_enabled_client_recovers_without_replaying_oversized_429() {
+    assert_client_recovers_after_cooldown(429, u64::MAX, RetryPolicy::safe_reads()).await;
+}
+
+#[tokio::test]
+async fn retry_enabled_client_recovers_after_long_representable_503_cooldown() {
+    assert_client_recovers_after_cooldown(503, 365 * 24 * 60 * 60, RetryPolicy::safe_reads()).await;
+}
+
+async fn assert_client_recovers_after_cooldown(status: u16, seconds: u64, policy: RetryPolicy) {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/api/subscribers/1"))
+        .respond_with(
+            ResponseTemplate::new(status)
+                .insert_header("retry-after", seconds.to_string())
+                .set_body_json(json!({"message":"try later"})),
+        )
+        .expect(1)
+        .mount(&server)
+        .await;
+    Mock::given(method("GET"))
+        .and(path("/api/subscribers/2"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({"data": subscriber()})))
+        .expect(1)
+        .mount(&server)
+        .await;
+    let sdk = MailerLite::builder("token")
+        .base_url(format!("{}/api", server.uri()))
+        .rate_limit_intervals(Duration::ZERO, Duration::ZERO)
+        .operation_timeout(Duration::from_secs(2))
+        .retry_policy(policy)
+        .build()
+        .unwrap();
+
+    let Error::Api(error) = sdk.subscribers().get("1").await.unwrap_err() else {
+        panic!("expected original API error without a retry")
+    };
+    assert_eq!(error.status().as_u16(), status);
+    assert_eq!(
+        error.metadata().retry_after(),
+        Some(Duration::from_secs(seconds))
+    );
+    assert_eq!(server.received_requests().await.unwrap().len(), 1);
+
+    // Skip only the cooldown; run network I/O with the clock resumed so mock
+    // sockets cannot race Tokio's automatic advancement to request deadlines.
+    tokio::time::pause();
+    tokio::time::advance(Duration::from_secs(300)).await;
+    tokio::time::resume();
+
+    let response = sdk.clone().subscribers().get("2").await.unwrap();
+
+    assert_eq!(response.data.id.as_str(), "900719925474099312345");
+    assert_eq!(server.received_requests().await.unwrap().len(), 2);
+}
+
+#[tokio::test]
 async fn redirects_cannot_forward_credentials_to_another_server() {
     let origin = MockServer::start().await;
     let hostile = MockServer::start().await;

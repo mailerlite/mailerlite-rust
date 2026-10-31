@@ -125,6 +125,8 @@ async fn execute_until(
         {
             // A shared token may have exhausted either bucket; do not assume
             // an import response proves the global bucket is still available.
+            // The limiter caps shared cooldowns; keep the original delay in
+            // metadata and automatic retry decisions below.
             inner.limiter.cooldown(false, delay).await;
             if policy.import {
                 inner.limiter.cooldown(true, delay).await;

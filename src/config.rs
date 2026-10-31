@@ -165,7 +165,9 @@ impl MailerLiteBuilder {
     }
     /// Set local pacing intervals. Zero disables that local pacing bucket.
     ///
-    /// Server-directed cooldowns remain enforced. Independent processes do not share this state.
+    /// Server-directed cooldowns still apply, capped at five minutes per response.
+    /// This cap does not shorten automatic retry delays or the local intervals
+    /// supplied here. Independent processes do not share this state.
     pub fn rate_limit_intervals(mut self, global: Duration, imports: Duration) -> Self {
         self.global_interval = global;
         self.import_interval = imports;

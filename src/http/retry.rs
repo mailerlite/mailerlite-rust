@@ -6,7 +6,8 @@ use std::time::Duration;
 ///
 /// Automatic retries are disabled by default. Opt in with [`Self::safe_reads`].
 /// Writes are never automatically replayed, irrespective of this configuration.
-/// A server's `Retry-After` is a minimum delay and is not shortened by the cap.
+/// For automatic retries, a server's `Retry-After` is a minimum delay and is not
+/// shortened by the backoff cap or the five-minute shared server cooldown cap.
 #[derive(Debug, Clone)]
 pub struct RetryPolicy {
     max_retries: u32,
@@ -86,6 +87,15 @@ impl RetryPolicy {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn shared_cooldown_cap_does_not_shorten_automatic_retry_delays() {
+        let policy = RetryPolicy::safe_reads();
+        for seconds in [301, 365 * 24 * 60 * 60, u64::MAX] {
+            let delay = Duration::from_secs(seconds);
+            assert_eq!(policy.delay_with_sample(0, Some(delay), 0), Some(delay));
+        }
+    }
+
     #[test]
     fn retries_are_bounded_and_server_delay_is_not_capped() {
         let policy = RetryPolicy::safe_reads();
