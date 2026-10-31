@@ -230,9 +230,11 @@ impl<'a> Imports<'a> {
     /// Returns [`Error::Config`] for a zero interval or timeout, a duration beyond
     /// the supported clock range, or an invalid receipt as described by
     /// [`Self::progress`]. Returns [`Error::Timeout`] if polling reaches its
-    /// deadline. Errors from individual [`Self::get`] calls also propagate,
-    /// including their own execution timeouts. Retain the receipt to check the
-    /// import later after any polling failure.
+    /// deadline, including when a fetch finishes at or after it. Synchronous
+    /// response decoding cannot be interrupted; its deadline is checked after
+    /// it finishes. Errors from individual [`Self::get`] calls propagate when
+    /// they arrive before the polling deadline, including their own execution
+    /// timeouts. Retain the receipt to check the import later after any failure.
     pub async fn wait(
         &self,
         receipt: &ImportReceipt,
@@ -292,7 +294,16 @@ where
 {
     tokio::time::timeout_at(deadline, async {
         loop {
-            let report = fetch().await?;
+            if tokio::time::Instant::now() >= deadline {
+                return Err(Error::Timeout);
+            }
+            let result = fetch().await;
+            // A ready fetch can finish without yielding to the timeout timer.
+            // Check before returning either a late report or a late error.
+            if tokio::time::Instant::now() >= deadline {
+                return Err(Error::Timeout);
+            }
+            let report = result?;
             if report.data.done {
                 return Ok(report);
             }
@@ -342,6 +353,74 @@ mod polling_tests {
 
     async fn poll_once<F: Future>(mut future: Pin<&mut F>) -> Poll<F::Output> {
         poll_fn(|context| Poll::Ready(future.as_mut().poll(context))).await
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn expired_polling_deadline_prevents_the_first_fetch() {
+        let calls = AtomicUsize::new(0);
+        let deadline = Instant::now();
+        let result = poll_until_complete(
+            || {
+                calls.fetch_add(1, Ordering::SeqCst);
+                std::future::ready(Ok(report(true)))
+            },
+            Duration::from_secs(1),
+            deadline,
+        )
+        .await;
+
+        assert!(matches!(result, Err(Error::Timeout)));
+        assert_eq!(calls.load(Ordering::SeqCst), 0);
+    }
+
+    async fn assert_fetch_deadline(outcome: Result<Response<ImportReport>>, elapsed: Duration) {
+        let calls = AtomicUsize::new(0);
+        let start = Instant::now();
+        let mut outcome = Some(outcome);
+        let result = poll_until_complete(
+            || {
+                calls.fetch_add(1, Ordering::SeqCst);
+                let outcome = outcome.take().expect("only one fetch should start");
+                async move {
+                    // Model a fetch that is ready when execution resumes at or
+                    // after the deadline, without relying on wall-clock sleeps.
+                    advance(elapsed).await;
+                    outcome
+                }
+            },
+            Duration::from_secs(1),
+            start + Duration::from_secs(1),
+        )
+        .await;
+
+        assert!(matches!(result, Err(Error::Timeout)), "got {result:?}");
+        assert_eq!(calls.load(Ordering::SeqCst), 1);
+        assert_eq!(start.elapsed(), elapsed);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn completed_fetch_after_polling_deadline_returns_timeout() {
+        assert_fetch_deadline(Ok(report(true)), Duration::from_secs(2)).await;
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn completed_fetch_at_polling_deadline_returns_timeout() {
+        assert_fetch_deadline(Ok(report(true)), Duration::from_secs(1)).await;
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn failed_fetch_after_polling_deadline_returns_timeout() {
+        let error = Error::Decode(crate::DecodeError::new(
+            metadata(reqwest::StatusCode::OK),
+            b"invalid response",
+            "invalid test response".into(),
+        ));
+        assert_fetch_deadline(Err(error), Duration::from_secs(2)).await;
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn unfinished_fetch_after_polling_deadline_does_not_poll_again() {
+        assert_fetch_deadline(Ok(report(false)), Duration::from_secs(2)).await;
     }
 
     #[tokio::test(start_paused = true)]

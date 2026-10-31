@@ -39,7 +39,10 @@ async fn injected_http_client_preserves_base_prefix_auth_version_and_encoded_ids
         .and(header("accept", "application/json"))
         .and(header("content-type", "application/json"))
         .and(header("x-version", DEFAULT_API_VERSION))
-        .and(header("user-agent", "mailerlite-rs/2.0.0"))
+        .and(header(
+            "user-agent",
+            concat!("mailerlite-rs/", env!("CARGO_PKG_VERSION")),
+        ))
         .respond_with(
             ResponseTemplate::new(200)
                 .set_body_json(json!({"data":subscriber()}))
