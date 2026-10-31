@@ -1,6 +1,8 @@
 //! Update an existing e-commerce cart item.
 //!
 //! Required environment: `MAILERLITE_API_TOKEN`, `MAILERLITE_SHOP_ID`, `MAILERLITE_CART_ID`, `MAILERLITE_CART_ITEM_ID`, `MAILERLITE_PRODUCT_ID`.
+//! Also required: `MAILERLITE_CART_ITEM_QUANTITY` (unsigned integer), `MAILERLITE_CART_ITEM_PRICE` (decimal text).
+//! Replaces the item's product, quantity, and price with the supplied values.
 use mailerlite_rs::resources::ecommerce::params::SaveCartItem;
 use mailerlite_rs::{Decimal, MailerLite};
 
@@ -11,10 +13,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cart_id = std::env::var("MAILERLITE_CART_ID")?;
     let cart_item_id = std::env::var("MAILERLITE_CART_ITEM_ID")?;
     let product_id = std::env::var("MAILERLITE_PRODUCT_ID")?;
+    let quantity: u64 = std::env::var("MAILERLITE_CART_ITEM_QUANTITY")?.parse()?;
+    let price: Decimal = std::env::var("MAILERLITE_CART_ITEM_PRICE")?.parse()?;
 
     let params = SaveCartItem::new(product_id)
-        .quantity(1)
-        .price(Decimal::new(1999, 2));
+        .quantity(quantity)
+        .price(price);
 
     let response = mailerlite
         .ecommerce()

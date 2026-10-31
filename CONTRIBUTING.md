@@ -507,6 +507,10 @@ Rustfmt does not insert these logical gaps into documentation snippets; review
 their rendered appearance as well as their compilation.
 
 Preserve nonduplicate examples, including the original v1 operation filenames.
+Update examples must take replacement values from explicit input, including
+names, prices, quantities, and attribute maps. Document required environment
+variables and which fields are replaced in the file header. Describe fixed
+operation choices, such as expressing a delay in days, in that header too.
 Update their implementations when APIs change. List new examples in
 [examples/README.md](examples/README.md), document required environment variables,
 and declare `required-features` in Cargo.toml for examples that need optional
@@ -530,8 +534,8 @@ cargo +1.88.0 test --doc --all-features
 RUSTDOCFLAGS='-D warnings' cargo +stable doc --no-deps --all-features --open
 ```
 
-The crate landing page displays the README. Method examples and error contracts
-appear on their resource type's page. For example, navigate to
+The crate landing page displays the overview written in `src/lib.rs`. Method
+examples and error contracts appear on their resource type's page. For example, navigate to
 `resources → subscribers → Subscribers → count`, or open
 `target/doc/mailerlite_rs/resources/subscribers/struct.Subscribers.html#method.count`.
 Expand the method's documentation if collapsed. After changing source comments,

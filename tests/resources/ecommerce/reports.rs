@@ -16,10 +16,22 @@ async fn shop_stats_preserve_required_date_range() {
         .expect(1)
         .mount(&server)
         .await;
-    api.shop("1")
+    let response = api
+        .shop("1")
         .stats("2026-01-01", "2026-02-01")
         .await
         .unwrap();
+
+    assert_eq!(response.data.ecommerce.orders_count, 2);
+    assert_eq!(response.data.ecommerce.revenue, Decimal::from(40));
+    assert_eq!(
+        response.data.ecommerce.average_order_value,
+        Decimal::from(20)
+    );
+    assert_eq!(
+        response.data.ecommerce.conversion_rate.as_deref(),
+        Some("2%")
+    );
 }
 
 #[tokio::test]
@@ -37,6 +49,13 @@ async fn campaign_stats_preserve_shop_filter() {
         .mount(&server)
         .await;
     let response = api.campaign_stats("2", "1").await.unwrap();
+
+    assert_eq!(response.data.ecommerce.orders_count, 2);
+    assert_eq!(response.data.ecommerce.revenue, Decimal::from(40));
+    assert_eq!(
+        response.data.ecommerce.average_order_value,
+        Decimal::from(20)
+    );
     assert_eq!(
         response.data.ecommerce.conversion_rate.as_deref(),
         Some("2%")
@@ -73,7 +92,18 @@ async fn subscriber_stats_preserve_shop_filter() {
         .expect(1)
         .mount(&server)
         .await;
-    api.subscriber_stats("2", "1").await.unwrap();
+    let response = api.subscriber_stats("2", "1").await.unwrap();
+
+    assert_eq!(response.data.ecommerce.orders_count, 2);
+    assert_eq!(response.data.ecommerce.revenue, Decimal::from(40));
+    assert_eq!(
+        response.data.ecommerce.average_order_value,
+        Decimal::from(20)
+    );
+    assert_eq!(
+        response.data.ecommerce.conversion_rate.as_deref(),
+        Some("2%")
+    );
 }
 
 #[tokio::test]

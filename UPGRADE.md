@@ -400,11 +400,11 @@ Order imports accept `Vec<CreateOrder>` and serialize it as `{"orders": [...]}`
 to match the backend. The SDK adds this wrapper automatically. This deliberately
 differs from the bare-array example in the public API documentation.
 
-All nonduplicate v1 examples are retained and migrated to v2. The
-`update_ecommerce_shop` example requires explicit replacement name, URL, and
-currency values; `update_ecommerce_product` requires a replacement name and
-decimal price. Set the environment variables documented in each file before
-running it. These examples modify the selected resource.
+All nonduplicate v1 examples are retained and migrated to v2. Update examples
+require explicit replacement values rather than applying sample names, prices,
+quantities, or attributes. Set the variables documented in each file header;
+the [example guide](examples/README.md) lists their expected formats. These
+examples modify the selected resource.
 
 Use `.automation_steps()`, `.automation_triggers()`, and
 `.automation_templates()` for the additional resources; action and report methods

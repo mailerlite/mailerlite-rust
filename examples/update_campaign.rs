@@ -1,6 +1,7 @@
-//! Update the subject and sender of an existing draft campaign.
+//! Replace the name, subject, and sender of an existing draft campaign.
 //!
 //! Required environment variables: `MAILERLITE_API_TOKEN`, `MAILERLITE_CAMPAIGN_ID`, `MAILERLITE_SENDER_EMAIL`, `MAILERLITE_SENDER_NAME`.
+//! Also required: `MAILERLITE_CAMPAIGN_NAME`, `MAILERLITE_CAMPAIGN_SUBJECT`.
 use mailerlite_rs::{
     MailerLite,
     resources::campaigns::{Email, UpdateCampaign},
@@ -12,12 +13,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let id = std::env::var("MAILERLITE_CAMPAIGN_ID")?;
     let sender = std::env::var("MAILERLITE_SENDER_EMAIL")?;
     let sender_name = std::env::var("MAILERLITE_SENDER_NAME")?;
+    let name = std::env::var("MAILERLITE_CAMPAIGN_NAME")?;
+    let subject = std::env::var("MAILERLITE_CAMPAIGN_SUBJECT")?;
 
-    let email = Email::new("Updated newsletter subject", sender_name, sender);
+    let email = Email::new(subject, sender_name, sender);
 
     let response = mailerlite
         .campaigns()
-        .update(id, UpdateCampaign::new("Updated newsletter", email))
+        .update(id, UpdateCampaign::new(name, email))
         .await?;
 
     println!(

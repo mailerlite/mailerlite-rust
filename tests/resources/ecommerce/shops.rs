@@ -55,9 +55,13 @@ async fn create_sends_documented_payload() {
         201,
     )
     .await;
-    api.create(SaveShop::new("Shop", "https://example.com", "USD"))
+    let response = api
+        .create(SaveShop::new("Shop", "https://example.com", "USD"))
         .await
         .unwrap();
+
+    assert_eq!(response.data.id.as_str(), "1");
+    assert_eq!(response.data.name, "Shop");
 }
 
 #[tokio::test]
@@ -75,9 +79,13 @@ async fn update_accepts_created_status() {
         201,
     )
     .await;
-    api.update("1", SaveShop::new("Shop", "https://example.com", "USD"))
+    let response = api
+        .update("1", SaveShop::new("Shop", "https://example.com", "USD"))
         .await
         .unwrap();
+
+    assert_eq!(response.data.id.as_str(), "1");
+    assert_eq!(response.data.name, "Shop");
 }
 
 #[tokio::test]
@@ -95,7 +103,10 @@ async fn delete_decodes_response_body() {
         200,
     )
     .await;
-    api.delete("1").await.unwrap();
+    let response = api.delete("1").await.unwrap();
+
+    assert_eq!(response.data.id.as_str(), "1");
+    assert_eq!(response.data.name, "Shop");
 }
 
 #[tokio::test]

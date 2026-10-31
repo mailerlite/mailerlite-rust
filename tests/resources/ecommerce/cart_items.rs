@@ -44,7 +44,7 @@ async fn create_sends_documented_payload() {
     let server = MockServer::start().await;
     let client = client(&server);
     let api = client.ecommerce().shop("1").carts().items("1");
-    let fixture = json!({"id":"1"});
+    let fixture = json!({"id":"1","quantity":2,"price":"12.34"});
     mount(
         &server,
         "POST",
@@ -54,9 +54,14 @@ async fn create_sends_documented_payload() {
         201,
     )
     .await;
-    api.create(SaveCartItem::new("3").quantity(2))
+    let response = api
+        .create(SaveCartItem::new("3").quantity(2))
         .await
         .unwrap();
+
+    assert_eq!(response.data.id.as_str(), "1");
+    assert_eq!(response.data.quantity, Some(2));
+    assert_eq!(response.data.price, Some(Decimal::new(1234, 2)));
 }
 
 #[tokio::test]
@@ -64,7 +69,7 @@ async fn update_accepts_created_status() {
     let server = MockServer::start().await;
     let client = client(&server);
     let api = client.ecommerce().shop("1").carts().items("1");
-    let fixture = json!({"id":"1"});
+    let fixture = json!({"id":"1","quantity":2,"price":"12.34"});
     mount(
         &server,
         "PUT",
@@ -74,9 +79,14 @@ async fn update_accepts_created_status() {
         201,
     )
     .await;
-    api.update("1", SaveCartItem::new("3").quantity(2))
+    let response = api
+        .update("1", SaveCartItem::new("3").quantity(2))
         .await
         .unwrap();
+
+    assert_eq!(response.data.id.as_str(), "1");
+    assert_eq!(response.data.quantity, Some(2));
+    assert_eq!(response.data.price, Some(Decimal::new(1234, 2)));
 }
 
 #[tokio::test]
@@ -84,7 +94,7 @@ async fn delete_decodes_response_body() {
     let server = MockServer::start().await;
     let client = client(&server);
     let api = client.ecommerce().shop("1").carts().items("1");
-    let fixture = json!({"id":"1"});
+    let fixture = json!({"id":"1","quantity":2,"price":"12.34"});
     mount(
         &server,
         "DELETE",
@@ -94,7 +104,11 @@ async fn delete_decodes_response_body() {
         200,
     )
     .await;
-    api.delete("1").await.unwrap();
+    let response = api.delete("1").await.unwrap();
+
+    assert_eq!(response.data.id.as_str(), "1");
+    assert_eq!(response.data.quantity, Some(2));
+    assert_eq!(response.data.price, Some(Decimal::new(1234, 2)));
 }
 
 #[tokio::test]

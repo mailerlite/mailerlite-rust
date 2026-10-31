@@ -40,10 +40,14 @@ async fn create_sends_variant_array_and_returns_product() {
         200,
     )
     .await;
-    variants
+    let response = variants
         .create(vec![SaveVariant::new("Black", BTreeMap::new())])
         .await
         .unwrap();
+
+    assert_eq!(response.data.id.as_str(), "2");
+    assert_eq!(response.data.name, "Product");
+    assert_eq!(response.data.price, Some(Decimal::new(1234, 2)));
 }
 
 #[tokio::test]
@@ -61,10 +65,14 @@ async fn update_returns_parent_product() {
         200,
     )
     .await;
-    variants
+    let response = variants
         .update("4", SaveVariant::new("Black", BTreeMap::new()))
         .await
         .unwrap();
+
+    assert_eq!(response.data.id.as_str(), "2");
+    assert_eq!(response.data.name, "Product");
+    assert_eq!(response.data.price, Some(Decimal::new(1234, 2)));
 }
 
 #[tokio::test]
@@ -82,5 +90,9 @@ async fn delete_returns_parent_product() {
         200,
     )
     .await;
-    variants.delete("4").await.unwrap();
+    let response = variants.delete("4").await.unwrap();
+
+    assert_eq!(response.data.id.as_str(), "2");
+    assert_eq!(response.data.name, "Product");
+    assert_eq!(response.data.price, Some(Decimal::new(1234, 2)));
 }

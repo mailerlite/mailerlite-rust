@@ -20,11 +20,39 @@ cargo run --example verify_webhook --features webhook-signatures
 
 Examples read environment variables directly; they do not automatically load a `.env` file. Set the additional variables listed in the selected file, such as `MAILERLITE_GROUP_ID` or `MAILERLITE_SHOP_ID`. Sample names and values can be edited before running.
 
-`update_ecommerce_shop` requires the replacement name, URL, and currency through
-`MAILERLITE_SHOP_NAME`, `MAILERLITE_SHOP_URL`, and `MAILERLITE_SHOP_CURRENCY`.
-`update_ecommerce_product` requires the replacement name and decimal price through
-`MAILERLITE_PRODUCT_NAME` and `MAILERLITE_PRODUCT_PRICE`. Set these deliberately;
-the supplied values overwrite the corresponding fields on the selected resource.
+Update examples require explicit replacement values. In addition to the token and
+resource IDs listed in each file header, supply the following environment values:
+
+| Example | Replacement values |
+| --- | --- |
+| `update_ecommerce_shop` | `MAILERLITE_SHOP_NAME`, `MAILERLITE_SHOP_URL`, `MAILERLITE_SHOP_CURRENCY` |
+| `update_ecommerce_product` | `MAILERLITE_PRODUCT_NAME`, `MAILERLITE_PRODUCT_PRICE` |
+| `update_ecommerce_category` | `MAILERLITE_CATEGORY_NAME` |
+| `update_ecommerce_product_variant` | `MAILERLITE_VARIANT_NAME`, `MAILERLITE_VARIANT_ATTRIBUTES`, `MAILERLITE_VARIANT_PRICE`, `MAILERLITE_VARIANT_PRICE_TYPE` |
+| `update_ecommerce_cart_item` | `MAILERLITE_PRODUCT_ID`, `MAILERLITE_CART_ITEM_QUANTITY`, `MAILERLITE_CART_ITEM_PRICE` |
+| `update_ecommerce_cart` | `MAILERLITE_CHECKOUT_URL` |
+| `update_ecommerce_customer` | `MAILERLITE_CUSTOMER_EMAIL` |
+| `update_ecommerce_order` | `MAILERLITE_ORDER_STATUS` |
+| `update_campaign` | `MAILERLITE_CAMPAIGN_NAME`, `MAILERLITE_CAMPAIGN_SUBJECT`, `MAILERLITE_SENDER_EMAIL`, `MAILERLITE_SENDER_NAME` |
+| `update_subscriber` | `MAILERLITE_SUBSCRIBER_NAME` |
+| `update_webhook` | `MAILERLITE_WEBHOOK_NAME` |
+| `update_automation` | `MAILERLITE_AUTOMATION_NAME` |
+| `update_automation_step` | `MAILERLITE_DELAY_DAYS`, `MAILERLITE_RESCHEDULE_WAITING_SUBSCRIBERS` |
+| `update_automation_trigger` | `MAILERLITE_GROUP_ID` |
+| `update_automation_email_content` | `MAILERLITE_EMAIL_HTML` |
+| `update_field` | `MAILERLITE_FIELD_NAME` |
+| `update_form` | `MAILERLITE_FORM_NAME` |
+| `update_group` | `MAILERLITE_GROUP_NAME` |
+| `update_segment` | `MAILERLITE_SEGMENT_NAME` |
+
+Prices are decimal text; quantities and delay days are unsigned integers.
+`MAILERLITE_VARIANT_ATTRIBUTES` is a complete JSON object of string values, such
+as `'{"color":"Blue","size":"Large"}'`; an empty object replaces the map with
+no attributes. Variant price type must be `fixed` or `increment`, order status
+must be `pending` or `complete`, and the reschedule flag must be `true` or `false`.
+The automation step example replaces the delay configuration with the supplied
+number of days. These values overwrite the corresponding fields on the selected
+resource, so choose them deliberately.
 
 Most examples make the operation described in the file against your account. Create, update, delete, import, assignment, and scheduling examples change account data; scheduling can send email. Normal CI only compiles examples and requires no API token. `configuration` builds a client without making an API request. `verify_webhook` verifies and decodes a signed synthetic event, then demonstrates rejection of a modified body. It needs no API token or running server.
 

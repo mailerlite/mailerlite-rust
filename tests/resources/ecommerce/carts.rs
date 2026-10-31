@@ -44,7 +44,7 @@ async fn update_preserves_checkout_url() {
     let server = MockServer::start().await;
     let client = client(&server);
     let api = client.ecommerce().shop("1").carts();
-    let fixture = json!({"id":"1"});
+    let fixture = json!({"id":"1","checkout_url":"https://checkout.example"});
     mount(
         &server,
         "PUT",
@@ -54,12 +54,19 @@ async fn update_preserves_checkout_url() {
         201,
     )
     .await;
-    api.update(
-        "1",
-        UpdateCart::new().checkout_url("https://checkout.example"),
-    )
-    .await
-    .unwrap();
+    let response = api
+        .update(
+            "1",
+            UpdateCart::new().checkout_url("https://checkout.example"),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.data.id.as_str(), "1");
+    assert_eq!(
+        response.data.checkout_url.as_deref(),
+        Some("https://checkout.example")
+    );
 }
 
 #[tokio::test]
