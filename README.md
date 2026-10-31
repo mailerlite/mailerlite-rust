@@ -29,7 +29,8 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
 
 Rustls provides HTTPS by default. Optional features are listed [below](#features).
-Version 2 is a breaking redesign; existing users should follow [UPGRADE.md](UPGRADE.md).
+To test an unpublished checkout, use a local path dependency instead of a
+crates.io version. Version 2 is a breaking redesign; existing users should follow [UPGRADE.md](UPGRADE.md).
 
 ## Quick start
 

@@ -69,6 +69,7 @@ Report relevant dependency-resolution differences when investigating failures.
 | `tests/support/`, `tests/fixtures/` | Shared mock setup and sanitized reusable payloads |
 | `tests/transport.rs`, `tests/errors.rs`, `tests/pagination.rs` | Cross-resource transport, error, and continuation behavior |
 | `tests/webhooks.rs` | Incoming webhook delivery and signature contracts |
+| `tests/thread_safety.rs` | Compile-time client, future, and stream concurrency contracts |
 | `examples/` | Standalone examples, indexed by `examples/README.md` |
 | `.github/workflows/main.yaml` | Build, test, formatting, lint, and release automation |
 
@@ -368,15 +369,14 @@ cargo +stable test --test webhooks --features webhook-signatures
 
 ## Checks before a pull request
 
-Format code, lint all targets and features, run the suite, compile examples, and
-build documentation:
+Format code, lint all targets and features, run the suite (including example
+compilation), and build documentation:
 
 ```sh
 cargo +stable fmt --all
 cargo +stable fmt --all -- --check
 cargo +stable clippy --all-targets --all-features -- -D warnings
 cargo +stable test --all-features
-cargo +stable check --examples --all-features
 RUSTDOCFLAGS='-D warnings' cargo +stable doc --no-deps --all-features
 git diff --check
 ```
@@ -386,6 +386,10 @@ separately. Markdown code outside the crate's rustdoc inputs is not automaticall
 tested: compile changed guide snippets in a temporary consumer when appropriate.
 Compiling examples must not execute their API calls.
 
+For a faster check while editing standalone examples, use
+`cargo +stable check --examples --all-features`. A separate example-compilation
+step is unnecessary immediately after `cargo test` with the same features.
+
 For changes to shared code, dependencies, feature flags, or public types, verify
 the supported feature combinations on stable and the MSRV. Maintainers should
 run this matrix before release:
@@ -393,13 +397,9 @@ run this matrix before release:
 ```sh
 for sdk_toolchain in stable 1.88.0; do
   cargo +"$sdk_toolchain" test
-  cargo +"$sdk_toolchain" check --examples
   cargo +"$sdk_toolchain" test --all-features
-  cargo +"$sdk_toolchain" check --examples --all-features
   cargo +"$sdk_toolchain" test --no-default-features --features native-tls
-  cargo +"$sdk_toolchain" check --examples --no-default-features --features native-tls
   cargo +"$sdk_toolchain" test --no-default-features
-  cargo +"$sdk_toolchain" check --examples --no-default-features
 done
 ```
 
@@ -469,6 +469,12 @@ Rustdoc source comments may hide a wrapper function and its final `Ok(())` with
 methods, attach examples to the gated item and test with that feature enabled.
 Document any application dependencies needed to consume a stream or decode JSON.
 Do not use `ignore` to hide a broken example or bypass feature verification.
+
+The README's feature-dependent webhook snippet is an intentional exception:
+it uses `ignore` so GitHub readers do not see rustdoc-only feature guards.
+Its matching `receive` function is compiled in `examples/verify_webhook.rs`
+with `webhook-signatures` enabled. Keep the two in sync and report this ignored
+doctest separately from passing doctests.
 
 Separate logical steps with a blank line: configuration, parameter construction,
 request execution, result handling, and return. Keep related setup variables

@@ -63,6 +63,7 @@ use mailerlite_rs::{MailerLite, resources::subscribers::UpsertSubscriber};
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+
     let response = mailerlite
         .subscribers()
         .upsert(UpsertSubscriber::new("jane@example.com").field("name", "Jane"))
@@ -88,6 +89,7 @@ fn configured_client(token: String) -> mailerlite_rs::Result<MailerLite> {
     let http = MailerLite::http_client_builder()
         .connect_timeout(Duration::from_secs(5))
         .build()?;
+
     MailerLite::builder(token)
         .http_client(http)
         .base_url("http://localhost:8080/api")
@@ -223,6 +225,7 @@ use mailerlite_rs::{MailerLite, models::subscribers::SubscriberStatus};
 async fn list_active(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
     let subscribers = mailerlite.subscribers();
     let mut cursor = None;
+
     loop {
         let mut request = subscribers
             .list()
@@ -232,6 +235,7 @@ async fn list_active(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
         if let Some(value) = cursor {
             request = request.cursor(value);
         }
+
         let response = request.send().await?;
 
         for subscriber in &response.data.data {
@@ -363,6 +367,7 @@ fn update_parameters() -> (UpdateSubscriber, UpdateStep) {
 
     // Omitting parent_id leaves the position unchanged; clear_parent sends null.
     let step = UpdateStep::new().clear_parent();
+
     (subscriber, step)
 }
 ```
@@ -459,6 +464,7 @@ fn field_fixture() -> serde_json::Result<Field> {
 
 fn field_name(field: Field) -> String {
     let Field { name, .. } = field;
+
     name
 }
 ```

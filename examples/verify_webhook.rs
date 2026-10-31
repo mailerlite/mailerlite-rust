@@ -30,6 +30,7 @@ fn receive(
     body: &[u8],
 ) -> Result<WebhookPayload, Box<dyn std::error::Error>> {
     verify_signature(secret, body, signature)?;
+
     Ok(serde_json::from_slice(body)?)
 }
 
