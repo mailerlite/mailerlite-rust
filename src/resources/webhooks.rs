@@ -122,7 +122,7 @@ impl<'a> Webhooks<'a> {
                 &["webhooks"],
                 &[],
                 Some(&params),
-                OperationPolicy::WRITE.with_success_statuses(&[200]),
+                OperationPolicy::WRITE.with_success_statuses(&[200, 201]),
             )
             .await
     }

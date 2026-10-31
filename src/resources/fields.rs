@@ -101,7 +101,7 @@ impl<'a> Fields<'a> {
                 &["fields"],
                 &[],
                 Some(&params),
-                OperationPolicy::WRITE.with_success_statuses(&[200]),
+                OperationPolicy::WRITE.with_success_statuses(&[200, 201]),
             )
             .await
     }

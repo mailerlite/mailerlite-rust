@@ -36,7 +36,11 @@ async fn campaign_stats_preserve_shop_filter() {
         .expect(1)
         .mount(&server)
         .await;
-    api.campaign_stats("2", "1").await.unwrap();
+    let response = api.campaign_stats("2", "1").await.unwrap();
+    assert_eq!(
+        response.data.ecommerce.conversion_rate.as_deref(),
+        Some("2%")
+    );
 }
 
 #[tokio::test]
@@ -91,4 +95,60 @@ async fn subscriber_orders_preserve_shop_and_page() {
         .await
         .unwrap();
     assert_eq!(orders.data.data[0].total, Decimal::new(1234, 2));
+}
+
+#[tokio::test]
+async fn shop_stats_accept_missing_conversion_rate() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/api/ecommerce/shops/1/reports/stats"))
+        .and(query_param("start_date", "2026-01-01"))
+        .and(query_param("end_date", "2026-02-01"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "data": {
+                "ecommerce": {"orders_count": 2, "revenue": "40.50", "average_order_value": "20.25"},
+                "series": []
+            }
+        })))
+        .expect(1)
+        .mount(&server)
+        .await;
+    let response = client(&server)
+        .ecommerce()
+        .shop("1")
+        .stats("2026-01-01", "2026-02-01")
+        .await
+        .unwrap();
+
+    assert!(response.data.ecommerce.conversion_rate.is_none());
+    assert_eq!(response.data.ecommerce.orders_count, 2);
+    assert_eq!(response.data.ecommerce.revenue, Decimal::new(4050, 2));
+    assert_eq!(
+        response.data.ecommerce.average_order_value,
+        Decimal::new(2025, 2)
+    );
+    assert!(response.data.series.unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn subscriber_stats_accept_missing_conversion_rate() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/api/subscribers/2/reports/ecommerce"))
+        .and(query_param("shop_id", "1"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "data": {"ecommerce": {"orders_count": 0, "revenue": 0, "average_order_value": 0}}
+        })))
+        .expect(1)
+        .mount(&server)
+        .await;
+    let response = client(&server)
+        .ecommerce()
+        .subscriber_stats("2", "1")
+        .await
+        .unwrap();
+
+    assert!(response.data.ecommerce.conversion_rate.is_none());
+    assert_eq!(response.data.ecommerce.orders_count, 0);
+    assert_eq!(response.data.ecommerce.revenue, Decimal::ZERO);
 }

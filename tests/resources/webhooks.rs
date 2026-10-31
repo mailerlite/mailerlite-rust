@@ -73,6 +73,33 @@ async fn create_serializes_callback_and_events_without_omitted_options() {
 }
 
 #[tokio::test]
+async fn create_accepts_201_and_keeps_signing_secret_redacted() {
+    let server = MockServer::start().await;
+    resource_mock(
+        &server,
+        "POST",
+        "/api/webhooks",
+        201,
+        Some(json!({"data":webhook()})),
+        Some(json!({"url":"https://example.test/callback","events":["subscriber.created"]})),
+    )
+    .await;
+    let response = default_client(&server)
+        .webhooks()
+        .create(CreateWebhook::new(
+            "https://example.test/callback",
+            [WebhookEvent::SubscriberCreated],
+        ))
+        .await
+        .unwrap();
+
+    assert_eq!(response.metadata.status.as_u16(), 201);
+    assert_eq!(response.data.id.as_ref(), "42");
+    assert_eq!(response.data.secret.expose_secret(), "signing-secret");
+    assert!(!format!("{response:?}").contains("signing-secret"));
+}
+
+#[tokio::test]
 async fn update_sends_explicit_false_without_replacing_other_properties() {
     let server = MockServer::start().await;
     resource_mock(

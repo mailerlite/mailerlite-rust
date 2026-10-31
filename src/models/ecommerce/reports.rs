@@ -16,8 +16,10 @@ pub struct EcommerceStats {
     /// Average attributed order amount, retained as an exact decimal.
     #[serde(deserialize_with = "wire::decimal")]
     pub average_order_value: Decimal,
-    /// Conversion rate in the server-provided representation.
-    pub conversion_rate: String,
+    /// Conversion rate in the server-provided representation, when available.
+    ///
+    /// Shop and subscriber reports may omit this field. Absence does not mean zero.
+    pub conversion_rate: Option<String>,
 }
 
 /// StatsReport returned by the e-commerce API.
@@ -76,4 +78,32 @@ pub struct ReportSubscriber {
     pub id: SubscriberId,
     /// Email address of the subscriber associated with the report.
     pub email: String,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::EcommerceStats;
+    use serde_json::json;
+
+    #[test]
+    fn null_conversion_rate_is_absent() {
+        let result = serde_json::from_value::<EcommerceStats>(json!({
+            "orders_count": 0, "revenue": 0, "average_order_value": 0,
+            "conversion_rate": null
+        }));
+
+        assert!(matches!(result, Ok(stats) if stats.conversion_rate.is_none()));
+    }
+
+    #[test]
+    fn malformed_conversion_rate_is_rejected() {
+        for value in [json!(2), json!(false), json!([]), json!({"rate": "2%"})] {
+            let result = serde_json::from_value::<EcommerceStats>(json!({
+                "orders_count": 2, "revenue": 40, "average_order_value": 20,
+                "conversion_rate": value
+            }));
+
+            assert!(result.is_err());
+        }
+    }
 }

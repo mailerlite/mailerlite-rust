@@ -57,6 +57,29 @@ async fn create_sends_name_and_wire_type() {
 }
 
 #[tokio::test]
+async fn create_accepts_201_with_typed_field_and_metadata() {
+    let server = MockServer::start().await;
+    resource_mock(
+        &server,
+        "POST",
+        "/api/fields",
+        201,
+        Some(json!({"data":field()})),
+        Some(json!({"name":"Birthday","type":"date"})),
+    )
+    .await;
+    let response = default_client(&server)
+        .fields()
+        .create(CreateField::new("Birthday", FieldType::Date))
+        .await
+        .unwrap();
+
+    assert_eq!(response.metadata.status.as_u16(), 201);
+    assert_eq!(response.data.id.as_ref(), "004");
+    assert_eq!(response.data.name, "Birthday");
+}
+
+#[tokio::test]
 async fn update_renames_without_changing_type() {
     let server = MockServer::start().await;
     resource_mock(

@@ -506,6 +506,9 @@ Treat changes to those closed shapes as compatibility changes rather than
 assuming fields or variants can be freely added.
 
 - `Form.double_optin` is `Option<bool>`.
+- `EcommerceStats.conversion_rate` is `Option<String>` because shop and subscriber
+  reports may omit it. Use `.as_deref()` to inspect a returned rate; absence is
+  distinct from a reported zero rate.
 - `ImportReport` exposes outcome samples/counts and named metadata rather than raw JSON indexing. Sample IDs identify import-log rows.
 - `SubscriberActivity.properties` is `ActivityProperties`; match the known
   variants, or explicitly inspect an unknown future payload. Provider-specific
