@@ -37,8 +37,20 @@ mailerlite-rs = { version = "2", default-features = false, features = ["native-t
 Disabling default features without enabling a TLS backend does not provide HTTPS
 by itself. There is no blocking feature; API calls remain asynchronous and use
 Tokio. If your application names reqwest types used by the SDK, update that
-dependency from reqwest 0.11 to **0.13**. Clients and status types from different
-reqwest versions are not interchangeable.
+dependency from reqwest 0.11 to **0.13**. A reqwest 0.11 client cannot be injected
+into this SDK.
+
+`mailerlite_rs::Decimal` and `mailerlite_rs::StatusCode` now provide convenient
+imports for the exact decimal and HTTP status types already used by the SDK.
+They are re-exports, so existing compatible upstream imports continue to work.
+No wrapper types, conversions, dependency upgrades, or new features are needed.
+For example, use `Decimal::new(1999, 2)` for a price of `19.99` and
+`StatusCode::UNPROCESSABLE_ENTITY` when comparing an API error's status.
+
+Public re-exports now list their names explicitly. All existing identifier,
+automation-configuration, and subscriber-activity import paths are retained.
+When naming other exposed dependency types, use the compatible versions in
+the [public dependency policy](CONTRIBUTING.md#public-exports-and-dependency-types).
 
 ## Client construction and configuration
 

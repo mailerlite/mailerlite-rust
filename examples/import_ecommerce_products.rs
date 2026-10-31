@@ -1,9 +1,8 @@
 //! Import e-commerce products using a typed array payload.
 //!
 //! Required environment: `MAILERLITE_API_TOKEN`, `MAILERLITE_SHOP_ID`.
-use mailerlite_rs::MailerLite;
 use mailerlite_rs::resources::ecommerce::params::{ImportProduct, SaveProduct};
-use rust_decimal::Decimal;
+use mailerlite_rs::{Decimal, MailerLite};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

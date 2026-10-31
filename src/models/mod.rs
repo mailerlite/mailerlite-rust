@@ -33,4 +33,7 @@ pub mod subscribers;
 pub mod webhooks;
 
 pub use common::{Patch, SecretString};
-pub use ids::*;
+pub use ids::{
+    AutomationId, CampaignId, CartId, CartItemId, CategoryId, CustomerId, FieldId, FormId, GroupId,
+    ImportId, OrderId, ProductId, SegmentId, ShopId, SubscriberId, WebhookId,
+};

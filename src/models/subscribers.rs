@@ -1,6 +1,13 @@
 //! Subscriber response models.
 use crate::models::groups::Group;
-pub use crate::models::subscriber_activity::*;
+pub use crate::models::subscriber_activity::{
+    ActivityProperties, ActivitySurveyAnswer, ActivitySurveyQuestion, AutomationEmailActivity,
+    CampaignEmailActivity, DeliveryIssueActivity, EcommerceImportActivity, EmailChangeActivity,
+    FieldChange, FormPrizeActivity, ForwardEmailActivity, ForwardRecipient, ForwardedEmail,
+    GroupActivity, ImportActivity, MarketingPreferencesActivity, MovedGroupActivity,
+    OneToOneEmailActivity, ProductPurchaseActivity, SubscriberActivity, SurveyActivity,
+    UnknownActivityProperties, WebformActivity,
+};
 use crate::models::{GroupId, SubscriberId};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::BTreeMap;

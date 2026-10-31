@@ -107,6 +107,12 @@ separate omission from explicit null where the endpoint supports it. Known
 schemas are typed; heterogeneous batch bodies and unknown future variants stay
 explicitly inspectable. Malformed known fields return decoding errors.
 
+Use `mailerlite_rs::Decimal` for exact monetary values and
+`mailerlite_rs::StatusCode` for HTTP status comparisons. These re-export the
+underlying library types, so basic usage needs no additional direct dependency.
+See the [public dependency policy](CONTRIBUTING.md#public-exports-and-dependency-types)
+when using HTTP, JSON, serialization, or stream types directly.
+
 ## Listing and pagination
 
 List builders end in `.send().await?`. Subscriber lists use cursors, while groups

@@ -1,9 +1,8 @@
 //! Update a product variant and return its containing product.
 //!
 //! Required environment: `MAILERLITE_API_TOKEN`, `MAILERLITE_SHOP_ID`, `MAILERLITE_PRODUCT_ID`, `MAILERLITE_VARIANT_ID`.
-use mailerlite_rs::MailerLite;
 use mailerlite_rs::resources::ecommerce::params::{PriceType, SaveVariant};
-use rust_decimal::Decimal;
+use mailerlite_rs::{Decimal, MailerLite};
 use std::collections::BTreeMap;
 
 #[tokio::main]

@@ -182,6 +182,40 @@ When adding a dependency, explain its purpose, feature impact, and Rust 1.88
 compatibility in the pull request. Keep optional functionality optional. Do not
 raise the MSRV or change default features incidentally.
 
+### Public exports and dependency types
+
+Use explicit names in public re-exports (`pub use module::{Type, OtherType}`),
+including re-exports from private implementation modules. Preserve existing
+public import paths when reorganizing files. Adding a public item to an
+implementation module must not silently export it through a wildcard. Private
+imports and test imports such as `use super::*` are a separate concern.
+
+The SDK intentionally exposes these dependency types and traits:
+
+| Dependency family | Public use | Convenience export |
+| --- | --- | --- |
+| `rust_decimal` 1 | `Decimal` in monetary values and booking durations | `mailerlite_rs::Decimal` |
+| `reqwest` 0.13 | `Client` injection, `ClientBuilder`, transport `Error`, and `StatusCode` | `mailerlite_rs::StatusCode` |
+| `serde` 1 | `Serialize`/`Deserialize` implementations and generic serialization/decoding bounds | Use `serde` directly |
+| `serde_json` 1 | `Value`, `Number`, and serialization/decoding `Error` | Use `serde_json` directly |
+| `futures-core` 0.3 | Returned `Stream` implementations with the `stream` feature | Use `futures_core::Stream` directly |
+
+Re-export common money and status values without wrapping or converting them.
+Keep broader HTTP, JSON, and trait APIs under their upstream crate names. Users
+can configure an injected client through `MailerLite::http_client_builder()`
+without naming reqwest types. Applications using Serde derives, `json!`, or
+`TryStreamExt` should declare compatible direct dependencies; the latter comes
+from `futures-util` 0.3. Tokio 1 is the required runtime, rather than an exported
+handle type.
+
+Treat incompatible changes to exposed dependency types as SDK API changes even
+when a signature's printed names stay the same. Re-exports preserve upstream
+type identity; they do not hide dependency compatibility requirements. Review
+the affected public signatures, trait bounds, and features before updating those
+dependencies. Check downstream compilation with compatible direct dependencies
+and with only the SDK dependency; internal unit tests alone cannot verify the
+consumer's import paths. Update this table when the public boundary changes.
+
 ## Adding or changing an API operation
 
 1. Establish the method, path, parameters, response envelope, success statuses,

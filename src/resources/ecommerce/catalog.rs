@@ -85,9 +85,8 @@ impl<'a> Products<'a> {
     /// # Examples
     ///
     /// ```no_run
-    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::{Decimal, MailerLite};
     /// use mailerlite_rs::resources::ecommerce::params::SaveProduct;
-    /// use rust_decimal::Decimal;
     ///
     /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
     /// let shop_id = "123456789";
@@ -127,9 +126,8 @@ impl<'a> Products<'a> {
     /// # Examples
     ///
     /// ```no_run
-    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::{Decimal, MailerLite};
     /// use mailerlite_rs::resources::ecommerce::params::SaveProduct;
-    /// use rust_decimal::Decimal;
     ///
     /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
     /// let shop_id = "123456789";
@@ -395,9 +393,8 @@ impl<'a> Products<'a> {
     /// # Examples
     ///
     /// ```no_run
-    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::{Decimal, MailerLite};
     /// use mailerlite_rs::resources::ecommerce::params::{ImportProduct, SaveProduct};
-    /// use rust_decimal::Decimal;
     ///
     /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
     /// let shop_id = "123456789";
@@ -906,9 +903,8 @@ impl Variants<'_> {
     /// # Examples
     ///
     /// ```no_run
-    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::{Decimal, MailerLite};
     /// use mailerlite_rs::resources::ecommerce::params::{PriceType, SaveVariant};
-    /// use rust_decimal::Decimal;
     /// use std::collections::BTreeMap;
     ///
     /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
@@ -959,9 +955,8 @@ impl Variants<'_> {
     /// # Examples
     ///
     /// ```no_run
-    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::{Decimal, MailerLite};
     /// use mailerlite_rs::resources::ecommerce::params::{PriceType, SaveVariant};
-    /// use rust_decimal::Decimal;
     /// use std::collections::BTreeMap;
     ///
     /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {

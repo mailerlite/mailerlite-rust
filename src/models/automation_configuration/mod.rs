@@ -11,7 +11,18 @@ mod wire;
 pub use common::{
     ConfigurationId, ConfigurationValue, ExtensionFields, RelatedObject, TimezoneMode,
 };
-pub use steps::*;
-pub use triggers::*;
+pub use steps::{
+    AbPath, AbTestConfiguration, ActionConfiguration, ActionType, Condition,
+    ConditionConfiguration, ConditionMatching, ConditionType, DelayConfiguration, DelayUnit,
+    ElapsedDateAction, EmailConfiguration, NotificationField, NotificationFields, PathAllocation,
+    StepConfiguration, StepKind, StepProperties, WebhookConfiguration, Weekday,
+};
+pub use triggers::{
+    AbandonedTriggerConfiguration, CategoryTriggerConfiguration, DateOffsetUnit,
+    DateTriggerConfiguration, DurationUnit, FieldTriggerConfiguration, FormTriggerConfiguration,
+    GroupTriggerConfiguration, LinkTriggerConfiguration, ProductTriggerConfiguration,
+    PurchaseFrequencyConfiguration, SegmentDisplayRule, SegmentTriggerConfiguration,
+    ShopTriggerConfiguration, TriggerConfiguration, TriggerProperties,
+};
 
 pub(crate) use wire::{STEP_FIELDS, TRIGGER_FIELDS, configuration_fields};

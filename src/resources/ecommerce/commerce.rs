@@ -379,11 +379,10 @@ impl<'a> Orders<'a> {
     /// # Examples
     ///
     /// ```no_run
-    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::{Decimal, MailerLite};
     /// use mailerlite_rs::resources::ecommerce::params::{
     ///     CreateOrder, OrderCart, OrderStatus, SaveCartItem, SaveCustomer,
     /// };
-    /// use rust_decimal::Decimal;
     ///
     /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
     /// let shop_id = "123456789";
@@ -563,11 +562,10 @@ impl<'a> Orders<'a> {
     /// # Examples
     ///
     /// ```no_run
-    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::{Decimal, MailerLite};
     /// use mailerlite_rs::resources::ecommerce::params::{
     ///     CreateOrder, OrderCart, SaveCartItem, SaveCustomer,
     /// };
-    /// use rust_decimal::Decimal;
     ///
     /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
     /// let shop_id = "123456789";
@@ -878,9 +876,8 @@ impl<'a> CartItems<'a> {
     /// # Examples
     ///
     /// ```no_run
-    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::{Decimal, MailerLite};
     /// use mailerlite_rs::resources::ecommerce::params::SaveCartItem;
-    /// use rust_decimal::Decimal;
     ///
     /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
     /// let shop_id = "123456789";
@@ -925,9 +922,8 @@ impl<'a> CartItems<'a> {
     /// # Examples
     ///
     /// ```no_run
-    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::{Decimal, MailerLite};
     /// use mailerlite_rs::resources::ecommerce::params::SaveCartItem;
-    /// use rust_decimal::Decimal;
     ///
     /// # async fn example(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
     /// let shop_id = "123456789";

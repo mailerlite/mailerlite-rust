@@ -1,9 +1,8 @@
 //! Update an existing e-commerce product.
 //!
 //! Required environment: `MAILERLITE_API_TOKEN`, `MAILERLITE_SHOP_ID`, `MAILERLITE_PRODUCT_ID`.
-use mailerlite_rs::MailerLite;
 use mailerlite_rs::resources::ecommerce::params::SaveProduct;
-use rust_decimal::Decimal;
+use mailerlite_rs::{Decimal, MailerLite};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
