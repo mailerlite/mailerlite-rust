@@ -7,7 +7,15 @@ use super::automations::{ActivityStatus, Automations};
 use crate::{
     Error, Response, Result,
     http::OperationPolicy,
-    models::{Patch, automation_reports::*, automations::Automation, campaigns::CampaignEmail},
+    models::{
+        Patch,
+        automation_reports::{
+            AutomationEcommerceReport, AutomationEmailContent, AutomationEmailEcommerceReport,
+            AutomationEmailReport, AutomationReportOrder, AutomationUnsubscribeReason,
+        },
+        automations::Automation,
+        campaigns::CampaignEmail,
+    },
     pagination::NumberedPage,
 };
 use reqwest::Method;

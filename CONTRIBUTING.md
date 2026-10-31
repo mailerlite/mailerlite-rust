@@ -121,6 +121,12 @@ public naming. Required request fields belong in constructors; optional fields
 use consuming setters. Resource handles borrow a reusable client. Avoid extra
 traits, macros, dependencies, allocations, or cloning without a concrete need.
 
+Use explicit imports in production code, including private modules. Name the
+types, functions, or modules used instead of importing `module::*`; group related
+names with braces and let rustfmt handle their layout. This makes dependencies
+visible and avoids pulling newly added names into scope implicitly. Inline unit
+test modules may use `use super::*` to exercise their parent module.
+
 Use named enums for arguments whose meaning is unclear at the call site, such
 as `.sort(GroupSort::Name, SortDirection::Descending)`. Clearly named boolean
 setters such as `.enabled(true)` can retain their boolean values.
@@ -190,8 +196,7 @@ raise the MSRV or change default features incidentally.
 Use explicit names in public re-exports (`pub use module::{Type, OtherType}`),
 including re-exports from private implementation modules. Preserve existing
 public import paths when reorganizing files. Adding a public item to an
-implementation module must not silently export it through a wildcard. Private
-imports and test imports such as `use super::*` are a separate concern.
+implementation module must not silently export it through a wildcard.
 
 The SDK intentionally exposes these dependency types and traits:
 

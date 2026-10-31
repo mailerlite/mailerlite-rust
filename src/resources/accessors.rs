@@ -1,5 +1,11 @@
 //! Discoverable resource accessors on the shared MailerLite client.
-use crate::{MailerLite, resources::*};
+use crate::{
+    MailerLite,
+    resources::{
+        automation_steps, automation_templates, automation_triggers, automations, batch, campaigns,
+        ecommerce, fields, forms, groups, imports, reference, segments, subscribers, webhooks,
+    },
+};
 
 impl MailerLite {
     /// Manage shops, products, orders, and e-commerce reporting.

@@ -1,6 +1,13 @@
 //! Shop-scoped products, categories, and product variants.
-use super::{List, Scope, params::*};
-use crate::{Response, Result, models::ecommerce::*, response::Count};
+use super::{
+    List, Scope,
+    params::{ImportProduct, SaveCategory, SaveProduct, SaveVariant},
+};
+use crate::{
+    Response, Result,
+    models::ecommerce::{Category, Product, ProductVariant},
+    response::Count,
+};
 use reqwest::Method;
 /// Shop-scoped products operations.
 #[derive(Clone, Debug)]

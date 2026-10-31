@@ -1,6 +1,13 @@
 //! Shop-scoped customers, orders, carts, and cart items.
-use super::{List, Scope, params::*};
-use crate::{Response, Result, models::ecommerce::*, response::Count};
+use super::{
+    List, Scope,
+    params::{CreateOrder, ImportCustomer, SaveCartItem, SaveCustomer, UpdateCart, UpdateOrder},
+};
+use crate::{
+    Response, Result,
+    models::ecommerce::{AcceptedCustomer, Cart, CartItem, Customer, Order},
+    response::Count,
+};
 use reqwest::Method;
 /// Shop-scoped customers operations.
 #[derive(Clone, Debug)]
