@@ -2,9 +2,10 @@
 use crate::{Error, Result};
 
 /// Retry and local rate-limit policy attached to an operation.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub(crate) struct OperationPolicy {
     pub read_only: bool,
+    pub idempotency_key: Option<reqwest::header::HeaderValue>,
     pub import: bool,
     pub success_statuses: &'static [u16],
 }
@@ -17,18 +18,21 @@ impl OperationPolicy {
     /// Explicitly reviewed read operation.
     pub const READ: Self = Self {
         read_only: true,
+        idempotency_key: None,
         import: false,
         success_statuses: &[200],
     };
     /// Write operation that must never be replayed automatically.
     pub const WRITE: Self = Self {
         read_only: false,
+        idempotency_key: None,
         import: false,
         success_statuses: &[200, 201, 204],
     };
     /// Subscriber import operation, subject to both local pacing buckets.
     pub const IMPORT: Self = Self {
         read_only: false,
+        idempotency_key: None,
         import: true,
         success_statuses: &[200, 202],
     };

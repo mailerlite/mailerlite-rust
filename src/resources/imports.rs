@@ -335,6 +335,7 @@ mod polling_tests {
 
     fn metadata(status: reqwest::StatusCode) -> ResponseMetadata {
         ResponseMetadata {
+            idempotent_replayed: false,
             status,
             rate_limit: None,
             rate_remaining: None,

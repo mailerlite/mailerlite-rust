@@ -21,6 +21,8 @@ impl<T> Response<T> {
 /// Selected response headers.
 #[derive(Debug, Clone)]
 pub struct ResponseMetadata {
+    /// Whether the server replayed a stored idempotent response.
+    pub idempotent_replayed: bool,
     /// HTTP status.
     pub status: reqwest::StatusCode,
     /// Server-reported limit.
@@ -33,6 +35,10 @@ pub struct ResponseMetadata {
     pub request_id: Option<String>,
 }
 impl ResponseMetadata {
+    /// Whether the server returned a stored response for the supplied idempotency key.
+    pub fn is_idempotent_replay(&self) -> bool {
+        self.idempotent_replayed
+    }
     /// Server-directed retry delay.
     pub fn retry_after(&self) -> Option<Duration> {
         self.retry_after

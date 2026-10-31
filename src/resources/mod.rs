@@ -20,3 +20,12 @@ mod accessors;
 mod sort_direction;
 
 pub use sort_direction::SortDirection;
+
+/// Emails API types.
+pub mod emails;
+
+/// Files API types.
+pub mod files;
+
+/// Brand styles API types.
+pub mod brand_styles;

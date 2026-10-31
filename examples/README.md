@@ -308,3 +308,41 @@ bodies, which may contain personal data.
 - [get_ecommerce_shop_stats](get_ecommerce_shop_stats.rs)
 - [get_subscriber_ecommerce_orders](get_subscriber_ecommerce_orders.rs)
 - [get_subscriber_ecommerce_stats](get_subscriber_ecommerce_stats.rs)
+
+## Simple-editor emails
+
+These examples use `MAILERLITE_API_KEY`. Operations on an existing email also
+require `MAILERLITE_EMAIL_ID`; writes with optimistic concurrency require
+`MAILERLITE_EMAIL_ETAG`. Block and version operations additionally use
+`MAILERLITE_BLOCK_ID` or `MAILERLITE_VERSION_ID`. Read the file header and body for
+its required values. Write examples modify the selected email.
+
+- [create campaign with simple editor](create_campaign_with_simple_editor.rs)
+- [create email block](create_email_block.rs)
+- [create email template](create_email_template.rs)
+- [create email version](create_email_version.rs)
+- [delete email block](delete_email_block.rs)
+- [find email](find_email.rs)
+- [find email block](find_email_block.rs)
+- [get brand styles](get_brand_styles.rs)
+- [get email html](get_email_html.rs)
+- [get email versions](get_email_versions.rs)
+- [get files](get_files.rs)
+- [move email block](move_email_block.rs)
+- [restore email version](restore_email_version.rs)
+- [retry email write](retry_email_write.rs)
+- [update email block](update_email_block.rs)
+- [update email settings](update_email_settings.rs)
+- [validate email block](validate_email_block.rs)
+- [validate email settings](validate_email_settings.rs)
+
+`retry_email_write` requires a caller-generated `MAILERLITE_IDEMPOTENCY_KEY`;
+reuse it only for the same logical write. `move_email_block` also requires
+`MAILERLITE_ADJACENT_BLOCK_ID`. Campaign creation reads its name, subject, and sender
+from `MAILERLITE_CAMPAIGN_NAME`, `MAILERLITE_SUBJECT`, `MAILERLITE_FROM_NAME`, and
+`MAILERLITE_FROM_EMAIL`.
+
+`update_email_block` requires the complete replacement block document in
+`MAILERLITE_EDITOR_CONTENT_JSON`. `update_email_settings` requires
+`MAILERLITE_BACKGROUND_COLOR` and `MAILERLITE_PARAGRAPH_SIZE`.
+`create_email_template` uses `MAILERLITE_TEMPLATE_NAME`.

@@ -114,6 +114,53 @@ underlying library types, so basic usage needs no additional direct dependency.
 See the [public dependency policy](CONTRIBUTING.md#public-exports-and-dependency-types)
 when using HTTP, JSON, serialization, or stream types directly.
 
+## Simple-editor emails
+
+Create a draft using `CreateCampaign::simple_editor()` or
+`.simple_editor_template(template_id)`, then edit its returned email IDs through
+`mailerlite.emails()`. Simple-editor creation cannot include HTML `content`.
+
+```rust
+use mailerlite_rs::{MailerLite, resources::campaigns::{CreateCampaign, Email}};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = MailerLite::new(std::env::var("MAILERLITE_API_KEY")?)?;
+    let draft = CreateCampaign::new(
+        "Newsletter", Email::new("Hello", "Example", "sender@example.com"),
+    ).simple_editor();
+    let campaign = client.campaigns().create(draft).await?;
+    if let Some(id) = campaign.data.default_email_id {
+        let email = client.emails().get(id).await?;
+        println!("Current email version: {}", email.data.etag);
+    }
+    Ok(())
+}
+```
+
+`emails()` supports document and HTML reads, block reads/creation/replacement/
+deletion/movement, block and settings validation, settings updates, template
+creation, version listing/creation, and version restoration. Response models
+live in `models::emails`; write parameters live in `resources::emails`.
+
+Versioned operations return `Response<WithEtag<T>>`: HTTP metadata is in
+`response.metadata`, the current version is `response.data.etag`, and the
+resource is `response.data.data`. Pass the latest etag to the next write.
+For HTTP 409 conflicts, inspect `ApiError::is_version_conflict()` and `etag()`;
+refetch and reconcile before attempting another write.
+
+Set `client.emails().with_idempotency_key(key)` for an explicit write. Use one
+key per logical operation and reuse it only when resubmitting that same request.
+Writes are never automatically retried. Read and validation methods ignore the
+key. `response.metadata.is_idempotent_replay()` reports server-side replay.
+
+Retrieve palettes with `client.brand_styles().get().await?` and files with
+`client.files().list().kind(FileType::Image).limit(25).send().await?`, importing
+`FileType` from `models::files`. Files and email versions use `NumberedPage<T>`.
+
+See [the simple-editor example guide](examples/README.md#simple-editor-emails).
+
+
 ## Listing and pagination
 
 List builders end in `.send().await?`. Subscriber lists use cursors, while groups

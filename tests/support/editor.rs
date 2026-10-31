@@ -1,0 +1,76 @@
+//! Shared mockito helpers for the migrated editor contract scenarios.
+#![allow(
+    clippy::expect_used,
+    clippy::unwrap_used,
+    reason = "Tests assert fixture outcomes"
+)]
+
+use mailerlite_rs::MailerLite;
+use mockito::{Matcher, Mock, ServerGuard};
+use serde_json::Value;
+
+pub const BAD_IDS: [&str; 4] = ["123/html", "123%2Fhtml", "123\n", "²"];
+
+pub fn fixture(name: &str) -> String {
+    std::fs::read_to_string(format!(
+        "{}/tests/fixtures/{name}.json",
+        env!("CARGO_MANIFEST_DIR")
+    ))
+    .expect("the fixture exists")
+}
+
+pub fn mailerlite(server: &ServerGuard) -> MailerLite {
+    MailerLite::builder("api_key")
+        .base_url(server.url())
+        .rate_limit_intervals(std::time::Duration::ZERO, std::time::Duration::ZERO)
+        .build()
+        .unwrap()
+}
+
+pub async fn expect_request(
+    server: &mut ServerGuard,
+    method: &str,
+    path_and_query: &str,
+    body: Option<Value>,
+    status: usize,
+    response: &str,
+) -> Mock {
+    let mock: Mock = server
+        .mock(method, path_and_query)
+        .match_header("Authorization", "Bearer api_key")
+        .match_header("Accept", "application/json")
+        .match_header("Content-Type", "application/json");
+    let mock: Mock = match body {
+        Some(body) => mock.match_body(Matcher::Json(body)),
+        None => mock.match_request(|request| request.body().is_ok_and(|body| body.is_empty())),
+    };
+
+    mock.with_status(status)
+        .with_header("Content-Type", "application/json")
+        .with_body(response)
+        .expect(1)
+        .create_async()
+        .await
+}
+
+/// Check the mocks with `assert_no_request`.
+pub async fn expect_no_request(server: &mut ServerGuard) -> Vec<Mock> {
+    let mut mocks: Vec<Mock> = Vec::new();
+    for method in ["GET", "POST", "PUT", "PATCH", "DELETE"] {
+        mocks.push(
+            server
+                .mock(method, Matcher::Any)
+                .expect(0)
+                .create_async()
+                .await,
+        );
+    }
+
+    mocks
+}
+
+pub async fn assert_no_request(mocks: &[Mock]) {
+    for mock in mocks {
+        mock.assert_async().await;
+    }
+}

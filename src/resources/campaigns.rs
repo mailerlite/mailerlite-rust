@@ -888,6 +888,10 @@ pub struct MultivariateEmail {
     reply_to: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     content: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    editor: Option<&'static str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    template_id: Option<String>,
 }
 impl MultivariateEmail {
     /// Create an email with subject and sender supplied by test variants.
@@ -924,6 +928,8 @@ impl From<Email> for MultivariateEmail {
             from: Some(email.from),
             reply_to: email.reply_to,
             content: email.content,
+            editor: None,
+            template_id: None,
         }
     }
 }
@@ -950,6 +956,27 @@ pub struct CreateCampaign {
     settings: Option<TrackingSettings>,
 }
 impl CreateCampaign {
+    /// Create all campaign emails with the simple editor.
+    ///
+    /// HTML content cannot be combined with this editor. Edit the returned email
+    /// IDs through `MailerLite::emails()` after creating the campaign.
+    pub fn simple_editor(mut self) -> Self {
+        for email in &mut self.emails {
+            email.editor = Some("simple");
+        }
+        self
+    }
+    /// Start all simple-editor emails from the same shared-gallery template.
+    /// The API validates template ownership and availability.
+    pub fn simple_editor_template(mut self, id: impl Into<String>) -> Self {
+        let id = id.into();
+        for email in &mut self.emails {
+            email.editor = Some("simple");
+            email.template_id = Some(id.clone());
+        }
+        self
+    }
+
     /// Create a regular draft campaign.
     pub fn new(name: impl Into<String>, email: Email) -> Self {
         Self {
@@ -1027,6 +1054,16 @@ impl CreateCampaign {
         self
     }
     fn validate(&self) -> Result<()> {
+        if self
+            .emails
+            .iter()
+            .any(|email| email.editor.is_some() && email.content.is_some())
+        {
+            return Err(Error::Config(
+                "simple-editor campaigns cannot include HTML content".into(),
+            ));
+        }
+
         if self.name.is_empty() || self.name.chars().count() > 255 || self.emails.is_empty() {
             return Err(Error::Config(
                 "campaign requires a name of 1..=255 characters and at least one email".into(),

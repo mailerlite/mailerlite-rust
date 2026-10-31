@@ -34,6 +34,8 @@ pub struct Campaign {
     pub stopped_at: Option<String>,
     /// Email versions included with this campaign; absent when not loaded.
     pub emails: Option<Vec<CampaignEmail>>,
+    /// Default email to edit after campaign creation.
+    pub default_email_id: Option<String>,
     /// Tracking settings included with this campaign.
     pub settings: Option<CampaignSettings>,
     /// Whether the server currently permits scheduling this campaign.
@@ -56,6 +58,9 @@ pub struct CampaignSettings {
 #[derive(Debug, Clone, serde::Deserialize)]
 #[non_exhaustive]
 pub struct CampaignEmail {
+    /// Server editor type, such as `builder_inline_email`.
+    #[serde(rename = "type")]
+    pub kind: Option<String>,
     /// MailerLite identifier, preserved as text.
     pub id: String,
     /// Email subject line, when included in the response.

@@ -69,3 +69,18 @@ impl MailerLite {
         imports::Imports::new(self)
     }
 }
+
+impl MailerLite {
+    /// Read and edit simple-editor emails.
+    pub fn emails(&self) -> crate::resources::emails::Emails<'_> {
+        crate::resources::emails::Emails::new(self)
+    }
+    /// Read account brand palettes.
+    pub fn brand_styles(&self) -> crate::resources::brand_styles::BrandStylesResource<'_> {
+        crate::resources::brand_styles::BrandStylesResource::new(self)
+    }
+    /// List media-library files.
+    pub fn files(&self) -> crate::resources::files::Files<'_> {
+        crate::resources::files::Files::new(self)
+    }
+}

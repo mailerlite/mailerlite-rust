@@ -42,3 +42,14 @@ pub use ids::{
     AutomationId, CampaignId, CartId, CartItemId, CategoryId, CustomerId, FieldId, FormId, GroupId,
     ImportId, OrderId, ProductId, SegmentId, ShopId, SubscriberId, WebhookId,
 };
+
+/// Emails API types.
+pub mod emails;
+
+/// Files API types.
+pub mod files;
+
+/// Brand styles API types.
+pub mod brand_styles;
+
+mod open_enum;

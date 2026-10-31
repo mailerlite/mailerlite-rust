@@ -123,45 +123,54 @@ pub(crate) fn numbered_stream_with_policy<'a, T: DeserializeOwned + 'a>(
         finished: false,
         cycle: CursorCycle::default(),
     };
-    try_unfold(state, move |mut state| async move {
-        loop {
-            if let Some(item) = state.items.next() {
-                return Ok(Some((item, state)));
+    try_unfold(state, move |mut state| {
+        let policy = policy.clone();
+        async move {
+            loop {
+                if let Some(item) = state.items.next() {
+                    return Ok(Some((item, state)));
+                }
+                if state.finished {
+                    return Ok(None);
+                }
+                let requested = state
+                    .query
+                    .iter()
+                    .find(|(key, _)| key == "page")
+                    .map(|(_, value)| value.parse::<u64>())
+                    .transpose()
+                    .map_err(|_| Error::Pagination("invalid requested page number".into()))?
+                    .unwrap_or(1);
+                if requested == 0 {
+                    return Err(Error::Pagination("page numbers start at one".into()));
+                }
+                let path: Vec<&str> = state.path.iter().map(String::as_str).collect();
+                let response = state
+                    .client
+                    .request::<NumberedPage<T>>(
+                        Method::GET,
+                        &path,
+                        &state.query,
+                        None,
+                        policy.clone(),
+                    )
+                    .await?;
+                let page = response.data;
+                if page
+                    .meta
+                    .current_page
+                    .is_some_and(|current| current != requested)
+                {
+                    return Err(Error::Pagination(
+                        "server returned an unexpected page number".into(),
+                    ));
+                }
+                match page.next_page() {
+                    Some(next) => set_parameter(&mut state.query, "page", next.to_string()),
+                    None => state.finished = true,
+                }
+                state.items = page.data.into_iter();
             }
-            if state.finished {
-                return Ok(None);
-            }
-            let requested = state
-                .query
-                .iter()
-                .find(|(key, _)| key == "page")
-                .map(|(_, value)| value.parse::<u64>())
-                .transpose()
-                .map_err(|_| Error::Pagination("invalid requested page number".into()))?
-                .unwrap_or(1);
-            if requested == 0 {
-                return Err(Error::Pagination("page numbers start at one".into()));
-            }
-            let path: Vec<&str> = state.path.iter().map(String::as_str).collect();
-            let response = state
-                .client
-                .request::<NumberedPage<T>>(Method::GET, &path, &state.query, None, policy)
-                .await?;
-            let page = response.data;
-            if page
-                .meta
-                .current_page
-                .is_some_and(|current| current != requested)
-            {
-                return Err(Error::Pagination(
-                    "server returned an unexpected page number".into(),
-                ));
-            }
-            match page.next_page() {
-                Some(next) => set_parameter(&mut state.query, "page", next.to_string()),
-                None => state.finished = true,
-            }
-            state.items = page.data.into_iter();
         }
     })
 }

@@ -67,9 +67,16 @@ impl fmt::Debug for Error {
 pub struct ApiError {
     metadata: Box<ResponseMetadata>,
     message: Option<String>,
+    context: Box<ApiErrorContext>,
     validation_errors: BTreeMap<String, Vec<String>>,
     body: Vec<u8>,
     truncated: bool,
+}
+
+#[derive(Clone)]
+struct ApiErrorContext {
+    code: Option<String>,
+    etag: Option<String>,
 }
 
 impl ApiError {
@@ -91,12 +98,36 @@ impl ApiError {
         Self {
             metadata: Box::new(metadata),
             message,
+            context: Box::new(ApiErrorContext {
+                code: parsed
+                    .as_ref()
+                    .and_then(|v| v.get("code"))
+                    .and_then(|v| v.as_str())
+                    .map(str::to_owned),
+                etag: parsed
+                    .as_ref()
+                    .and_then(|v| v.get("etag"))
+                    .and_then(|v| v.as_str())
+                    .map(str::to_owned),
+            }),
             validation_errors,
             body: body[..body.len().min(DIAGNOSTIC_LIMIT)].to_vec(),
             truncated: body.len() > DIAGNOSTIC_LIMIT,
         }
     }
 
+    /// Machine-readable server error code.
+    pub fn code(&self) -> Option<&str> {
+        self.context.code.as_deref()
+    }
+    /// Current email version after a version conflict.
+    pub fn etag(&self) -> Option<&str> {
+        self.context.etag.as_deref()
+    }
+    /// Whether the server rejected an outdated simple-editor email version.
+    pub fn is_version_conflict(&self) -> bool {
+        self.status() == StatusCode::CONFLICT && self.code() == Some("version_conflict")
+    }
     /// HTTP status returned by MailerLite.
     pub fn status(&self) -> StatusCode {
         self.metadata.status
@@ -311,6 +342,7 @@ mod tests {
 
     fn metadata(status: StatusCode) -> ResponseMetadata {
         ResponseMetadata {
+            idempotent_replayed: false,
             status,
             rate_limit: None,
             rate_remaining: None,

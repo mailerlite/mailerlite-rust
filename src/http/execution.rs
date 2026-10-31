@@ -33,6 +33,10 @@ fn metadata(status: StatusCode, headers: &HeaderMap) -> ResponseMetadata {
                 })
         });
     ResponseMetadata {
+        idempotent_replayed: headers
+            .get("Idempotent-Replayed")
+            .and_then(|v| v.to_str().ok())
+            .is_some_and(|v| v.trim().eq_ignore_ascii_case("true")),
         status,
         rate_limit: integer("x-ratelimit-limit"),
         rate_remaining: integer("x-ratelimit-remaining"),
@@ -88,6 +92,9 @@ async fn execute_until(
                 concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION")),
             )
             .timeout(inner.request_timeout);
+        if let Some(key) = &policy.idempotency_key {
+            request = request.header("Idempotency-Key", key.clone());
+        }
         if let ApiVersion::Pinned(version) = &inner.version {
             request = request.header("X-Version", version.as_str());
         }
