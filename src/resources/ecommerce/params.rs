@@ -957,17 +957,45 @@ impl ProductSettings {
         self.minimum_notice_period_unit = Some(value.into());
         self
     }
-    /// Set custom availability days.
+    /// Add or update time ranges for the supplied weekdays.
+    ///
+    /// Merges into the availability already configured on this builder, preserving
+    /// other days, including explicit nulls set by [`Self::unavailable_day`]. For
+    /// the same day, the last call wins. An empty map leaves existing days intact.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mailerlite_rs::resources::ecommerce::params::{ProductAction, ProductSettings};
+    /// use std::collections::BTreeMap;
+    ///
+    /// let settings = ProductSettings::new(ProductAction::MoveToGroup)
+    ///     .unavailable_day("sunday")
+    ///     .custom_availability_days(BTreeMap::from([(
+    ///         "monday".into(), ["09:00".into(), "17:00".into()],
+    ///     )]));
+    ///
+    /// let body = serde_json::to_value(settings)?;
+    ///
+    /// assert_eq!(body["custom_availability_days"], serde_json::json!({
+    ///     "monday": ["09:00", "17:00"], "sunday": null,
+    /// }));
+    /// # Ok::<(), serde_json::Error>(())
+    /// ```
     pub fn custom_availability_days(mut self, value: BTreeMap<String, [String; 2]>) -> Self {
-        self.custom_availability_days = Some(
-            value
-                .into_iter()
-                .map(|(day, times)| (day, Some(times)))
-                .collect(),
-        );
+        let days = self
+            .custom_availability_days
+            .get_or_insert_with(BTreeMap::new);
+        for (day, times) in value {
+            days.insert(day, Some(times));
+        }
         self
     }
     /// Mark a weekday unavailable by sending an explicit null time range.
+    ///
+    /// Replaces any time range previously configured for this day and preserves
+    /// all other days. A later [`Self::custom_availability_days`] call containing
+    /// the same day makes it available again.
     pub fn unavailable_day(mut self, day: impl Into<String>) -> Self {
         self.custom_availability_days
             .get_or_insert_with(BTreeMap::new)
@@ -1082,6 +1110,88 @@ mod tests {
                 ["09:00".into(), "17:00".into()],
             )]))
             .unavailable_day("sunday");
+        assert_eq!(
+            serde_json::to_value(settings).unwrap(),
+            json!({"action":"move_to_group","custom_availability_days":{"monday":["09:00","17:00"],"sunday":null}})
+        );
+    }
+
+    #[test]
+    fn availability_hours_preserve_previously_unavailable_days() {
+        let settings = ProductSettings::new(ProductAction::MoveToGroup)
+            .unavailable_day("sunday")
+            .custom_availability_days(BTreeMap::from([(
+                "monday".into(),
+                ["09:00".into(), "17:00".into()],
+            )]));
+
+        assert_eq!(
+            serde_json::to_value(settings).unwrap(),
+            json!({"action":"move_to_group","custom_availability_days":{"monday":["09:00","17:00"],"sunday":null}})
+        );
+    }
+
+    #[test]
+    fn repeated_availability_maps_merge_days_and_replace_matching_ranges() {
+        let settings = ProductSettings::new(ProductAction::MoveToGroup)
+            .custom_availability_days(BTreeMap::from([
+                ("monday".into(), ["09:00".into(), "17:00".into()]),
+                ("tuesday".into(), ["10:00".into(), "16:00".into()]),
+            ]))
+            .custom_availability_days(BTreeMap::from([
+                ("monday".into(), ["08:00".into(), "12:00".into()]),
+                ("wednesday".into(), ["11:00".into(), "15:00".into()]),
+            ]));
+
+        assert_eq!(
+            serde_json::to_value(settings).unwrap(),
+            json!({"action":"move_to_group","custom_availability_days":{
+                "monday":["08:00","12:00"],"tuesday":["10:00","16:00"],"wednesday":["11:00","15:00"]
+            }})
+        );
+    }
+
+    #[test]
+    fn unavailable_day_replaces_only_its_existing_time_range() {
+        let settings = ProductSettings::new(ProductAction::MoveToGroup)
+            .custom_availability_days(BTreeMap::from([
+                ("monday".into(), ["09:00".into(), "17:00".into()]),
+                ("tuesday".into(), ["10:00".into(), "16:00".into()]),
+            ]))
+            .unavailable_day("monday");
+
+        assert_eq!(
+            serde_json::to_value(settings).unwrap(),
+            json!({"action":"move_to_group","custom_availability_days":{"monday":null,"tuesday":["10:00","16:00"]}})
+        );
+    }
+
+    #[test]
+    fn availability_hours_can_restore_one_previously_unavailable_day() {
+        let settings = ProductSettings::new(ProductAction::MoveToGroup)
+            .unavailable_day("monday")
+            .unavailable_day("sunday")
+            .custom_availability_days(BTreeMap::from([(
+                "monday".into(),
+                ["09:00".into(), "17:00".into()],
+            )]));
+
+        assert_eq!(
+            serde_json::to_value(settings).unwrap(),
+            json!({"action":"move_to_group","custom_availability_days":{"monday":["09:00","17:00"],"sunday":null}})
+        );
+    }
+
+    #[test]
+    fn empty_availability_map_preserves_existing_days() {
+        let settings = ProductSettings::new(ProductAction::MoveToGroup)
+            .unavailable_day("sunday")
+            .custom_availability_days(BTreeMap::from([(
+                "monday".into(),
+                ["09:00".into(), "17:00".into()],
+            )]))
+            .custom_availability_days(BTreeMap::new());
+
         assert_eq!(
             serde_json::to_value(settings).unwrap(),
             json!({"action":"move_to_group","custom_availability_days":{"monday":["09:00","17:00"],"sunday":null}})

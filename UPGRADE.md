@@ -538,6 +538,9 @@ assuming fields or variants can be freely added.
   under `models::ecommerce`. Request settings remain separate under
   `resources::ecommerce::params`. JSON URL assets use `SaveProductAsset::url`;
   uploading file bytes requires a separate multipart contract.
+  `ProductSettings::custom_availability_days` merges the supplied weekdays into
+  the request builder, preserving other days set with `unavailable_day`. For
+  overlapping days, the last call wins; an empty map preserves existing entries.
 - Step and trigger response properties, shared trigger state, and template
   workflows expose concrete fields. Stored configuration identifiers can
   preserve either the original integer or string representation.

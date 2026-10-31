@@ -137,11 +137,16 @@ support equality and hashing. Callers need these traits to compare options or
 use them as collection keys; they cannot add the implementations downstream.
 Do not invent an ordering for domain choices just to derive `Ord`.
 
-Repeated request-builder setters replace the earlier value for that parameter.
+By default, repeated request-builder setters replace the earlier value for that parameter.
 Validate the final state in `send()` and use the same validation for streams.
 Correcting one parameter must not hide an invalid value in another parameter or
 an option unsupported by the endpoint. Retain typed values when validation
 depends on information that would be lost in the wire representation.
+
+Document collection setters that merge entries instead. Preserve unrelated
+entries, including explicit nulls, and define how overlapping keys behave.
+For example, booking availability merges weekdays with the last call winning
+for each day. Test both call orders, repeated keys, and empty input.
 
 Mark lazy request-builder types `#[must_use]` with a message directing callers
 to `.send().await`, and client configuration builders with a message directing
