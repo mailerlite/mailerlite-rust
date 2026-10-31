@@ -2,12 +2,11 @@
 
 Contributions to the MailerLite Rust SDK are welcome: bug fixes, API coverage,
 tests, documentation, and examples. This guide describes how to develop and
-review changes against the current 2.x codebase.
+review changes against the current codebase.
 
 Start with the [README](README.md) for the public API and [UPGRADE.md](UPGRADE.md)
 for changes from 1.x. The SDK is a single asynchronous crate targeting the current
-MailerLite REST API. Classic API, blocking clients, and browser/WASM support are
-outside its current scope.
+MailerLite REST API.
 
 ## Reporting issues and proposing changes
 
@@ -538,10 +537,15 @@ subscribers().upsert(UpsertSubscriber::new(email)).
 ```
 
 `fix` denotes a patch, `feat` a minor change, and a breaking-change marker a major
-change under semantic versioning. Other types do not imply a version bump by
-themselves. [Release Please](https://github.com/googleapis/release-please#how-should-i-write-my-commits)
-uses the commit history to prepare releases. Before a squash merge, make sure
-the final commit retains the correct type and any breaking-change footer.
+change under semantic versioning. Nonbreaking `docs`, `test`, `refactor`, `build`,
+`ci`, `style`, and `chore` commits do not request a release by themselves.
+[Release Please](https://github.com/googleapis/release-please#how-should-i-write-my-commits)
+uses commits merged into `main` to prepare releases. When several changes are
+pending, the highest required version bump wins. Before a squash merge, make
+sure the final commit retains the correct type and any breaking-change footer;
+individual branch commits will be replaced by that squash commit. Choose the
+type that describes the change rather than labeling maintenance as `fix` just
+to request a release. See [CI and releases](#ci-and-releases) for the release flow.
 Conventions are reviewed by contributors and maintainers; the current workflow
 does not run commitlint.
 
@@ -571,8 +575,27 @@ The current [workflow](.github/workflows/main.yaml) runs on pushes:
   jobs).
 - Check formatting and run Clippy across all targets and features on stable.
 - On `main`, run release-please after build/test and quality checks pass.
-- When release-please creates a release, run the crates.io publish job using the
-  configured environment and repository credentials.
+
+The workflow runs regardless of commit type. Release Please uses
+`release-type: rust` and the commit history since the last release to prepare
+the next version:
+
+1. Merge a change into `main`. A `fix` requests a patch release, a `feat` requests
+   a minor release, and a breaking-change marker requests a major release.
+2. After CI passes, Release Please opens or updates a release PR with the version
+   bump and changelog. Further changes can accumulate in that PR before release.
+3. A maintainer reviews the release PR and completes the checks below, then
+   merges it into `main` when ready to release.
+4. After CI passes on that merge, Release Please creates the version tag and
+   GitHub Release. Its `release_created` output enables the separate crates.io
+   publish job, using the configured environment and repository credentials.
+
+A feature or fix merge therefore prepares a release; publication follows the
+release PR merge. Release Please manages the version, changelog, tag, and GitHub
+Release; our publish job uploads the crate. See the upstream
+[release PR lifecycle](https://github.com/googleapis/release-please#whats-a-release-pr)
+and [conditional publication](https://github.com/googleapis/release-please-action#automating-publication-to-npm)
+documentation for how these stages connect.
 
 Feature and rustdoc checks live in the existing build/test job. CI compiles
 examples without running them, and normal tests require no API token. It does
