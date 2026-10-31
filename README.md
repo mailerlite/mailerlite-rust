@@ -1,4 +1,4 @@
-<a class="hidden" href="https://www.mailerlite.com"><img src="https://app.mailerlite.com/assets/images/logo-color.png" width="200px"/></a>
+<a href="https://www.mailerlite.com"><img src="https://app.mailerlite.com/assets/images/logo-color.png" width="200px"/></a>
 
 # MailerLite Rust SDK
 
@@ -317,7 +317,7 @@ the bytes being authenticated.
 The following feature-dependent snippet is also compiled as
 [verify_webhook.rs](examples/verify_webhook.rs):
 
-```rust ignore
+```rust
 use mailerlite_rs::webhooks::{WebhookPayload, verify_signature};
 
 fn receive(

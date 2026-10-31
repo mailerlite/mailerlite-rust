@@ -417,6 +417,13 @@ and endpoint details in resource rustdoc. Update relative links when
 moving documentation. User-facing guides should describe the current SDK,
 without implementation-session history or agent ownership notes.
 
+The crate-level overview lives in `src/lib.rs`; it does not embed the README.
+Use intra-doc links there to generated types, modules, and methods. Repository
+guides and examples are not copied into rustdoc output, so do not link to their
+relative file paths from rustdoc. Keep README links relative for GitHub and local
+Markdown previews. Keep shared quick-start instructions and defaults consistent
+between the README and crate overview.
+
 ### Resource rustdoc
 
 Model field documentation should explain representations and units, not repeat
@@ -470,11 +477,10 @@ methods, attach examples to the gated item and test with that feature enabled.
 Document any application dependencies needed to consume a stream or decode JSON.
 Do not use `ignore` to hide a broken example or bypass feature verification.
 
-The README's feature-dependent webhook snippet is an intentional exception:
-it uses `ignore` so GitHub readers do not see rustdoc-only feature guards.
-Its matching `receive` function is compiled in `examples/verify_webhook.rs`
-with `webhook-signatures` enabled. Keep the two in sync and report this ignored
-doctest separately from passing doctests.
+README and other standalone Markdown snippets are not run by `cargo test --doc`.
+Compile changed snippets in a temporary consumer with their required features.
+The README's webhook `receive` function also matches `examples/verify_webhook.rs`,
+which is compiled with `webhook-signatures` enabled; keep the two in sync.
 
 Separate logical steps with a blank line: configuration, parameter construction,
 request execution, result handling, and return. Keep related setup variables
