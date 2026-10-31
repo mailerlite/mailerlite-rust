@@ -1,5 +1,10 @@
 //! Typed response models and shared values used by MailerLite resources.
 //!
+//! Optional response fields may be absent or null. `None` does not mean zero,
+//! false, or an empty collection. Timestamp strings retain the server's format;
+//! the SDK does not infer a timezone for timestamps without one. Monetary values
+//! use exact decimals, while rate models document their numeric and display units.
+//!
 //! Server-owned resource, report, activity, and enriched configuration records
 //! are non-exhaustive so future SDK versions can expose additional fields.
 //! Read fields directly or destructure with `..`; deserialize sanitized JSON

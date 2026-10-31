@@ -259,3 +259,104 @@ async fn subscribers_reject_segment_only_after_parameter_without_http() {
     ));
     assert!(server.received_requests().await.unwrap().is_empty());
 }
+
+#[tokio::test]
+async fn list_accepts_corrected_page_and_limit() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/api/groups"))
+        .and(query_param("page", "2"))
+        .and(query_param("limit", "25"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({"data":[]})))
+        .expect(1)
+        .mount(&server)
+        .await;
+    let client = default_client(&server);
+
+    client
+        .groups()
+        .list()
+        .page(0)
+        .limit(0)
+        .page(2)
+        .limit(25)
+        .send()
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
+async fn corrected_limit_does_not_clear_invalid_page() {
+    let server = MockServer::start().await;
+    let client = default_client(&server);
+
+    let result = client
+        .groups()
+        .list()
+        .page(0)
+        .limit(0)
+        .limit(25)
+        .send()
+        .await;
+
+    assert!(matches!(result, Err(Error::Config(_))));
+    assert!(server.received_requests().await.unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn corrected_page_does_not_clear_invalid_limit() {
+    let server = MockServer::start().await;
+    let client = default_client(&server);
+
+    let result = client.groups().list().limit(0).page(0).page(2).send().await;
+
+    assert!(matches!(result, Err(Error::Config(_))));
+    assert!(server.received_requests().await.unwrap().is_empty());
+}
+
+#[cfg(feature = "stream")]
+#[tokio::test]
+async fn stream_accepts_corrected_page_and_limit() {
+    use futures_util::TryStreamExt;
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/api/groups"))
+        .and(query_param("page", "2"))
+        .and(query_param("limit", "25"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({"data":[]})))
+        .expect(1)
+        .mount(&server)
+        .await;
+    let client = default_client(&server);
+    let stream = client
+        .groups()
+        .list()
+        .page(0)
+        .limit(0)
+        .page(2)
+        .limit(25)
+        .into_stream();
+    tokio::pin!(stream);
+
+    assert!(stream.try_next().await.unwrap().is_none());
+}
+
+#[cfg(feature = "stream")]
+#[tokio::test]
+async fn stream_preserves_unrelated_validation_failure_after_correction() {
+    use futures_util::TryStreamExt;
+    let server = MockServer::start().await;
+    let client = default_client(&server);
+    let stream = client
+        .groups()
+        .list()
+        .page(0)
+        .limit(0)
+        .limit(25)
+        .into_stream();
+    tokio::pin!(stream);
+
+    assert!(matches!(stream.try_next().await, Err(Error::Config(_))));
+    assert!(stream.try_next().await.unwrap().is_none());
+    assert!(server.received_requests().await.unwrap().is_empty());
+}

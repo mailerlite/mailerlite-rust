@@ -11,9 +11,9 @@ pub struct Segment {
     pub name: String,
     /// Matching subscribers.
     pub total: Option<u64>,
-    /// Open rate.
+    /// Email open rate in the server-provided rate representation.
     pub open_rate: Option<Rate>,
-    /// Click rate.
+    /// Email click rate in the server-provided rate representation.
     pub click_rate: Option<Rate>,
     /// Creation timestamp without an assumed timezone.
     pub created_at: Option<String>,

@@ -40,14 +40,8 @@ jobs:
         with:
           key: ${{ matrix.toolchain }}-${{ matrix.features.name }}
 
-      - name: Build
-        run: cargo build --verbose ${{ matrix.features.args }}
-
-      - name: Test
+      - name: Test, doctests, and example compilation
         run: cargo test --verbose ${{ matrix.features.args }}
-
-      - name: Check examples
-        run: cargo check --examples ${{ matrix.features.args }}
 
       - name: Check documentation
         env:

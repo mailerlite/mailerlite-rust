@@ -22,7 +22,7 @@ use serde_json::{Map, Value};
 /// Kind of automation step to create.
 pub use crate::models::automation_configuration::StepKind as StepType;
 /// A condition or A/B branch.
-#[derive(Debug, Clone, Copy, Serialize)]
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "snake_case")]
 pub enum StepBranch {
     /// Matching condition branch.
@@ -37,7 +37,7 @@ pub enum StepBranch {
     CPath,
 }
 /// A branch of a condition step.
-#[derive(Debug, Clone, Copy, Serialize)]
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "snake_case")]
 pub enum ConditionBranch {
     /// Matching branch.
@@ -291,7 +291,7 @@ impl UpdateStep {
     }
 }
 /// Branch handling when deleting condition or A/B steps.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum DeleteBranch {
     /// Delete all branches.
     All,
@@ -403,7 +403,7 @@ impl ReorderSteps {
     }
 }
 /// Which step execution rows to list.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum StepSubscriberStatus {
     /// Subscribers waiting at the step.
     Queued,

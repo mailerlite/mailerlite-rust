@@ -9,55 +9,55 @@ use std::collections::BTreeMap;
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct Product {
-    /// Id.
+    /// MailerLite identifier, preserved as text.
     #[serde(deserialize_with = "wire::id")]
     pub id: ProductId,
-    /// Name.
+    /// Display name assigned to this resource.
     pub name: String,
-    /// Resource id.
+    /// Identifier assigned by the connected shop, distinct from the MailerLite ID.
     pub resource_id: Option<String>,
-    /// Price.
+    /// Exact decimal price without conversion through floating point.
     #[serde(default, deserialize_with = "wire::optional_decimal")]
     pub price: Option<Decimal>,
-    /// Url.
+    /// URL of the product page in the connected shop.
     pub url: Option<String>,
-    /// Image.
+    /// Product image location supplied by the shop.
     pub image: Option<String>,
-    /// Exclude from automations.
+    /// Whether this resource is excluded from automation processing.
     pub exclude_from_automations: Option<bool>,
-    /// Enabled.
+    /// Whether this resource is enabled on the server.
     pub enabled: Option<bool>,
-    /// Categories.
+    /// Assigned categories, when included in the response.
     pub categories: Option<Vec<Category>>,
-    /// Variants.
+    /// Product variants, when included in the response.
     pub variants: Option<Vec<ProductVariant>>,
-    /// Short description.
+    /// Short product description used in listings.
     pub short_description: Option<String>,
-    /// Description.
+    /// Full product description supplied by the shop.
     pub description: Option<String>,
-    /// Type.
+    /// Server type discriminator, preserving unrecognized values as text.
     #[serde(rename = "type")]
     pub kind: Option<String>,
-    /// Currency.
+    /// Currency identifier reported for this resource.
     pub currency: Option<String>,
-    /// Currency symbol.
+    /// Display symbol for the currency, distinct from its identifier.
     pub currency_symbol: Option<String>,
-    /// Discounts.
+    /// Discounts associated with this product, when included.
     pub discounts: Option<Vec<Discount>>,
-    /// Assets.
+    /// Digital delivery or booking assets, when included.
     pub assets: Option<Vec<ProductAsset>>,
-    /// Settings.
+    /// Resolved digital or booking settings; an empty array becomes empty settings.
     #[serde(default, deserialize_with = "product_details::optional_settings")]
     pub settings: Option<ProductSettings>,
-    /// Stripe minimum.
+    /// Whether the product price is below the Stripe minimum.
     pub stripe_minimum: Option<bool>,
-    /// Has checkout.
+    /// Whether a checkout is available for this product.
     pub has_checkout: Option<bool>,
-    /// Checkout url.
+    /// URL where the customer can complete checkout.
     pub checkout_url: Option<String>,
-    /// Order stats.
+    /// Aggregate completed-order counts and amounts, when included.
     pub order_stats: Option<ProductOrderStats>,
-    /// Created at.
+    /// Creation timestamp as returned by the server; no timezone is inferred.
     pub created_at: Option<String>,
 }
 
@@ -65,21 +65,21 @@ pub struct Product {
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct ProductVariant {
-    /// Id.
+    /// MailerLite identifier, preserved as text.
     #[serde(deserialize_with = "wire::id")]
     pub id: String,
-    /// Name.
+    /// Display name assigned to this resource.
     pub name: String,
-    /// Attributes.
+    /// Variant attribute names mapped to their selected values.
     pub attributes: BTreeMap<String, String>,
-    /// Price.
+    /// Exact decimal price without conversion through floating point.
     #[serde(default, deserialize_with = "wire::optional_decimal")]
     pub price: Option<Decimal>,
-    /// Price type.
+    /// Server price-mode discriminator, preserved as text.
     pub price_type: Option<String>,
-    /// Resource id.
+    /// Identifier assigned by the connected shop, distinct from the MailerLite ID.
     pub resource_id: Option<String>,
-    /// Image url.
+    /// URL of the variant-specific image.
     pub image_url: Option<String>,
 }
 
@@ -87,27 +87,27 @@ pub struct ProductVariant {
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct Discount {
-    /// Id.
+    /// MailerLite identifier, preserved as text.
     #[serde(deserialize_with = "wire::id")]
     pub id: String,
-    /// Name.
+    /// Display name assigned to this resource.
     pub name: Option<String>,
-    /// Value.
+    /// Discount amount or percentage, according to `is_percentage`.
     #[serde(default, deserialize_with = "wire::optional_decimal")]
     pub value: Option<Decimal>,
-    /// Is percentage.
+    /// Whether `value` is a percentage rather than a fixed amount.
     pub is_percentage: Option<bool>,
-    /// Enabled.
+    /// Whether this resource is enabled on the server.
     pub enabled: Option<bool>,
-    /// Start date.
+    /// Beginning of the discount validity period, when supplied.
     pub start_date: Option<String>,
-    /// End date.
+    /// End of the discount validity period, when supplied.
     pub end_date: Option<String>,
-    /// Created at.
+    /// Creation timestamp as returned by the server; no timezone is inferred.
     pub created_at: Option<String>,
-    /// Updated at.
+    /// Last modification timestamp as returned by the server.
     pub updated_at: Option<String>,
-    /// Price after discount.
+    /// Resulting product price after this discount, when supplied.
     #[serde(default, deserialize_with = "wire::optional_decimal")]
     pub price_after_discount: Option<Decimal>,
 }

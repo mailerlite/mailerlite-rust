@@ -23,11 +23,11 @@ pub struct Group {
     pub sent_count: Option<u64>,
     /// Opens.
     pub opens_count: Option<u64>,
-    /// Open rate.
+    /// Email open rate in the server-provided rate representation.
     pub open_rate: Option<Rate>,
     /// Clicks.
     pub clicks_count: Option<u64>,
-    /// Click rate.
+    /// Email click rate in the server-provided rate representation.
     pub click_rate: Option<Rate>,
     /// Unsubscribed members.
     pub unsubscribed_count: Option<u64>,

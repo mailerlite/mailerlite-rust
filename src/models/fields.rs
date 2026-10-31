@@ -2,7 +2,7 @@
 use crate::models::FieldId;
 use serde::{Deserialize, Serialize};
 /// Documented custom-field types for requests.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "snake_case")]
 pub enum FieldType {
     /// Text field.

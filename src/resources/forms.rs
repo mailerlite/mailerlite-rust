@@ -7,7 +7,7 @@ use crate::{
 };
 use reqwest::Method;
 /// FormType request value.
-#[derive(Debug, Clone, Copy, serde::Serialize)]
+#[derive(Debug, Clone, Copy, serde::Serialize, PartialEq, Eq, Hash)]
 pub enum FormType {
     /// Popup.
     #[serde(rename = "popup")]

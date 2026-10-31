@@ -6,29 +6,29 @@ use crate::models::AutomationId;
 pub struct Automation {
     /// Whether a template-based automation is still being built.
     pub building_in_progress: Option<bool>,
-    /// Id.
+    /// MailerLite identifier, preserved as text.
     pub id: AutomationId,
-    /// Name.
+    /// Display name assigned to this resource.
     pub name: String,
-    /// Enabled.
+    /// Whether this resource is enabled on the server.
     pub enabled: bool,
-    /// Created at.
+    /// Creation timestamp as returned by the server; no timezone is inferred.
     pub created_at: Option<String>,
-    /// Complete.
+    /// Whether the server considers the workflow fully configured.
     pub complete: Option<bool>,
-    /// Broken.
+    /// Whether the server reports broken workflow relationships.
     pub broken: Option<bool>,
-    /// Emails count.
+    /// Number of email steps reported for the workflow.
     pub emails_count: Option<u64>,
-    /// Qualified subscribers count.
+    /// Number of subscribers reported as qualified for the workflow.
     pub qualified_subscribers_count: Option<u64>,
-    /// Trigger data.
+    /// Shared trigger configuration and workflow state, when included.
     pub trigger_data: Option<TriggerData>,
-    /// Steps.
+    /// Workflow steps, when included in the response.
     pub steps: Option<Vec<AutomationStep>>,
-    /// Triggers.
+    /// Entry triggers, when included in the response.
     pub triggers: Option<Vec<AutomationTrigger>>,
-    /// Stats.
+    /// Aggregate workflow execution and email statistics, when included.
     pub stats: Option<AutomationStats>,
 }
 /// TriggerData returned by MailerLite.
@@ -66,37 +66,37 @@ pub struct TriggerData {
     pub complete_workflow: Option<bool>,
     /// Whether a workflow relationship is broken.
     pub broken_workflow: Option<bool>,
-    /// Track ecommerce.
+    /// Whether e-commerce tracking is enabled for the workflow.
     pub track_ecommerce: Option<bool>,
-    /// Repeatable.
+    /// Whether subscribers may enter the workflow again.
     pub repeatable: Option<bool>,
-    /// Valid.
+    /// Server-reported validity of the trigger configuration.
     pub valid: Option<bool>,
 }
 /// AutomationStep returned by MailerLite.
 #[derive(Debug, Clone, serde::Deserialize)]
 #[non_exhaustive]
 pub struct AutomationStep {
-    /// Id.
+    /// MailerLite identifier, preserved as text.
     pub id: String,
-    /// Kind.
+    /// Server type discriminator, preserving unrecognized values as text.
     #[serde(rename = "type")]
     pub kind: String,
-    /// Parent id.
+    /// Preceding step identifier; absent for a step without a parent.
     pub parent_id: Option<String>,
-    /// Name.
+    /// Display name assigned to this resource.
     pub name: Option<String>,
-    /// Description.
+    /// Server-provided description of this workflow step.
     pub description: Option<String>,
-    /// Complete.
+    /// Whether the step configuration is complete.
     pub complete: Option<bool>,
-    /// Broken.
+    /// Whether the server reports broken references for the step.
     pub broken: Option<bool>,
-    /// Unit.
+    /// Unit used by the step configuration, when applicable.
     pub unit: Option<String>,
-    /// Value.
+    /// Type-dependent step value, retaining its supported wire representation.
     pub value: Option<crate::models::automation_steps::StepValue>,
-    /// Email.
+    /// Email associated with an email step, when included.
     pub email: Option<crate::models::campaigns::CampaignEmail>,
     /// Typed type-specific configuration from the backend step resource.
     #[serde(flatten)]
@@ -108,38 +108,38 @@ pub type AutomationTrigger = crate::models::automation_triggers::Trigger;
 #[derive(Debug, Clone, serde::Deserialize)]
 #[non_exhaustive]
 pub struct AutomationStats {
-    /// Completed subscribers count.
+    /// Subscribers that have completed this workflow.
     pub completed_subscribers_count: Option<u64>,
-    /// Subscribers in queue count.
+    /// Subscribers currently queued in this workflow.
     pub subscribers_in_queue_count: Option<u64>,
-    /// Sent.
+    /// Number of emails sent, rather than the number successfully delivered.
     pub sent: Option<u64>,
-    /// Opens count.
+    /// Server-reported email open count.
     pub opens_count: Option<u64>,
-    /// Clicks count.
+    /// Server-reported email click count.
     pub clicks_count: Option<u64>,
 }
 /// AutomationActivity returned by MailerLite.
 #[derive(Debug, Clone, serde::Deserialize)]
 #[non_exhaustive]
 pub struct AutomationActivity {
-    /// Id.
+    /// MailerLite identifier, preserved as text.
     pub id: String,
-    /// Status.
+    /// Server-reported state, preserving unrecognized values as text.
     pub status: String,
-    /// Date.
+    /// Timestamp associated with the reported execution state.
     pub date: Option<String>,
-    /// Reason.
+    /// Server reason code explaining the execution state, when supplied.
     pub reason: Option<String>,
-    /// Reason description.
+    /// Human-readable explanation of the execution state, when supplied.
     pub reason_description: Option<String>,
     /// Step execution history.
     #[serde(rename = "stepRuns")]
     pub step_runs: Option<Vec<StepRun>>,
-    /// Next step.
+    /// Next workflow step, when one is reported.
     #[serde(rename = "nextStep")]
     pub next_step: Option<AutomationStep>,
-    /// Current step.
+    /// Current workflow step, when one is reported.
     #[serde(rename = "currentStep")]
     pub current_step: Option<AutomationStep>,
 }
@@ -147,13 +147,13 @@ pub struct AutomationActivity {
 #[derive(Debug, Clone, serde::Deserialize)]
 #[non_exhaustive]
 pub struct StepRun {
-    /// Id.
+    /// MailerLite identifier, preserved as text.
     pub id: String,
-    /// Step id.
+    /// Identifier of the workflow step that was executed.
     pub step_id: String,
-    /// Description.
+    /// Server-provided description of this step execution.
     pub description: Option<String>,
-    /// Scheduled for.
+    /// Scheduled execution timestamp, when an execution has been scheduled.
     pub scheduled_for: Option<String>,
 }
 

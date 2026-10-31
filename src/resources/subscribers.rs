@@ -179,7 +179,7 @@ impl<'a> Subscribers<'a> {
         ListSubscribers {
             client: self.client,
             query: Vec::new(),
-            error: None,
+            status: None,
         }
     }
     /// Create or update a subscriber. This write is never automatically retried.
@@ -364,7 +364,6 @@ impl<'a> Subscribers<'a> {
             client: self.client,
             id: id.into(),
             query: Vec::new(),
-            error: None,
         }
     }
     /// Remove the subscriber while retaining their history for resubscription.
@@ -460,22 +459,23 @@ impl<'a> Subscribers<'a> {
 pub struct ListSubscribers<'a> {
     client: &'a MailerLite,
     query: Vec<(String, String)>,
-    error: Option<String>,
+    status: Option<SubscriberStatus>,
 }
 impl<'a> ListSubscribers<'a> {
+    fn validate(&self) -> Result<()> {
+        if let Some(status) = &self.status {
+            status.validate()?;
+        }
+        validate_query(&self.query, None)
+    }
     /// Filter by a documented subscriber status.
     pub fn status(mut self, status: SubscriberStatus) -> Self {
-        if status.validate().is_err() {
-            self.error = Some("unknown subscriber status".into());
-        }
         set(&mut self.query, "filter[status]", status.as_str().into());
+        self.status = Some(status);
         self
     }
     /// Set a positive page size.
     pub fn limit(mut self, limit: u64) -> Self {
-        if limit == 0 {
-            self.error = Some("list limit must be positive; use count()".into());
-        }
         set(&mut self.query, "limit", limit.to_string());
         self
     }
@@ -490,6 +490,8 @@ impl<'a> ListSubscribers<'a> {
         self
     }
     /// Fetch one page.
+    ///
+    /// Repeated setters replace earlier values; only the final parameters are validated.
     ///
     /// Missing continuation metadata means no known next page; links are
     /// retained for inspection and never followed directly.
@@ -518,14 +520,12 @@ impl<'a> ListSubscribers<'a> {
     ///
     /// # Errors
     ///
-    /// Returns [`Error::Config`] before dispatch if a zero limit or unknown
-    /// status was supplied to the builder. API rejection, transport failure,
+    /// Returns [`Error::Config`] before dispatch if the final limit is zero or
+    /// the final status is unknown. API rejection, transport failure,
     /// malformed responses, and execution deadlines return [`Error::Api`],
     /// [`Error::Transport`], [`Error::Decode`], or [`Error::Timeout`].
     pub async fn send(self) -> Result<Response<CursorPage<Subscriber>>> {
-        if let Some(e) = self.error {
-            return Err(Error::Config(e));
-        }
+        self.validate()?;
         self.client
             .request(
                 Method::GET,
@@ -571,13 +571,9 @@ impl<'a> ListSubscribers<'a> {
     /// yielded items remain available to the caller.
     #[cfg(feature = "stream")]
     pub fn into_stream(self) -> impl futures_core::Stream<Item = Result<Subscriber>> + 'a {
-        use futures_util::StreamExt;
-        let count = if self.error.is_none() { usize::MAX } else { 0 };
-        let error = self.error.map(Error::Config);
-        let initial = futures_util::stream::iter(error.into_iter().map(Err));
-        initial.chain(
-            crate::pagination::cursor_stream(self.client, vec!["subscribers".into()], self.query)
-                .take(count),
+        crate::pagination::validated_stream(
+            self.validate(),
+            crate::pagination::cursor_stream(self.client, vec!["subscribers".into()], self.query),
         )
     }
 }
@@ -588,24 +584,35 @@ pub struct SubscriberMembers<'a> {
     client: &'a MailerLite,
     path: Vec<String>,
     query: Vec<(String, String)>,
-    error: Option<String>,
+    status: Option<SubscriberStatus>,
     max_limit: Option<u64>,
 }
 impl<'a> SubscriberMembers<'a> {
+    fn validate(&self) -> Result<()> {
+        if let Some(status) = &self.status {
+            status.validate()?;
+        }
+        validate_query(&self.query, self.max_limit)?;
+        let resource = self.path.first().map(String::as_str);
+        if resource != Some("groups") && self.query.iter().any(|(key, _)| key == "include") {
+            return Err(Error::Config(
+                "include groups is only documented for group membership lists".into(),
+            ));
+        }
+        if resource != Some("segments") && self.query.iter().any(|(key, _)| key == "after") {
+            return Err(Error::Config(
+                "after is only documented for segment membership lists".into(),
+            ));
+        }
+        Ok(())
+    }
     /// Include groups in a group-membership query.
     pub fn include_groups(mut self) -> Self {
-        if self.path.first().map(String::as_str) != Some("groups") {
-            self.error =
-                Some("include groups is only documented for group membership lists".into());
-        }
         set(&mut self.query, "include", "groups".into());
         self
     }
     /// Set the legacy segment continuation ID; prefer an opaque cursor when available.
     pub fn after(mut self, id: impl Into<String>) -> Self {
-        if self.path.first().map(String::as_str) != Some("segments") {
-            self.error = Some("after is only documented for segment membership lists".into());
-        }
         set(&mut self.query, "after", id.into());
         self
     }
@@ -614,23 +621,18 @@ impl<'a> SubscriberMembers<'a> {
             client,
             path,
             query: Vec::new(),
-            error: None,
+            status: None,
             max_limit,
         }
     }
     /// Filter subscriber status.
     pub fn status(mut self, status: SubscriberStatus) -> Self {
-        if status.validate().is_err() {
-            self.error = Some("unknown subscriber status".into());
-        }
         set(&mut self.query, "filter[status]", status.as_str().into());
+        self.status = Some(status);
         self
     }
     /// Set a positive page size within the endpoint's documented bound.
     pub fn limit(mut self, limit: u64) -> Self {
-        if limit == 0 || self.max_limit.is_some_and(|max| limit > max) {
-            self.error = Some("invalid subscriber page size".into());
-        }
         set(&mut self.query, "limit", limit.to_string());
         self
     }
@@ -640,6 +642,8 @@ impl<'a> SubscriberMembers<'a> {
         self
     }
     /// Fetch one page.
+    ///
+    /// Repeated setters replace earlier values; only the final parameters are validated.
     ///
     /// Group and segment accessors share this builder. The segment `after` parameter
     /// is separate from the opaque `cursor`; preserve the same filters when continuing.
@@ -668,9 +672,7 @@ impl<'a> SubscriberMembers<'a> {
     /// [`crate::Error::Transport`], [`crate::Error::Decode`], or
     /// [`crate::Error::Timeout`].
     pub async fn send(self) -> Result<Response<CursorPage<Subscriber>>> {
-        if let Some(e) = self.error {
-            return Err(Error::Config(e));
-        }
+        self.validate()?;
         let path: Vec<&str> = self.path.iter().map(String::as_str).collect();
         self.client
             .request(Method::GET, &path, &self.query, None, OperationPolicy::READ)
@@ -709,12 +711,10 @@ impl<'a> SubscriberMembers<'a> {
     /// Missing continuation metadata ends the stream normally.
     #[cfg(feature = "stream")]
     pub fn into_stream(self) -> impl futures_core::Stream<Item = Result<Subscriber>> + 'a {
-        use futures_util::StreamExt;
-        let count = if self.error.is_none() { usize::MAX } else { 0 };
-        let initial =
-            futures_util::stream::iter(self.error.map(Error::Config).into_iter().map(Err));
-        initial
-            .chain(crate::pagination::cursor_stream(self.client, self.path, self.query).take(count))
+        crate::pagination::validated_stream(
+            self.validate(),
+            crate::pagination::cursor_stream(self.client, self.path, self.query),
+        )
     }
 }
 /// Manual subscriber activity query.
@@ -724,7 +724,6 @@ pub struct ListSubscriberActivity<'a> {
     client: &'a MailerLite,
     id: String,
     query: Vec<(String, String)>,
-    error: Option<String>,
 }
 impl ListSubscriberActivity<'_> {
     /// Filter by a documented activity kind.
@@ -734,21 +733,17 @@ impl ListSubscriberActivity<'_> {
     }
     /// Set the one-based page number.
     pub fn page(mut self, page: u64) -> Self {
-        if page == 0 {
-            self.error = Some("page starts at one".into());
-        }
         set(&mut self.query, "page", page.to_string());
         self
     }
     /// Set a positive page size.
     pub fn limit(mut self, limit: u64) -> Self {
-        if limit == 0 {
-            self.error = Some("limit must be positive".into());
-        }
         set(&mut self.query, "limit", limit.to_string());
         self
     }
     /// Fetch activity entries without inventing pagination metadata.
+    ///
+    /// Repeated setters replace earlier values; only the final parameters are validated.
     ///
     /// The result contains entries without continuation metadata. The reviewed
     /// backend does not provide reliable exhaustive continuation, so this SDK exposes
@@ -770,16 +765,14 @@ impl ListSubscriberActivity<'_> {
     ///
     /// # Errors
     ///
-    /// Returns [`crate::Error::Config`] for an empty/dot subscriber ID or if zero
-    /// was supplied as the page number or limit.
+    /// Returns [`crate::Error::Config`] for an empty/dot subscriber ID or a final
+    /// page number or limit of zero.
     /// Rejected requests return [`crate::Error::Api`]. Transport failures, unexpected
     /// response statuses or bodies, and execution deadlines return
     /// [`crate::Error::Transport`], [`crate::Error::Decode`], or
     /// [`crate::Error::Timeout`].
     pub async fn send(self) -> Result<Response<Vec<SubscriberActivity>>> {
-        if let Some(e) = self.error {
-            return Err(Error::Config(e));
-        }
+        validate_query(&self.query, None)?;
         self.client
             .data(
                 Method::GET,
@@ -792,7 +785,7 @@ impl ListSubscriberActivity<'_> {
     }
 }
 /// Supported subscriber activity filters.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ActivityKind {
     /// Campaign delivery.
     CampaignSend,
@@ -834,6 +827,23 @@ impl ActivityKind {
 pub(crate) fn set(query: &mut Vec<(String, String)>, key: &str, value: String) {
     query.retain(|(k, _)| k != key);
     query.push((key.into(), value));
+}
+
+fn validate_query(query: &[(String, String)], max_limit: Option<u64>) -> Result<()> {
+    for (key, value) in query {
+        if key == "page" || key == "limit" {
+            let value = value
+                .parse::<u64>()
+                .map_err(|_| Error::Config("page and limit must be positive integers".into()))?;
+            if value == 0 {
+                return Err(Error::Config("page and limit must be positive".into()));
+            }
+            if key == "limit" && max_limit.is_some_and(|max| value > max) {
+                return Err(Error::Config("invalid subscriber page size".into()));
+            }
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]

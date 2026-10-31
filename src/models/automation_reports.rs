@@ -34,29 +34,29 @@ pub struct AutomationEmailReport {
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct AutomationEngagement {
-    /// Sent.
+    /// Number of emails sent, rather than the number successfully delivered.
     pub sent: u64,
-    /// Opens count.
+    /// Server-reported email open count.
     pub opens_count: u64,
-    /// Clicks count.
+    /// Server-reported email click count.
     pub clicks_count: u64,
-    /// Total opens count.
+    /// Total opens, including repeat opens by the same recipient.
     pub total_opens_count: u64,
-    /// Total clicks count.
+    /// Total clicks, including repeat clicks by the same recipient.
     pub total_clicks_count: u64,
-    /// Forwards count.
+    /// Number of tracked email forwards.
     pub forwards_count: u64,
-    /// Social interactions count.
+    /// Number of tracked social interactions.
     pub social_interactions_count: u64,
-    /// Open rate.
+    /// Email open rate in the server-provided rate representation.
     pub open_rate: AutomationReportRate,
-    /// Click rate.
+    /// Email click rate in the server-provided rate representation.
     pub click_rate: AutomationReportRate,
-    /// Click to open rate.
+    /// Server-formatted click-to-open percentage.
     pub click_to_open_rate: AutomationReportRate,
-    /// Forward rate.
+    /// Server-formatted email-forward percentage.
     pub forward_rate: AutomationReportRate,
-    /// Social interaction rate.
+    /// Server-formatted social-interaction percentage.
     pub social_interaction_rate: AutomationReportRate,
 }
 
@@ -64,27 +64,27 @@ pub struct AutomationEngagement {
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct AutomationDeliverability {
-    /// Sent.
+    /// Number of emails sent, rather than the number successfully delivered.
     pub sent: u64,
-    /// Delivered count.
+    /// Number of emails reported as delivered.
     pub delivered_count: u64,
-    /// Hard bounces count.
+    /// Number of permanent delivery failures.
     pub hard_bounces_count: u64,
-    /// Soft bounces count.
+    /// Number of temporary delivery failures.
     pub soft_bounces_count: u64,
-    /// Spam count.
+    /// Number of attributed spam complaints.
     pub spam_count: u64,
-    /// Unsubscribes count.
+    /// Number of attributed unsubscriptions.
     pub unsubscribes_count: u64,
-    /// Delivered rate.
+    /// Server-formatted email-delivery percentage.
     pub delivered_rate: AutomationReportRate,
-    /// Hard bounce rate.
+    /// Permanent-delivery-failure rate in the server-provided representation.
     pub hard_bounce_rate: AutomationReportRate,
-    /// Soft bounce rate.
+    /// Temporary-delivery-failure rate in the server-provided representation.
     pub soft_bounce_rate: AutomationReportRate,
-    /// Spam rate.
+    /// Spam-complaint rate in the server-provided rate representation.
     pub spam_rate: AutomationReportRate,
-    /// Unsubscribe rate.
+    /// Unsubscription rate in the server-provided rate representation.
     pub unsubscribe_rate: AutomationReportRate,
 }
 
@@ -97,7 +97,7 @@ pub struct AutomationEcommerceMetrics {
     /// Attributed revenue.
     #[serde(deserialize_with = "wire::decimal")]
     pub revenue: Decimal,
-    /// Average order value.
+    /// Average attributed order amount, retained as an exact decimal.
     #[serde(deserialize_with = "wire::decimal")]
     pub average_order_value: Decimal,
     /// Formatted conversion rate, when supplied.
@@ -137,7 +137,7 @@ pub struct AutomationBestPerformingEmail {
     pub sent_count: u64,
     /// Numeric conversion ratio.
     pub conversion_rate: f64,
-    /// Average order value.
+    /// Average attributed order amount, retained as an exact decimal.
     #[serde(deserialize_with = "wire::decimal")]
     pub average_order_value: Decimal,
     /// Email screenshot URL.

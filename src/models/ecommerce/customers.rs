@@ -8,21 +8,21 @@ use serde::Deserialize;
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct Customer {
-    /// Id.
+    /// MailerLite identifier, preserved as text.
     #[serde(deserialize_with = "wire::id")]
     pub id: CustomerId,
-    /// Email.
+    /// Email address of the customer.
     pub email: String,
-    /// Resource id.
+    /// Identifier assigned by the connected shop, distinct from the MailerLite ID.
     pub resource_id: Option<String>,
-    /// Accepts marketing.
+    /// Whether the customer has opted in to marketing.
     pub accepts_marketing: Option<bool>,
-    /// Total spent.
+    /// Cumulative customer spending, retained as an exact decimal.
     #[serde(default, deserialize_with = "wire::optional_decimal")]
     pub total_spent: Option<Decimal>,
-    /// Orders count.
+    /// Number of orders recorded for this customer or report.
     pub orders_count: Option<u64>,
-    /// Subscriber.
+    /// Linked MailerLite subscriber, when included.
     pub subscriber: Option<crate::models::subscribers::Subscriber>,
 }
 
@@ -30,17 +30,17 @@ pub struct Customer {
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct AcceptedCustomer {
-    /// Email.
+    /// Email address accepted for customer import.
     pub email: String,
-    /// Resource id.
+    /// Identifier assigned by the connected shop, distinct from the MailerLite ID.
     pub resource_id: Option<String>,
-    /// Accepts marketing.
+    /// Whether the customer has opted in to marketing.
     pub accepts_marketing: Option<bool>,
-    /// Create subscriber.
+    /// Whether the accepted import requested creation of a subscriber.
     pub create_subscriber: Option<bool>,
-    /// Total spent.
+    /// Customer spending amount accepted by the import.
     #[serde(default, deserialize_with = "wire::optional_decimal")]
     pub total_spent: Option<Decimal>,
-    /// Orders count.
+    /// Number of orders recorded for this customer or report.
     pub orders_count: Option<u64>,
 }

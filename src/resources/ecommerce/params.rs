@@ -4,7 +4,7 @@ use rust_decimal::Decimal;
 use serde::Serialize;
 use std::collections::BTreeMap;
 /// Documented OrderStatus values.
-#[derive(Debug, Clone, Copy, Serialize)]
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq, Hash)]
 pub enum OrderStatus {
     /// Pending.
     #[serde(rename = "pending")]
@@ -22,7 +22,7 @@ impl OrderStatus {
     }
 }
 /// Documented ProductType values.
-#[derive(Debug, Clone, Copy, Serialize)]
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq, Hash)]
 pub enum ProductType {
     /// OneTime.
     #[serde(rename = "one-time")]
@@ -44,7 +44,7 @@ impl ProductType {
     }
 }
 /// Documented PriceType values.
-#[derive(Debug, Clone, Copy, Serialize)]
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq, Hash)]
 pub enum PriceType {
     /// Fixed.
     #[serde(rename = "fixed")]
@@ -54,7 +54,7 @@ pub enum PriceType {
     Increment,
 }
 /// Documented ProductAction values.
-#[derive(Debug, Clone, Copy, Serialize)]
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq, Hash)]
 pub enum ProductAction {
     /// MoveToGroup.
     #[serde(rename = "move_to_group")]

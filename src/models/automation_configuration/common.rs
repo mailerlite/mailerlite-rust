@@ -78,7 +78,7 @@ impl fmt::Debug for ExtensionFields {
 }
 
 /// Timezone used for a scheduled operation.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "snake_case")]
 pub enum TimezoneMode {
     /// The `account` API value.

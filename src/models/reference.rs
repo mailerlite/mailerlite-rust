@@ -3,29 +3,29 @@
 #[derive(Debug, Clone, serde::Deserialize)]
 #[non_exhaustive]
 pub struct Timezone {
-    /// Id.
+    /// MailerLite identifier, preserved as text.
     pub id: String,
-    /// Name.
+    /// Timezone name used for scheduling, such as an IANA identifier.
     pub name: String,
-    /// Name for humans.
+    /// Human-readable timezone label supplied by the server.
     pub name_for_humans: String,
-    /// Offset name.
+    /// Display label for the UTC offset.
     pub offset_name: String,
-    /// Offset.
+    /// UTC offset supplied by the server, in minutes.
     pub offset: i32,
 }
 /// CampaignLanguage returned by MailerLite.
 #[derive(Debug, Clone, serde::Deserialize)]
 #[non_exhaustive]
 pub struct CampaignLanguage {
-    /// Id.
+    /// MailerLite identifier, preserved as text.
     pub id: String,
-    /// Shortcode.
+    /// MailerLite language shortcode used by campaign settings.
     pub shortcode: String,
-    /// Iso639.
+    /// ISO 639 language code supplied by the server.
     pub iso639: String,
-    /// Name.
+    /// Human-readable language name.
     pub name: String,
-    /// Direction.
+    /// Text direction reported for the language, such as `ltr` or `rtl`.
     pub direction: String,
 }

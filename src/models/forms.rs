@@ -4,36 +4,36 @@ use crate::models::FormId;
 #[derive(Debug, Clone, serde::Deserialize)]
 #[non_exhaustive]
 pub struct Form {
-    /// Id.
+    /// MailerLite identifier, preserved as text.
     pub id: FormId,
-    /// Kind.
+    /// Server type discriminator, preserving unrecognized values as text.
     #[serde(rename = "type")]
     pub kind: String,
-    /// Name.
+    /// Display name assigned to this resource.
     pub name: String,
-    /// Slug.
+    /// Server-assigned slug used to identify the form in URLs.
     pub slug: Option<String>,
-    /// Created at.
+    /// Creation timestamp as returned by the server; no timezone is inferred.
     pub created_at: Option<String>,
-    /// Conversions count.
+    /// Number of conversions recorded for this form.
     pub conversions_count: Option<u64>,
-    /// Opens count.
+    /// Number of times this form was opened.
     pub opens_count: Option<u64>,
-    /// Conversion rate.
+    /// Conversion rate in the server-provided representation.
     pub conversion_rate: Option<crate::models::campaigns::Rate>,
-    /// Last registration at.
+    /// Most recent registration timestamp, when one is reported.
     pub last_registration_at: Option<String>,
-    /// Active.
+    /// Whether the form is currently active.
     pub active: Option<bool>,
-    /// Is broken.
+    /// Whether the server reports a broken form configuration.
     pub is_broken: Option<bool>,
-    /// Has content.
+    /// Whether the form has configured content.
     pub has_content: Option<bool>,
-    /// Used in automations.
+    /// Whether an automation uses this form, when the relationship is loaded.
     pub used_in_automations: Option<bool>,
     /// Whether double opt-in is enabled; absent or null when not supplied.
     pub double_optin: Option<bool>,
-    /// Screenshot url.
+    /// URL of the generated visual preview, when available.
     pub screenshot_url: Option<String>,
 }
 

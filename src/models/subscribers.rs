@@ -37,7 +37,7 @@ use std::collections::BTreeMap;
 ///     }
 /// }
 /// ```
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum SubscriberStatus {
     /// Receives campaigns.

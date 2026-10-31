@@ -3,7 +3,7 @@ use crate::models::automations::{Automation, AutomationActivity};
 use crate::{Error, MailerLite, Response, Result, http::OperationPolicy, pagination::NumberedPage};
 use reqwest::Method;
 /// ActivityStatus request value.
-#[derive(Debug, Clone, Copy, serde::Serialize)]
+#[derive(Debug, Clone, Copy, serde::Serialize, PartialEq, Eq, Hash)]
 pub enum ActivityStatus {
     /// Completed.
     #[serde(rename = "completed")]

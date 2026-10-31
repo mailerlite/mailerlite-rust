@@ -325,3 +325,457 @@ async fn activity_malformed_known_email_properties_return_decode_errors() {
     assert_eq!(error.status().as_u16(), 200);
     assert!(!error.body().is_empty());
 }
+
+#[tokio::test]
+async fn subscriber_list_send_accepts_corrected_parameters() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/api/subscribers"))
+        .and(query_param("limit", "25"))
+        .and(query_param("filter[status]", "active"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({"data":[]})))
+        .expect(1)
+        .mount(&server)
+        .await;
+    let client = default_client(&server);
+
+    client
+        .subscribers()
+        .list()
+        .limit(0)
+        .limit(25)
+        .status(SubscriberStatus::Unknown("active".into()))
+        .status(SubscriberStatus::Active)
+        .send()
+        .await
+        .unwrap();
+}
+
+#[cfg(feature = "stream")]
+#[tokio::test]
+async fn subscriber_list_stream_accepts_corrected_parameters() {
+    use futures_util::TryStreamExt;
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/api/subscribers"))
+        .and(query_param("limit", "25"))
+        .and(query_param("filter[status]", "active"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({"data":[]})))
+        .expect(1)
+        .mount(&server)
+        .await;
+    let client = default_client(&server);
+
+    let stream = client
+        .subscribers()
+        .list()
+        .limit(0)
+        .limit(25)
+        .status(SubscriberStatus::Unknown("active".into()))
+        .status(SubscriberStatus::Active)
+        .into_stream();
+    tokio::pin!(stream);
+
+    assert!(stream.try_next().await.unwrap().is_none());
+}
+
+#[tokio::test]
+async fn group_members_send_accepts_corrected_parameters() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/api/groups/001/subscribers"))
+        .and(query_param("limit", "25"))
+        .and(query_param("filter[status]", "active"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({"data":[]})))
+        .expect(1)
+        .mount(&server)
+        .await;
+    let client = default_client(&server);
+
+    client
+        .groups()
+        .subscribers("001")
+        .limit(1001)
+        .limit(25)
+        .status(SubscriberStatus::Unknown("active".into()))
+        .status(SubscriberStatus::Active)
+        .send()
+        .await
+        .unwrap();
+}
+
+#[cfg(feature = "stream")]
+#[tokio::test]
+async fn group_members_stream_accepts_corrected_parameters() {
+    use futures_util::TryStreamExt;
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/api/groups/001/subscribers"))
+        .and(query_param("limit", "25"))
+        .and(query_param("filter[status]", "active"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({"data":[]})))
+        .expect(1)
+        .mount(&server)
+        .await;
+    let client = default_client(&server);
+
+    let stream = client
+        .groups()
+        .subscribers("001")
+        .limit(1001)
+        .limit(25)
+        .status(SubscriberStatus::Unknown("active".into()))
+        .status(SubscriberStatus::Active)
+        .into_stream();
+    tokio::pin!(stream);
+
+    assert!(stream.try_next().await.unwrap().is_none());
+}
+
+#[tokio::test]
+async fn segment_members_send_accepts_corrected_parameters() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/api/segments/001/subscribers"))
+        .and(query_param("limit", "25"))
+        .and(query_param("filter[status]", "active"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({"data":[]})))
+        .expect(1)
+        .mount(&server)
+        .await;
+    let client = default_client(&server);
+
+    client
+        .segments()
+        .subscribers("001")
+        .limit(0)
+        .limit(25)
+        .status(SubscriberStatus::Unknown("active".into()))
+        .status(SubscriberStatus::Active)
+        .send()
+        .await
+        .unwrap();
+}
+
+#[cfg(feature = "stream")]
+#[tokio::test]
+async fn segment_members_stream_accepts_corrected_parameters() {
+    use futures_util::TryStreamExt;
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/api/segments/001/subscribers"))
+        .and(query_param("limit", "25"))
+        .and(query_param("filter[status]", "active"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({"data":[]})))
+        .expect(1)
+        .mount(&server)
+        .await;
+    let client = default_client(&server);
+
+    let stream = client
+        .segments()
+        .subscribers("001")
+        .limit(0)
+        .limit(25)
+        .status(SubscriberStatus::Unknown("active".into()))
+        .status(SubscriberStatus::Active)
+        .into_stream();
+    tokio::pin!(stream);
+
+    assert!(stream.try_next().await.unwrap().is_none());
+}
+
+#[tokio::test]
+async fn activity_send_accepts_corrected_parameters() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/api/subscribers/001/activity-log"))
+        .and(query_param("page", "2"))
+        .and(query_param("limit", "25"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({"data":[]})))
+        .expect(1)
+        .mount(&server)
+        .await;
+    let client = default_client(&server);
+
+    client
+        .subscribers()
+        .activity("001")
+        .page(0)
+        .page(2)
+        .limit(0)
+        .limit(25)
+        .send()
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
+async fn send_subscriber_status_correction_preserves_invalid_limit() {
+    let server = MockServer::start().await;
+    let client = default_client(&server);
+
+    let result = client
+        .subscribers()
+        .list()
+        .limit(0)
+        .status(SubscriberStatus::Unknown("active".into()))
+        .status(SubscriberStatus::Active)
+        .send()
+        .await;
+
+    assert!(matches!(result, Err(Error::Config(_))));
+    assert!(server.received_requests().await.unwrap().is_empty());
+}
+
+#[cfg(feature = "stream")]
+#[tokio::test]
+async fn stream_subscriber_status_correction_preserves_invalid_limit() {
+    use futures_util::TryStreamExt;
+    let server = MockServer::start().await;
+    let client = default_client(&server);
+
+    let stream = client
+        .subscribers()
+        .list()
+        .limit(0)
+        .status(SubscriberStatus::Unknown("active".into()))
+        .status(SubscriberStatus::Active)
+        .into_stream();
+    tokio::pin!(stream);
+
+    assert!(matches!(stream.try_next().await, Err(Error::Config(_))));
+    assert!(stream.try_next().await.unwrap().is_none());
+    assert!(server.received_requests().await.unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn send_subscriber_limit_correction_preserves_unknown_status() {
+    let server = MockServer::start().await;
+    let client = default_client(&server);
+
+    let result = client
+        .subscribers()
+        .list()
+        .status(SubscriberStatus::Unknown("active".into()))
+        .limit(0)
+        .limit(25)
+        .send()
+        .await;
+
+    assert!(matches!(result, Err(Error::Config(_))));
+    assert!(server.received_requests().await.unwrap().is_empty());
+}
+
+#[cfg(feature = "stream")]
+#[tokio::test]
+async fn stream_subscriber_limit_correction_preserves_unknown_status() {
+    use futures_util::TryStreamExt;
+    let server = MockServer::start().await;
+    let client = default_client(&server);
+
+    let stream = client
+        .subscribers()
+        .list()
+        .status(SubscriberStatus::Unknown("active".into()))
+        .limit(0)
+        .limit(25)
+        .into_stream();
+    tokio::pin!(stream);
+
+    assert!(matches!(stream.try_next().await, Err(Error::Config(_))));
+    assert!(stream.try_next().await.unwrap().is_none());
+    assert!(server.received_requests().await.unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn send_member_limit_correction_preserves_unknown_status() {
+    let server = MockServer::start().await;
+    let client = default_client(&server);
+
+    let result = client
+        .groups()
+        .subscribers("001")
+        .status(SubscriberStatus::Unknown("active".into()))
+        .limit(1001)
+        .limit(25)
+        .send()
+        .await;
+
+    assert!(matches!(result, Err(Error::Config(_))));
+    assert!(server.received_requests().await.unwrap().is_empty());
+}
+
+#[cfg(feature = "stream")]
+#[tokio::test]
+async fn stream_member_limit_correction_preserves_unknown_status() {
+    use futures_util::TryStreamExt;
+    let server = MockServer::start().await;
+    let client = default_client(&server);
+
+    let stream = client
+        .groups()
+        .subscribers("001")
+        .status(SubscriberStatus::Unknown("active".into()))
+        .limit(1001)
+        .limit(25)
+        .into_stream();
+    tokio::pin!(stream);
+
+    assert!(matches!(stream.try_next().await, Err(Error::Config(_))));
+    assert!(stream.try_next().await.unwrap().is_none());
+    assert!(server.received_requests().await.unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn send_member_status_correction_preserves_limit_bound() {
+    let server = MockServer::start().await;
+    let client = default_client(&server);
+
+    let result = client
+        .groups()
+        .subscribers("001")
+        .limit(1001)
+        .status(SubscriberStatus::Unknown("active".into()))
+        .status(SubscriberStatus::Active)
+        .send()
+        .await;
+
+    assert!(matches!(result, Err(Error::Config(_))));
+    assert!(server.received_requests().await.unwrap().is_empty());
+}
+
+#[cfg(feature = "stream")]
+#[tokio::test]
+async fn stream_member_status_correction_preserves_limit_bound() {
+    use futures_util::TryStreamExt;
+    let server = MockServer::start().await;
+    let client = default_client(&server);
+
+    let stream = client
+        .groups()
+        .subscribers("001")
+        .limit(1001)
+        .status(SubscriberStatus::Unknown("active".into()))
+        .status(SubscriberStatus::Active)
+        .into_stream();
+    tokio::pin!(stream);
+
+    assert!(matches!(stream.try_next().await, Err(Error::Config(_))));
+    assert!(stream.try_next().await.unwrap().is_none());
+    assert!(server.received_requests().await.unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn send_member_correction_preserves_unsupported_after() {
+    let server = MockServer::start().await;
+    let client = default_client(&server);
+
+    let result = client
+        .groups()
+        .subscribers("001")
+        .after("123")
+        .limit(0)
+        .limit(25)
+        .send()
+        .await;
+
+    assert!(matches!(result, Err(Error::Config(_))));
+    assert!(server.received_requests().await.unwrap().is_empty());
+}
+
+#[cfg(feature = "stream")]
+#[tokio::test]
+async fn stream_member_correction_preserves_unsupported_after() {
+    use futures_util::TryStreamExt;
+    let server = MockServer::start().await;
+    let client = default_client(&server);
+
+    let stream = client
+        .groups()
+        .subscribers("001")
+        .after("123")
+        .limit(0)
+        .limit(25)
+        .into_stream();
+    tokio::pin!(stream);
+
+    assert!(matches!(stream.try_next().await, Err(Error::Config(_))));
+    assert!(stream.try_next().await.unwrap().is_none());
+    assert!(server.received_requests().await.unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn send_member_correction_preserves_unsupported_include() {
+    let server = MockServer::start().await;
+    let client = default_client(&server);
+
+    let result = client
+        .segments()
+        .subscribers("001")
+        .include_groups()
+        .limit(0)
+        .limit(25)
+        .send()
+        .await;
+
+    assert!(matches!(result, Err(Error::Config(_))));
+    assert!(server.received_requests().await.unwrap().is_empty());
+}
+
+#[cfg(feature = "stream")]
+#[tokio::test]
+async fn stream_member_correction_preserves_unsupported_include() {
+    use futures_util::TryStreamExt;
+    let server = MockServer::start().await;
+    let client = default_client(&server);
+
+    let stream = client
+        .segments()
+        .subscribers("001")
+        .include_groups()
+        .limit(0)
+        .limit(25)
+        .into_stream();
+    tokio::pin!(stream);
+
+    assert!(matches!(stream.try_next().await, Err(Error::Config(_))));
+    assert!(stream.try_next().await.unwrap().is_none());
+    assert!(server.received_requests().await.unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn send_activity_limit_correction_preserves_invalid_page() {
+    let server = MockServer::start().await;
+    let client = default_client(&server);
+
+    let result = client
+        .subscribers()
+        .activity("001")
+        .page(0)
+        .limit(0)
+        .limit(25)
+        .send()
+        .await;
+
+    assert!(matches!(result, Err(Error::Config(_))));
+    assert!(server.received_requests().await.unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn send_activity_page_correction_preserves_invalid_limit() {
+    let server = MockServer::start().await;
+    let client = default_client(&server);
+
+    let result = client
+        .subscribers()
+        .activity("001")
+        .limit(0)
+        .page(0)
+        .page(2)
+        .send()
+        .await;
+
+    assert!(matches!(result, Err(Error::Config(_))));
+    assert!(server.received_requests().await.unwrap().is_empty());
+}

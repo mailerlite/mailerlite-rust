@@ -8,29 +8,29 @@ use serde::Deserialize;
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct Order {
-    /// Id.
+    /// MailerLite identifier, preserved as text.
     #[serde(deserialize_with = "wire::id")]
     pub id: OrderId,
-    /// Resource id.
+    /// Identifier assigned by the connected shop, distinct from the MailerLite ID.
     pub resource_id: Option<String>,
-    /// Shop.
+    /// Shop associated with this order, when included.
     pub shop: Option<Shop>,
-    /// Customer.
+    /// Purchasing customer, when included.
     pub customer: Option<Customer>,
-    /// Cart.
+    /// Cart associated with this order, when included.
     pub cart: Option<Cart>,
-    /// Total.
+    /// Exact decimal order total without conversion through floating point.
     #[serde(default, deserialize_with = "wire::optional_decimal")]
     pub total: Option<Decimal>,
-    /// Status.
+    /// Server-reported state, preserving unrecognized values as text.
     pub status: String,
-    /// Attribution.
+    /// Email attribution attached to this order, when available.
     pub attribution: Option<Attribution>,
-    /// Created at.
+    /// Creation timestamp as returned by the server; no timezone is inferred.
     pub created_at: Option<String>,
-    /// Updated at.
+    /// Last modification timestamp as returned by the server.
     pub updated_at: Option<String>,
-    /// Completed at.
+    /// Order completion timestamp, when the server reports completion.
     pub completed_at: Option<String>,
 }
 
@@ -38,9 +38,9 @@ pub struct Order {
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct Attribution {
-    /// Email id.
+    /// Identifier of the email credited with the order.
     pub email_id: String,
-    /// Type.
+    /// Attribution source type, preserved as supplied by the server.
     #[serde(rename = "type")]
     pub kind: String,
 }

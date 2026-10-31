@@ -49,7 +49,6 @@ impl<'a> Segments<'a> {
         ListSegments {
             client: self.client,
             query: vec![],
-            error: None,
         }
     }
     /// Rename an existing segment.
@@ -163,26 +162,21 @@ impl<'a> Segments<'a> {
 pub struct ListSegments<'a> {
     client: &'a MailerLite,
     query: Vec<(String, String)>,
-    error: Option<String>,
 }
 impl<'a> ListSegments<'a> {
     /// Set a positive page size.
     pub fn limit(mut self, value: u64) -> Self {
-        if value == 0 {
-            self.error = Some("limit must be positive".into());
-        }
         set(&mut self.query, "limit", value.to_string());
         self
     }
     /// Set a one-based page number.
     pub fn page(mut self, value: u64) -> Self {
-        if value == 0 {
-            self.error = Some("page starts at one".into());
-        }
         set(&mut self.query, "page", value.to_string());
         self
     }
     /// Fetch one page.
+    ///
+    /// Repeated setters replace earlier values; only the final parameters are validated.
     ///
     /// # Examples
     ///
@@ -199,16 +193,14 @@ impl<'a> ListSegments<'a> {
     ///
     /// # Errors
     ///
-    /// Returns [`crate::Error::Config`] if zero was supplied as the page number
-    /// or limit.
+    /// Returns [`crate::Error::Config`] if the final page number
+    /// or limit is zero.
     /// Rejected requests return [`crate::Error::Api`]. Transport failures, unexpected
     /// response statuses or bodies, and execution deadlines return
     /// [`crate::Error::Transport`], [`crate::Error::Decode`], or
     /// [`crate::Error::Timeout`].
     pub async fn send(self) -> Result<Response<NumberedPage<Segment>>> {
-        if let Some(e) = self.error {
-            return Err(Error::Config(e));
-        }
+        validate_query(&self.query)?;
         self.client
             .request(
                 Method::GET,
@@ -252,11 +244,19 @@ impl<'a> ListSegments<'a> {
     /// Missing continuation metadata ends the stream normally.
     #[cfg(feature = "stream")]
     pub fn into_stream(self) -> impl futures_core::Stream<Item = Result<Segment>> + 'a {
-        use futures_util::StreamExt;
-        let count = if self.error.is_none() { usize::MAX } else { 0 };
-        futures_util::stream::iter(self.error.map(Error::Config).into_iter().map(Err)).chain(
-            crate::pagination::numbered_stream(self.client, vec!["segments".into()], self.query)
-                .take(count),
+        crate::pagination::validated_stream(
+            validate_query(&self.query),
+            crate::pagination::numbered_stream(self.client, vec!["segments".into()], self.query),
         )
     }
+}
+
+fn validate_query(query: &[(String, String)]) -> Result<()> {
+    if query
+        .iter()
+        .any(|(key, value)| (key == "page" || key == "limit") && value == "0")
+    {
+        return Err(Error::Config("page and limit must be positive".into()));
+    }
+    Ok(())
 }

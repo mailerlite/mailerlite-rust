@@ -4,129 +4,133 @@ use crate::models::CampaignId;
 #[derive(Debug, Clone, serde::Deserialize)]
 #[non_exhaustive]
 pub struct Campaign {
-    /// Id.
+    /// MailerLite identifier, preserved as text.
     pub id: CampaignId,
-    /// Name.
+    /// Display name assigned to this resource.
     pub name: String,
-    /// Kind.
+    /// Server type discriminator, preserving unrecognized values as text.
     #[serde(rename = "type")]
     pub kind: String,
-    /// Status.
+    /// Server-reported state, preserving unrecognized values as text.
     pub status: String,
-    /// Account id.
+    /// Identifier of the account that owns the campaign.
     pub account_id: Option<String>,
-    /// Created at.
+    /// Creation timestamp as returned by the server; no timezone is inferred.
     pub created_at: Option<String>,
-    /// Updated at.
+    /// Last modification timestamp as returned by the server.
     pub updated_at: Option<String>,
-    /// Scheduled for.
+    /// Scheduled start time, retained in the server's timestamp format.
     pub scheduled_for: Option<String>,
-    /// Queued at.
+    /// Timestamp when the campaign entered the sending queue.
     pub queued_at: Option<String>,
-    /// Started at.
+    /// Timestamp when campaign sending began.
     pub started_at: Option<String>,
-    /// Finished at.
+    /// Timestamp when campaign sending finished.
     pub finished_at: Option<String>,
-    /// Stopped at.
+    /// Timestamp when campaign sending was stopped.
     pub stopped_at: Option<String>,
-    /// Emails.
+    /// Email versions included with this campaign; absent when not loaded.
     pub emails: Option<Vec<CampaignEmail>>,
-    /// Settings.
+    /// Tracking settings included with this campaign.
     pub settings: Option<CampaignSettings>,
-    /// Can be scheduled.
+    /// Whether the server currently permits scheduling this campaign.
     pub can_be_scheduled: Option<bool>,
-    /// Is currently sending out.
+    /// Whether the campaign is currently sending messages.
     pub is_currently_sending_out: Option<bool>,
 }
 /// CampaignSettings returned by MailerLite.
 #[derive(Debug, Clone, serde::Deserialize)]
 #[non_exhaustive]
 pub struct CampaignSettings {
-    /// Track opens.
+    /// Whether open tracking is enabled for the campaign.
     pub track_opens: Option<bool>,
-    /// Use google analytics.
+    /// Whether campaign links include Google Analytics tracking.
     pub use_google_analytics: Option<bool>,
-    /// Ecommerce tracking.
+    /// Whether e-commerce attribution is enabled for the campaign.
     pub ecommerce_tracking: Option<bool>,
 }
 /// CampaignEmail returned by MailerLite.
 #[derive(Debug, Clone, serde::Deserialize)]
 #[non_exhaustive]
 pub struct CampaignEmail {
-    /// Id.
+    /// MailerLite identifier, preserved as text.
     pub id: String,
-    /// Subject.
+    /// Email subject line, when included in the response.
     pub subject: Option<String>,
-    /// From.
+    /// Sender email address shown on the message.
     pub from: Option<String>,
-    /// From name.
+    /// Sender display name shown on the message.
     pub from_name: Option<String>,
-    /// Reply to.
+    /// Email address used for replies, when configured.
     pub reply_to: Option<String>,
-    /// Plain text.
+    /// Plain-text version of the email body, when included.
     pub plain_text: Option<String>,
-    /// Preview url.
+    /// URL where the rendered email can be previewed.
     pub preview_url: Option<String>,
-    /// Screenshot url.
+    /// URL of the generated visual preview, when available.
     pub screenshot_url: Option<String>,
-    /// Stats.
+    /// Engagement statistics included for this email.
     pub stats: Option<EmailStats>,
 }
-/// Rate returned by MailerLite.
+/// A fractional rate paired with the server's formatted percentage.
+///
+/// `float` is suitable for calculations; `string` is the display representation.
+/// Formatting and rounding come from the server, so the string need not preserve
+/// every digit of the numeric value.
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct Rate {
-    /// Float.
+    /// Fractional rate before percentage conversion; `0.25` represents 25%.
     pub float: f64,
-    /// String.
+    /// Server-formatted percentage including `%`, such as `"25%"`.
     pub string: String,
 }
 /// EmailStats returned by MailerLite.
 #[derive(Debug, Clone, serde::Deserialize)]
 #[non_exhaustive]
 pub struct EmailStats {
-    /// Sent.
+    /// Number of emails sent, rather than the number successfully delivered.
     pub sent: Option<u64>,
-    /// Opens count.
+    /// Unique recipient opens reported by the email statistics resource.
     pub opens_count: Option<u64>,
-    /// Unique opens count.
+    /// Number of distinct recipients who opened an email, when reported.
     pub unique_opens_count: Option<u64>,
-    /// Clicks count.
+    /// Unique recipient clicks reported by the email statistics resource.
     pub clicks_count: Option<u64>,
-    /// Unique clicks count.
+    /// Number of distinct recipients who clicked a link, when reported.
     pub unique_clicks_count: Option<u64>,
-    /// Unsubscribes count.
+    /// Number of attributed unsubscriptions.
     pub unsubscribes_count: Option<u64>,
-    /// Spam count.
+    /// Number of attributed spam complaints.
     pub spam_count: Option<u64>,
-    /// Hard bounces count.
+    /// Number of permanent delivery failures.
     pub hard_bounces_count: Option<u64>,
-    /// Soft bounces count.
+    /// Number of temporary delivery failures.
     pub soft_bounces_count: Option<u64>,
-    /// Forwards count.
+    /// Number of tracked email forwards.
     pub forwards_count: Option<u64>,
-    /// Open rate.
+    /// Email open rate in the server-provided rate representation.
     pub open_rate: Option<Rate>,
-    /// Click rate.
+    /// Email click rate in the server-provided rate representation.
     pub click_rate: Option<Rate>,
-    /// Unsubscribe rate.
+    /// Unsubscription rate in the server-provided rate representation.
     pub unsubscribe_rate: Option<Rate>,
-    /// Spam rate.
+    /// Spam-complaint rate in the server-provided rate representation.
     pub spam_rate: Option<Rate>,
-    /// Hard bounce rate.
+    /// Permanent-delivery-failure rate in the server-provided representation.
     pub hard_bounce_rate: Option<Rate>,
-    /// Soft bounce rate.
+    /// Temporary-delivery-failure rate in the server-provided representation.
     pub soft_bounce_rate: Option<Rate>,
 }
 /// CampaignActivity returned by MailerLite.
 #[derive(Debug, Clone, serde::Deserialize)]
 #[non_exhaustive]
 pub struct CampaignActivity {
-    /// Id.
+    /// MailerLite identifier, preserved as text.
     pub id: String,
-    /// Opens count.
+    /// Number of opens recorded for this activity entry.
     pub opens_count: Option<u64>,
-    /// Clicks count.
+    /// Number of clicks recorded for this activity entry.
     pub clicks_count: Option<u64>,
-    /// Subscriber.
+    /// Subscriber associated with this activity, when included.
     pub subscriber: Option<crate::models::subscribers::Subscriber>,
 }

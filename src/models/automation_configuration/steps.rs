@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 
 /// Supported delay schedules.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "snake_case")]
 pub enum DelayUnit {
     /// The `minutes` API value.
@@ -41,7 +41,7 @@ pub enum DelayUnit {
 }
 
 /// Behavior when a scheduled delay date has already elapsed.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "snake_case")]
 pub enum ElapsedDateAction {
     /// The `stop` API value.
@@ -56,7 +56,7 @@ pub enum ElapsedDateAction {
 }
 
 /// How multiple conditions are combined.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "snake_case")]
 pub enum ConditionMatching {
     /// The `any` API value.
@@ -68,7 +68,7 @@ pub enum ConditionMatching {
 }
 
 /// Supported workflow conditions.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "snake_case")]
 pub enum ConditionType {
     /// The `workflow_activity` API value.
@@ -89,7 +89,7 @@ pub enum ConditionType {
 }
 
 /// Supported subscriber actions.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "snake_case")]
 pub enum ActionType {
     /// The `update_custom_field` API value.
@@ -116,7 +116,7 @@ pub enum ActionType {
 }
 
 /// Known automation step discriminators.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "snake_case")]
 pub enum StepKind {
     /// Send an email.
@@ -134,7 +134,7 @@ pub enum StepKind {
     Action,
 }
 /// A path in an automation A/B step.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "snake_case")]
 pub enum AbPath {
     /// Path A.
@@ -146,7 +146,7 @@ pub enum AbPath {
 }
 
 /// ISO weekday used by scheduled delays, from Monday (1) through Sunday (7).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Weekday {
     /// Monday, ISO day 1.
     Monday = 1,

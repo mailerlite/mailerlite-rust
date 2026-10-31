@@ -8,7 +8,7 @@ use serde_json::Value;
 use std::fmt;
 
 /// An allowed HTTP method within a batch.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Hash)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum BatchMethod {
     /// Read a resource.

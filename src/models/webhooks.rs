@@ -3,7 +3,7 @@ use crate::models::{SecretString, WebhookId};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 /// A webhook event; unknown response values are retained.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum WebhookEvent {
     /// A subscriber was created.

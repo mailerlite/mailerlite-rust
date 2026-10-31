@@ -10,7 +10,7 @@ use std::{fmt, time::Duration};
 pub const DEFAULT_API_VERSION: &str = "2026-10-30";
 
 /// Whether requests use a pinned date or the server's latest version.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub enum ApiVersion {
     /// Use a validated `YYYY-MM-DD` version date.
     Pinned(String),

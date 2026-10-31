@@ -131,6 +131,17 @@ Use named enums for arguments whose meaning is unclear at the call site, such
 as `.sort(GroupSort::Name, SortDirection::Descending)`. Clearly named boolean
 setters such as `.enabled(true)` can retain their boolean values.
 
+Derive `PartialEq`, `Eq`, and `Hash` for public option enums when their values
+support equality and hashing. Callers need these traits to compare options or
+use them as collection keys; they cannot add the implementations downstream.
+Do not invent an ordering for domain choices just to derive `Ord`.
+
+Repeated request-builder setters replace the earlier value for that parameter.
+Validate the final state in `send()` and use the same validation for streams.
+Correcting one parameter must not hide an invalid value in another parameter or
+an option unsupported by the endpoint. Retain typed values when validation
+depends on information that would be lost in the wire representation.
+
 Mark lazy request-builder types `#[must_use]` with a message directing callers
 to `.send().await`, and client configuration builders with a message directing
 callers to `.build()`. Type-level annotations also catch discarded consuming
@@ -408,6 +419,12 @@ without implementation-session history or agent ownership notes.
 
 ### Resource rustdoc
 
+Model field documentation should explain representations and units, not repeat
+field names. Distinguish a fractional rate from its percentage display string,
+MailerLite IDs from external resource IDs, and missing values from zero or false.
+Verify units and meanings against the API contract or backend source before
+documenting them; do not infer a timezone for an unspecified timestamp.
+
 Every exposed endpoint operation needs an inline `# Examples` section. Public
 fallible constructors, request helpers, and decoding helpers also need examples
 and `# Errors`. Put the summary and important behavior first, then `# Examples`,
@@ -586,9 +603,10 @@ in screenshots, logs, or attachments.
 
 ## CI and releases
 
-The current [workflow](.github/workflows/main.yaml) runs on pushes:
+The current [workflow](.github/workflows/main.yaml) runs on branch and tag pushes:
 
-- Build, run tests (including doctests), compile examples, and check rustdoc
+- Run `cargo test`, which builds the library and enabled examples and runs unit,
+  integration, and documentation tests, then check rustdoc
   with warnings denied on Rust 1.88.0, stable, beta, and nightly for default
   features, all features, native TLS alone, and no default features (16 matrix
   jobs).
@@ -620,6 +638,11 @@ Feature and rustdoc checks live in the existing build/test job. CI compiles
 examples without running them, and normal tests require no API token. It does
 not currently have a `pull_request` trigger, advisory-audit, or package-consumer
 job; those release checks still need to be completed locally.
+
+Keep the full toolchain/feature matrix. Separate `cargo build` and
+`cargo check --examples` steps would repeat compilation already covered by
+`cargo test`; a standalone rustdoc check remains necessary for documentation
+warnings and links. Release creation and publication remain restricted to `main`.
 
 Maintainers should complete these steps before approving a release:
 

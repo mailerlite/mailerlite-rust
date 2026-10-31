@@ -13,7 +13,7 @@ use reqwest::Method;
 use serde::de::DeserializeOwned;
 use std::marker::PhantomData;
 /// Sort fields supported by e-commerce collection endpoints.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Sort {
     /// ID ascending.
     Id,

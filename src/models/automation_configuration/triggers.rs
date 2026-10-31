@@ -4,7 +4,7 @@ use crate::models::Patch;
 use serde::{Deserialize, Serialize};
 
 /// Duration unit for ecommerce triggers.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "snake_case")]
 pub enum DurationUnit {
     /// The `hours` API value.
@@ -22,7 +22,7 @@ pub enum DurationUnit {
 }
 
 /// Offset unit for date triggers.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "snake_case")]
 pub enum DateOffsetUnit {
     /// The `day` API value.

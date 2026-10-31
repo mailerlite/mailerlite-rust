@@ -176,6 +176,11 @@ nested resource. The shop itself still takes its MailerLite shop ID.
 
 ## Listing and pagination
 
+Repeated setters replace the previous value for that parameter. Validation uses
+the final request state for both `.send()` and `.into_stream()`: for example,
+`.limit(0).limit(25)` uses 25. Correcting the limit does not clear an invalid page,
+unknown subscriber status, or an option unsupported by the selected endpoint.
+
 Group and field list builders take an explicit `resources::SortDirection`:
 `.sort(GroupSort::Name, SortDirection::Ascending)` or
 `.sort(FieldSort::Name, SortDirection::Descending)`. Import the shared direction

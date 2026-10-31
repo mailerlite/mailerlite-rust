@@ -3,7 +3,7 @@ use crate::models::campaigns::{Campaign, CampaignActivity};
 use crate::{Error, MailerLite, Response, Result, http::OperationPolicy, pagination::NumberedPage};
 use reqwest::Method;
 /// CampaignStatus request value.
-#[derive(Debug, Clone, Copy, serde::Serialize)]
+#[derive(Debug, Clone, Copy, serde::Serialize, PartialEq, Eq, Hash)]
 pub enum CampaignStatus {
     /// Draft.
     #[serde(rename = "draft")]
@@ -25,7 +25,7 @@ impl CampaignStatus {
     }
 }
 /// CampaignFilterType request value.
-#[derive(Debug, Clone, Copy, serde::Serialize)]
+#[derive(Debug, Clone, Copy, serde::Serialize, PartialEq, Eq, Hash)]
 pub enum CampaignFilterType {
     /// Regular.
     #[serde(rename = "regular")]
@@ -51,7 +51,7 @@ impl CampaignFilterType {
     }
 }
 /// ActivityType request value.
-#[derive(Debug, Clone, Copy, serde::Serialize)]
+#[derive(Debug, Clone, Copy, serde::Serialize, PartialEq, Eq, Hash)]
 pub enum ActivityType {
     /// Opened.
     #[serde(rename = "opened")]
@@ -689,7 +689,7 @@ impl Email {
     }
 }
 /// WinnerMetric option.
-#[derive(Debug, Clone, Copy, serde::Serialize)]
+#[derive(Debug, Clone, Copy, serde::Serialize, PartialEq, Eq, Hash)]
 pub enum WinnerMetric {
     /// O.
     #[serde(rename = "o")]
@@ -699,7 +699,7 @@ pub enum WinnerMetric {
     Clicks,
 }
 /// WaitUnit option.
-#[derive(Debug, Clone, Copy, serde::Serialize)]
+#[derive(Debug, Clone, Copy, serde::Serialize, PartialEq, Eq, Hash)]
 pub enum WaitUnit {
     /// H.
     #[serde(rename = "h")]
@@ -709,7 +709,7 @@ pub enum WaitUnit {
     Days,
 }
 /// AbTestType option.
-#[derive(Debug, Clone, Copy, serde::Serialize)]
+#[derive(Debug, Clone, Copy, serde::Serialize, PartialEq, Eq, Hash)]
 pub enum AbTestType {
     /// Subject.
     #[serde(rename = "subject")]
@@ -1125,7 +1125,7 @@ impl UpdateCampaign {
     }
 }
 /// Delivery option.
-#[derive(Debug, Clone, Copy, serde::Serialize)]
+#[derive(Debug, Clone, Copy, serde::Serialize, PartialEq, Eq, Hash)]
 pub enum Delivery {
     /// Instant.
     #[serde(rename = "instant")]
@@ -1141,7 +1141,7 @@ pub enum Delivery {
     SmartSending,
 }
 /// ResendDelivery option.
-#[derive(Debug, Clone, Copy, serde::Serialize)]
+#[derive(Debug, Clone, Copy, serde::Serialize, PartialEq, Eq, Hash)]
 pub enum ResendDelivery {
     /// Day.
     #[serde(rename = "day")]

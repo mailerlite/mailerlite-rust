@@ -248,7 +248,7 @@ impl UpdateAutomationTrigger {
     }
 }
 /// Execution state accepted by the trigger subscribers endpoint.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum TriggerSubscriberStatus {
     /// Executions still in progress.
     Queued,

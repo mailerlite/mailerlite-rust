@@ -8,21 +8,21 @@ use serde::Deserialize;
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct Cart {
-    /// Id.
+    /// MailerLite identifier, preserved as text.
     #[serde(deserialize_with = "wire::id")]
     pub id: CartId,
-    /// Resource id.
+    /// Identifier assigned by the connected shop, distinct from the MailerLite ID.
     pub resource_id: Option<String>,
-    /// Ecommerce order id.
+    /// MailerLite order identifier associated with this cart, when present.
     pub ecommerce_order_id: Option<String>,
-    /// Checkout url.
+    /// URL where the customer can complete checkout.
     pub checkout_url: Option<String>,
-    /// Cart total.
+    /// Total cart amount, retained as an exact decimal.
     #[serde(default, deserialize_with = "wire::optional_decimal")]
     pub cart_total: Option<Decimal>,
-    /// Customer.
+    /// Customer associated with this cart, when included.
     pub customer: Option<Customer>,
-    /// Items.
+    /// Cart line items, when included in the response.
     pub items: Option<Vec<CartItem>>,
 }
 
@@ -30,20 +30,20 @@ pub struct Cart {
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct CartItem {
-    /// Id.
+    /// MailerLite identifier, preserved as text.
     #[serde(deserialize_with = "wire::id")]
     pub id: CartItemId,
-    /// Resource id.
+    /// Identifier assigned by the connected shop, distinct from the MailerLite ID.
     pub resource_id: Option<String>,
-    /// Product.
+    /// Product represented by this cart line, when included.
     pub product: Option<Product>,
-    /// Ecommerce product variant id.
+    /// MailerLite product-variant identifier for this line, when present.
     pub ecommerce_product_variant_id: Option<String>,
-    /// Variant.
+    /// Variant description supplied for this cart line.
     pub variant: Option<String>,
-    /// Quantity.
+    /// Number of units represented by this cart line.
     pub quantity: Option<u64>,
-    /// Price.
+    /// Exact decimal price without conversion through floating point.
     #[serde(default, deserialize_with = "wire::optional_decimal")]
     pub price: Option<Decimal>,
 }

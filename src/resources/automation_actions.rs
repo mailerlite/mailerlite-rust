@@ -107,7 +107,7 @@ impl AutomationTriggerSettings {
 }
 
 /// Unit of the delay before subscribers may re-enter an automation.
-#[derive(Debug, Clone, Copy, Serialize)]
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "snake_case")]
 pub enum AutomationRepeatableUnit {
     /// Hours.
@@ -121,7 +121,7 @@ pub enum AutomationRepeatableUnit {
 }
 
 /// Timing policy for repeated automation enrollment.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq, Hash)]
 #[serde(tag = "mode", rename_all = "snake_case")]
 pub enum AutomationRepeatableSettings {
     /// Permit immediate re-entry.
@@ -500,7 +500,7 @@ impl AutomationReportQuery {
 }
 
 /// Reporting period accepted by the automation order endpoint.
-#[derive(Debug, Clone, Copy, Serialize)]
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "snake_case")]
 pub enum AutomationOrderTimeFrame {
     /// Current week.
@@ -629,7 +629,7 @@ impl AutomationOrderQuery {
 }
 
 /// Where subscribers resume when re-enrolled.
-#[derive(Debug, Clone, Copy, Serialize)]
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "snake_case")]
 pub enum ReaddDestination {
     /// Continue after the last completed step.
