@@ -215,6 +215,7 @@ Build injected clients with
 HTTP retries. The SDK cannot inspect or override those policies on an arbitrary
 reqwest client. The current SDK uses reqwest 0.13.
 
+Version pinning is optional; omitting it keeps `ApiVersion::Latest`.
 To pin API behavior, import `mailerlite_rs::ApiVersion` and add
 `.api_version(ApiVersion::pinned(version_date)?)` to the builder, where
 `version_date` is your chosen `YYYY-MM-DD` date. MailerLite recommends the date

@@ -76,7 +76,9 @@ An existing environment variable named `MAILERLITE_API_KEY` works too: pass its
 value to the same constructor. Keep one client per configuration; clones share
 connections, pacing, and server cooldowns.
 
-Use the builder for timeouts, API version pinning, or an injected HTTP client:
+Use the builder for timeouts, API version pinning, or an injected HTTP client.
+This example opts into pinning and therefore takes a date argument. To keep
+`ApiVersion::Latest`, omit both `version_date` and the `.api_version(...)` call:
 
 ```rust
 use mailerlite_rs::{ApiVersion, MailerLite};

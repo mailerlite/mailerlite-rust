@@ -9,6 +9,11 @@ use std::fmt;
 /// The SDK preserves both values without rescaling or recomputing them. Formatting
 /// and rounding come from the server, so the string need not preserve every digit
 /// of the numeric value.
+///
+/// [`crate::models::campaigns::Rate`] and [`crate::models::groups::Rate`] re-export
+/// this same type. Automation email engagement and deliverability reports use
+/// [`crate::models::automation_reports::AutomationReportRate`], which exposes
+/// only the formatted percentage string.
 #[derive(Debug, Clone, Deserialize)]
 pub struct Rate {
     /// Fractional rate before percentage conversion; `0.25` represents 25%.

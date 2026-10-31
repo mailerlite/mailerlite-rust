@@ -147,8 +147,9 @@ Document collection setters that merge entries instead. Preserve unrelated
 entries, including explicit nulls, and define how overlapping keys behave.
 For example, booking availability merges weekdays with the last call winning
 for each typed `BookingWeekday` key, and provides an explicit whole-map replacement
-method. Prefer enum keys for closed sets of request values. Test both call
-orders, wire names, repeated keys, replacement, and empty input. Distinguish
+method that accepts time ranges and explicit null days. Prefer enum keys for
+closed sets of request values. Test both call orders, wire names, repeated keys,
+replacement, and empty input. Distinguish
 changes to a request builder from guarantees about persisted server state.
 An empty merge must preserve omission on a fresh builder as well as existing
 entries; emitting an empty object can change server state. Test that separately

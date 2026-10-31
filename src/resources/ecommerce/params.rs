@@ -752,28 +752,30 @@ impl SaveVariant {
 ///     ("monday".into(), Some(["09:00".into(), "17:00".into()])),
 ///     ("sunday".into(), None),
 /// ]);
-/// let mut available = BTreeMap::new();
-/// let mut settings = ProductSettings::new(ProductAction::MoveToGroup);
+/// let days = availability.into_iter()
+///     .map(|(name, times)| name.parse().map(|day| (day, times)))
+///     .collect::<Result<BTreeMap<BookingWeekday, _>, _>>()?;
 ///
-/// for (name, times) in availability {
-///     let day: BookingWeekday = name.parse()?;
-///     match times {
-///         Some(times) => {
-///             available.insert(day, times);
-///         }
-///         None => settings = settings.unavailable_day(day),
-///     }
-/// }
-///
-/// let settings = settings.custom_availability_days(available);
+/// let settings = ProductSettings::new(ProductAction::MoveToGroup)
+///     .replace_custom_availability_days(days);
 /// # Ok::<(), mailerlite_rs::resources::ecommerce::params::ParseBookingWeekdayError>(())
 /// ```
 ///
-/// Arbitrary strings cannot be assigned directly:
+/// Response keys are preserved even when unsupported. Conversion intentionally
+/// fails for names such as `Monday` or future keys, so the application can decide
+/// how to handle them. The SDK does not silently discard or normalize them:
+/// doing so could change the meaning of a stored schedule or merge distinct keys.
+///
+/// Request setters require typed weekday keys:
 ///
 /// ```compile_fail
-/// use mailerlite_rs::resources::ecommerce::params::BookingWeekday;
-/// let day: BookingWeekday = "Mon";
+/// use mailerlite_rs::resources::ecommerce::params::{ProductAction, ProductSettings};
+/// use std::collections::BTreeMap;
+///
+/// let settings = ProductSettings::new(ProductAction::MoveToGroup)
+///     .custom_availability_days(BTreeMap::from([
+///         ("Mon".to_owned(), ["09:00".to_owned(), "17:00".to_owned()]),
+///     ]));
 /// ```
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[serde(rename_all = "lowercase")]
@@ -1104,8 +1106,8 @@ impl ProductSettings {
     }
     /// Replace all availability entries configured on this builder.
     ///
-    /// Discards previous time ranges and unavailable-day nulls, then adds the
-    /// supplied ranges. An empty map serializes as `{}` rather than omitting the
+    /// Discards previous entries, then uses the supplied schedule, including nulls
+    /// for unavailable days. An empty map serializes as `{}` rather than omitting the
     /// field. This can clear stored custom-availability entries; it is not a no-op.
     /// To preserve existing hours, omit availability in a fresh settings builder.
     /// Empty custom availability does not guarantee that every weekday is closed.
@@ -1120,23 +1122,24 @@ impl ProductSettings {
     /// let base = ProductSettings::new(ProductAction::MoveToGroup)
     ///     .unavailable_day(BookingWeekday::Sunday);
     ///
-    /// let settings = base.replace_custom_availability_days(BTreeMap::from([(
-    ///     BookingWeekday::Monday, ["09:00".into(), "17:00".into()],
-    /// )]));
+    /// let settings = base.replace_custom_availability_days(BTreeMap::from([
+    ///     (BookingWeekday::Monday, Some(["09:00".into(), "17:00".into()])),
+    ///     (BookingWeekday::Saturday, None),
+    /// ]));
     ///
     /// let body = serde_json::to_value(settings)?;
     ///
     /// assert_eq!(body["custom_availability_days"], serde_json::json!({
-    ///     "monday": ["09:00", "17:00"],
+    ///     "monday": ["09:00", "17:00"], "saturday": null,
     /// }));
     /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn replace_custom_availability_days(
         mut self,
-        value: BTreeMap<BookingWeekday, [String; 2]>,
+        value: BTreeMap<BookingWeekday, Option<[String; 2]>>,
     ) -> Self {
-        self.custom_availability_days = Some(BTreeMap::new());
-        self.custom_availability_days(value)
+        self.custom_availability_days = Some(value);
+        self
     }
     /// Mark a weekday unavailable by sending an explicit null time range.
     ///
@@ -1428,18 +1431,14 @@ mod tests {
         let body = json!({"monday":["09:00","17:00"],"sunday":null});
         let availability: crate::models::ecommerce::BookingAvailability =
             serde_json::from_value(body.clone()).unwrap();
-        let mut available = BTreeMap::new();
-        let mut settings = ProductSettings::new(ProductAction::MoveToGroup);
-        for (name, times) in availability {
-            let day = name.parse().unwrap();
-            match times {
-                Some(times) => {
-                    available.insert(day, times);
-                }
-                None => settings = settings.unavailable_day(day),
-            }
-        }
-        let settings = settings.custom_availability_days(available);
+        let days = availability
+            .into_iter()
+            .map(|(name, times)| name.parse().map(|day| (day, times)))
+            .collect::<Result<BTreeMap<BookingWeekday, _>, ParseBookingWeekdayError>>()
+            .unwrap();
+        let settings = ProductSettings::new(ProductAction::MoveToGroup)
+            .unavailable_day(BookingWeekday::Friday)
+            .replace_custom_availability_days(days);
         assert_eq!(
             serde_json::to_value(settings).unwrap()["custom_availability_days"],
             body
@@ -1447,6 +1446,43 @@ mod tests {
         let typed: BTreeMap<BookingWeekday, Option<[String; 2]>> =
             serde_json::from_value(body.clone()).unwrap();
         assert_eq!(serde_json::to_value(typed).unwrap(), body);
+    }
+
+    #[test]
+    fn response_availability_preserves_unknown_keys_but_request_conversion_rejects_them() {
+        for name in ["Monday", "future-day"] {
+            let availability: crate::models::ecommerce::BookingAvailability =
+                serde_json::from_value(json!({name:["09:00","17:00"],"monday":null})).unwrap();
+            assert!(availability.contains_key(name));
+            assert!(availability.contains_key("monday"));
+            let converted = availability
+                .into_iter()
+                .map(|(name, times)| name.parse().map(|day| (day, times)))
+                .collect::<Result<BTreeMap<BookingWeekday, _>, ParseBookingWeekdayError>>();
+            assert_eq!(converted, Err(ParseBookingWeekdayError));
+        }
+    }
+
+    #[test]
+    fn replacing_availability_can_set_every_day_to_null() {
+        let settings = ProductSettings::new(ProductAction::MoveToGroup)
+            .custom_availability_days(BTreeMap::from([(
+                BookingWeekday::Monday,
+                ["09:00".into(), "17:00".into()],
+            )]))
+            .replace_custom_availability_days(
+                BookingWeekday::ALL
+                    .into_iter()
+                    .map(|day| (day, None))
+                    .collect(),
+            );
+        assert_eq!(
+            serde_json::to_value(settings).unwrap()["custom_availability_days"],
+            json!({
+                "monday":null,"tuesday":null,"wednesday":null,"thursday":null,
+                "friday":null,"saturday":null,"sunday":null
+            })
+        );
     }
 
     #[test]
@@ -1464,7 +1500,7 @@ mod tests {
 
         let settings = base.replace_custom_availability_days(BTreeMap::from([(
             BookingWeekday::Monday,
-            ["10:00".into(), "12:00".into()],
+            Some(["10:00".into(), "12:00".into()]),
         )]));
 
         assert_eq!(
