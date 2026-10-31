@@ -121,6 +121,10 @@ public naming. Required request fields belong in constructors; optional fields
 use consuming setters. Resource handles borrow a reusable client. Avoid extra
 traits, macros, dependencies, allocations, or cloning without a concrete need.
 
+Use named enums for arguments whose meaning is unclear at the call site, such
+as `.sort(GroupSort::Name, SortDirection::Descending)`. Clearly named boolean
+setters such as `.enabled(true)` can retain their boolean values.
+
 Mark lazy request-builder types `#[must_use]` with a message directing callers
 to `.send().await`, and client configuration builders with a message directing
 callers to `.build()`. Type-level annotations also catch discarded consuming

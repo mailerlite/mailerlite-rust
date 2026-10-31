@@ -176,6 +176,14 @@ nested resource. The shop itself still takes its MailerLite shop ID.
 
 ## Listing and pagination
 
+Group and field list builders take an explicit `resources::SortDirection`:
+`.sort(GroupSort::Name, SortDirection::Ascending)` or
+`.sort(FieldSort::Name, SortDirection::Descending)`. Import the shared direction
+from `mailerlite_rs::resources::SortDirection` and the field enum from its resource
+module. If you used the early v2 boolean argument, replace `false` with
+`SortDirection::Ascending` and `true` with `SortDirection::Descending`. This is a
+source-breaking change; the query values remain `name` and `-name`, respectively.
+
 Lazy request builders are `#[must_use]`: discarding one now warns, or fails
 compilation when `unused_must_use` is denied. Call `.send().await` to execute a
 request, or enable `stream` and consume `.into_stream()`. Discarded client

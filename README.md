@@ -420,4 +420,4 @@ at [info@mailerlite.com](mailto:info@mailerlite.com).
 
 ## License
 
-[The MIT License (MIT)](LICENSE).
+[The MIT License (MIT)](./LICENSE).

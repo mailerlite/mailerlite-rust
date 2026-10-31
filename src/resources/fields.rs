@@ -1,5 +1,5 @@
 //! Custom field operations.
-use crate::resources::{groups::validate_name, subscribers::set};
+use crate::resources::{SortDirection, groups::validate_name, subscribers::set};
 use crate::{
     Error, MailerLite, Response, Result,
     http::OperationPolicy,
@@ -229,15 +229,27 @@ impl<'a> ListFields<'a> {
         set(&mut self.query, "filter[type]", value.as_str().into());
         self
     }
-    /// Sort by name or type.
-    pub fn sort(mut self, value: FieldSort, descending: bool) -> Self {
+    /// Sort by name or type in the selected direction.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mailerlite_rs::{MailerLite, resources::{SortDirection, fields::FieldSort}};
+    ///
+    /// # fn example(mailerlite: &MailerLite) {
+    /// let fields = mailerlite.fields().list()
+    ///     .sort(FieldSort::Name, SortDirection::Descending);
+    /// # let _ = fields;
+    /// # }
+    /// ```
+    pub fn sort(mut self, field: FieldSort, direction: SortDirection) -> Self {
         set(
             &mut self.query,
             "sort",
             format!(
                 "{}{}",
-                if descending { "-" } else { "" },
-                match value {
+                direction.prefix(),
+                match field {
                     FieldSort::Name => "name",
                     FieldSort::Type => "type",
                 }

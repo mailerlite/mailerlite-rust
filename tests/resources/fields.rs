@@ -3,7 +3,10 @@ use crate::support::{default_client, resource_mock};
 use mailerlite_rs::{
     Error,
     models::fields::FieldType,
-    resources::fields::{CreateField, FieldSort, UpdateField},
+    resources::{
+        SortDirection,
+        fields::{CreateField, FieldSort, UpdateField},
+    },
 };
 use serde_json::{Value, json};
 use wiremock::{
@@ -13,6 +16,25 @@ use wiremock::{
 
 fn field() -> Value {
     json!({"id":"004","name":"Birthday","key":"birthday","type":"date"})
+}
+
+#[tokio::test]
+async fn list_sorts_by_type_ascending_without_a_prefix() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/api/fields"))
+        .and(query_param("sort", "type"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({"data":[field()]})))
+        .expect(1)
+        .mount(&server)
+        .await;
+    default_client(&server)
+        .fields()
+        .list()
+        .sort(FieldSort::Type, SortDirection::Ascending)
+        .send()
+        .await
+        .unwrap();
 }
 
 #[tokio::test]
@@ -85,7 +107,7 @@ async fn list_preserves_page_limit_keyword_type_and_descending_sort() {
         .limit(25)
         .keyword("birth")
         .field_type(FieldType::Date)
-        .sort(FieldSort::Name, true)
+        .sort(FieldSort::Name, SortDirection::Descending)
         .send()
         .await
         .unwrap();

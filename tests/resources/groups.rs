@@ -3,7 +3,10 @@ use crate::support::{default_client, resource_mock};
 use mailerlite_rs::{
     Error,
     models::subscribers::SubscriberStatus,
-    resources::groups::{CreateGroup, GroupSort, UpdateGroup},
+    resources::{
+        SortDirection,
+        groups::{CreateGroup, GroupSort, UpdateGroup},
+    },
 };
 use serde_json::{Value, json};
 use wiremock::{
@@ -13,6 +16,25 @@ use wiremock::{
 
 fn group() -> Value {
     json!({"id":"001","name":"Newsletter"})
+}
+
+#[tokio::test]
+async fn list_sorts_by_name_ascending_without_a_prefix() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/api/groups"))
+        .and(query_param("sort", "name"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({"data":[group()]})))
+        .expect(1)
+        .mount(&server)
+        .await;
+    default_client(&server)
+        .groups()
+        .list()
+        .sort(GroupSort::Name, SortDirection::Ascending)
+        .send()
+        .await
+        .unwrap();
 }
 
 #[tokio::test]
@@ -124,7 +146,7 @@ async fn list_preserves_page_limit_name_filter_and_descending_sort() {
         .page(2)
         .limit(25)
         .name("News")
-        .sort(GroupSort::Total, true)
+        .sort(GroupSort::Total, SortDirection::Descending)
         .send()
         .await
         .unwrap();

@@ -1,5 +1,8 @@
 //! Group operations and request parameters.
-use crate::resources::subscribers::{SubscriberMembers, set};
+use crate::resources::{
+    SortDirection,
+    subscribers::{SubscriberMembers, set},
+};
 use crate::{
     Error, MailerLite, Response, Result, http::OperationPolicy, models::groups::Group,
     pagination::NumberedPage,
@@ -348,12 +351,24 @@ impl<'a> ListGroups<'a> {
         set(&mut self.query, "filter[name]", value.into());
         self
     }
-    /// Sort by a documented field, optionally descending.
-    pub fn sort(mut self, field: GroupSort, descending: bool) -> Self {
+    /// Sort by a documented field in the selected direction.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mailerlite_rs::{MailerLite, resources::{SortDirection, groups::GroupSort}};
+    ///
+    /// # fn example(mailerlite: &MailerLite) {
+    /// let groups = mailerlite.groups().list()
+    ///     .sort(GroupSort::Name, SortDirection::Ascending);
+    /// # let _ = groups;
+    /// # }
+    /// ```
+    pub fn sort(mut self, field: GroupSort, direction: SortDirection) -> Self {
         set(
             &mut self.query,
             "sort",
-            format!("{}{}", if descending { "-" } else { "" }, field.as_str()),
+            format!("{}{}", direction.prefix(), field.as_str()),
         );
         self
     }

@@ -17,3 +17,6 @@ pub mod subscribers;
 pub mod webhooks;
 
 mod accessors;
+mod sort_direction;
+
+pub use sort_direction::SortDirection;

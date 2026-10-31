@@ -2,13 +2,23 @@
 //!
 //! Requires `MAILERLITE_API_TOKEN`.
 
-use mailerlite_rs::MailerLite;
+use mailerlite_rs::{
+    MailerLite,
+    resources::{SortDirection, groups::GroupSort},
+};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
 
-    let page = mailerlite.groups().list().page(1).limit(25).send().await?;
+    let page = mailerlite
+        .groups()
+        .list()
+        .page(1)
+        .limit(25)
+        .sort(GroupSort::Name, SortDirection::Ascending)
+        .send()
+        .await?;
 
     for group in &page.data.data {
         println!("{}: {}", group.id, group.name);

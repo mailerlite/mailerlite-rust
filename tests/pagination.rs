@@ -3,7 +3,11 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 mod support;
 use futures_util::{StreamExt, TryStreamExt};
-use mailerlite_rs::{Error, models::subscribers::SubscriberStatus};
+use mailerlite_rs::{
+    Error,
+    models::subscribers::SubscriberStatus,
+    resources::{SortDirection, groups::GroupSort},
+};
 use serde_json::json;
 use support::{client, subscriber};
 use wiremock::{
@@ -96,15 +100,26 @@ async fn numbered_stream_retains_filters_and_uses_metadata_not_navigation_url() 
     let origin = MockServer::start().await;
     let hostile = MockServer::start().await;
     let sdk = client(&origin);
-    Mock::given(method("GET")).and(path("/api/groups"))
-        .and(query_param("page","2")).and(query_param("limit","25")).and(query_param("filter[name]","readers"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!({"data":[],"meta":{"current_page":2,"last_page":3},"links":{"next":format!("{}/steal?page=999",hostile.uri())}})))
-        .expect(1).mount(&origin).await;
+    Mock::given(method("GET"))
+        .and(path("/api/groups"))
+        .and(query_param("page", "2"))
+        .and(query_param("limit", "25"))
+        .and(query_param("filter[name]", "readers"))
+        .and(query_param("sort", "-name"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "data": [],
+            "meta": {"current_page": 2, "last_page": 3},
+            "links": {"next": format!("{}/steal?page=999", hostile.uri())}
+        })))
+        .expect(1)
+        .mount(&origin)
+        .await;
     Mock::given(method("GET"))
         .and(path("/api/groups"))
         .and(query_param("page", "3"))
         .and(query_param("limit", "25"))
         .and(query_param("filter[name]", "readers"))
+        .and(query_param("sort", "-name"))
         .respond_with(ResponseTemplate::new(200).set_body_json(
             json!({"data":[{"id":"12","name":"readers"}],"meta":{"current_page":3,"last_page":3}}),
         ))
@@ -117,6 +132,7 @@ async fn numbered_stream_retains_filters_and_uses_metadata_not_navigation_url() 
         .page(2)
         .limit(25)
         .name("readers")
+        .sort(GroupSort::Name, SortDirection::Descending)
         .into_stream();
     tokio::pin!(stream);
     assert_eq!(stream.try_next().await.unwrap().unwrap().name, "readers");
