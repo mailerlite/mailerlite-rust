@@ -511,6 +511,10 @@ impl PurchaseFrequencyConfiguration {
 }
 
 #[cfg(test)]
+#[allow(
+    clippy::unwrap_used,
+    reason = "Tests assert fixture and operation outcomes"
+)]
 mod tests {
     use super::*;
     use crate::{

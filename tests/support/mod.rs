@@ -1,10 +1,13 @@
-#![allow(dead_code)]
 use mailerlite_rs::{MailerLite, RetryPolicy};
 use serde_json::Value;
 use std::time::Duration;
 use wiremock::MockServer;
 
 /// Resource-test client using the SDK's default no-retry policy.
+#[allow(
+    dead_code,
+    reason = "Only some integration targets need a no-retry client"
+)]
 pub fn default_client(server: &MockServer) -> MailerLite {
     MailerLite::builder("test-token")
         .base_url(format!("{}/api", server.uri()))
@@ -14,6 +17,7 @@ pub fn default_client(server: &MockServer) -> MailerLite {
 }
 
 /// Expect one resource request, including the shared HTTP headers.
+#[allow(dead_code, reason = "Only some integration targets use resource mocks")]
 pub async fn resource_mock(
     server: &MockServer,
     verb: &str,

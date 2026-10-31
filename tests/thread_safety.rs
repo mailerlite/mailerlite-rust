@@ -1,5 +1,8 @@
 //! Compile-time concurrency contracts. Futures and streams are never polled.
-#![allow(clippy::unwrap_used)]
+#![allow(
+    clippy::unwrap_used,
+    reason = "Tests assert fixture and operation outcomes"
+)]
 
 use mailerlite_rs::{
     ApiError, DecodeError, Error, MailerLite, MailerLiteBuilder, ResponseMetadata,

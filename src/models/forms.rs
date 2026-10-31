@@ -38,6 +38,10 @@ pub struct Form {
 }
 
 #[cfg(test)]
+#[allow(
+    clippy::unwrap_used,
+    reason = "Tests assert fixture and operation outcomes"
+)]
 mod tests {
     use serde_json::{Value, json};
 

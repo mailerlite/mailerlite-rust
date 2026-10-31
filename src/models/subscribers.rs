@@ -187,6 +187,10 @@ pub struct ForgetSubscriber {
 pub type SubscriberGroups = Vec<GroupId>;
 
 #[cfg(test)]
+#[allow(
+    clippy::unwrap_used,
+    reason = "Tests assert fixture and operation outcomes"
+)]
 mod tests {
     use super::*;
     use serde_json::{Value, json};

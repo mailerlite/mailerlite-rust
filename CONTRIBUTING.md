@@ -144,6 +144,16 @@ fixtures. Unsafe code is forbidden. Document every new public type, variant,
 field, and method, including meaningful limits and failure behavior.
 Start each implementation file with a short `//!` summary of its responsibility.
 
+Keep shared lint levels in `Cargo.toml`, including the unsafe-code prohibition.
+Scope lint exceptions to the smallest practical item and include a `reason`.
+Unit-test modules may allow `clippy::unwrap_used` for fixtures and assertions;
+integration-test targets may do the same. Do not suppress these lints across the
+library with `cfg_attr(test, ...)`, which also hides warnings in production code
+when compiling unit tests. Keep `expect_used` exceptions on the test or helper
+that needs them; wiremock's `.expect(count)` is not a panic-producing `expect`.
+Shared test helpers may allow `dead_code` individually when only some integration
+targets use them. Avoid suppressing it for the entire support module.
+
 Keep resource code responsible for endpoint semantics and route HTTP work
 through the shared client helpers. Do not create an independent reqwest client
 inside a resource or duplicate authentication, retry, or response decoding logic.

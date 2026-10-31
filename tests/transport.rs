@@ -1,5 +1,8 @@
 //! Deterministic transport, diagnostics, retry, and credential-boundary tests.
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+#![allow(
+    clippy::unwrap_used,
+    reason = "Tests assert fixture and operation outcomes"
+)]
 mod support;
 use mailerlite_rs::{
     ApiVersion, DEFAULT_API_VERSION, Error, MailerLite, RetryPolicy,

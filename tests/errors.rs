@@ -1,5 +1,8 @@
 //! Public error classification and diagnostic behavior for unusual HTTP responses.
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+#![allow(
+    clippy::unwrap_used,
+    reason = "Tests assert fixture and operation outcomes"
+)]
 mod support;
 
 use mailerlite_rs::{Error, resources::subscribers::UpsertSubscriber};

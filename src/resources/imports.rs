@@ -315,6 +315,10 @@ where
 }
 
 #[cfg(test)]
+#[allow(
+    clippy::unwrap_used,
+    reason = "Tests assert fixture and operation outcomes"
+)]
 mod polling_tests {
     use super::*;
     use crate::{ApiError, ResponseMetadata};
@@ -373,6 +377,10 @@ mod polling_tests {
         assert_eq!(calls.load(Ordering::SeqCst), 0);
     }
 
+    #[expect(
+        clippy::expect_used,
+        reason = "A second fetch violates the test's deadline assertion"
+    )]
     async fn assert_fetch_deadline(outcome: Result<Response<ImportReport>>, elapsed: Duration) {
         let calls = AtomicUsize::new(0);
         let start = Instant::now();

@@ -1,5 +1,8 @@
 //! Token-free incoming webhook schema and signature verification scenarios.
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+#![allow(
+    clippy::unwrap_used,
+    reason = "Tests assert fixture and operation outcomes"
+)]
 use mailerlite_rs::webhooks::{WebhookEvent, WebhookPayload};
 use serde_json::{Value, json};
 

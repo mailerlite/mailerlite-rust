@@ -207,6 +207,10 @@ fn batch_policy(requests: &[BatchRequest]) -> OperationPolicy {
 }
 
 #[cfg(test)]
+#[allow(
+    clippy::unwrap_used,
+    reason = "Tests assert fixture and operation outcomes"
+)]
 mod tests {
     use super::*;
     use crate::http::rate_limit::RateLimiter;

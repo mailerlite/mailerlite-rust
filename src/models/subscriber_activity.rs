@@ -475,6 +475,10 @@ pub enum WebformActivity {
 }
 
 #[cfg(test)]
+#[allow(
+    clippy::unwrap_used,
+    reason = "Tests assert fixture and operation outcomes"
+)]
 mod tests {
     use crate::models::subscribers::FieldValue;
     use serde_json::{Value, json};

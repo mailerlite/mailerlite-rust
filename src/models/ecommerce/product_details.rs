@@ -207,6 +207,10 @@ pub(super) fn optional_settings<'de, D: Deserializer<'de>>(
 }
 
 #[cfg(test)]
+#[allow(
+    clippy::unwrap_used,
+    reason = "Tests assert fixture and operation outcomes"
+)]
 mod tests {
     use super::ProductAssetType;
     use crate::models::ecommerce::Product;

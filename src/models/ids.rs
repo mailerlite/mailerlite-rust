@@ -78,6 +78,10 @@ identifier!(CartId, "An opaque e-commerce cart identifier.");
 identifier!(CartItemId, "An opaque e-commerce cart-item identifier.");
 
 #[cfg(test)]
+#[allow(
+    clippy::unwrap_used,
+    reason = "Tests assert fixture and operation outcomes"
+)]
 mod tests {
     use super::SubscriberId;
 

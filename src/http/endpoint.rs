@@ -24,6 +24,10 @@ pub(super) fn endpoint(base: &Url, path: &[&str]) -> Result<Url> {
 }
 
 #[cfg(test)]
+#[allow(
+    clippy::unwrap_used,
+    reason = "Tests assert fixture and operation outcomes"
+)]
 mod tests {
     use super::*;
 

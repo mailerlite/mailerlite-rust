@@ -785,6 +785,10 @@ pub enum NotificationFields {
 }
 
 #[cfg(test)]
+#[allow(
+    clippy::unwrap_used,
+    reason = "Tests assert fixture and operation outcomes"
+)]
 mod tests {
     use super::*;
     use crate::{
@@ -934,6 +938,10 @@ mod tests {
     }
 
     #[test]
+    #[expect(
+        clippy::expect_used,
+        reason = "The fixture must decode both weekday representations"
+    )]
     fn delay_response_accepts_stored_integer_and_text_weekdays() {
         // DelayStep::fill stores week_days unchanged and ::toArray returns them as
         // stored. AutomationDelayStepCalculationTest uses integer [1, 7], while

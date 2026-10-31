@@ -82,6 +82,10 @@ impl fmt::Debug for SecretString {
 }
 
 #[cfg(test)]
+#[allow(
+    clippy::unwrap_used,
+    reason = "Tests assert fixture and operation outcomes"
+)]
 mod tests {
     use super::{Patch, SecretString};
     use serde::{Deserialize, Serialize};

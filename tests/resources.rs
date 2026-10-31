@@ -1,5 +1,8 @@
 //! Independent HTTP contract and boundary scenarios, organized by API resource.
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+#![allow(
+    clippy::unwrap_used,
+    reason = "Tests assert fixture and operation outcomes"
+)]
 
 mod support;
 

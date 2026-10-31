@@ -184,6 +184,10 @@ fn segment_ids<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Vec<SegmentId>,
 }
 
 #[cfg(test)]
+#[allow(
+    clippy::unwrap_used,
+    reason = "Tests assert fixture and operation outcomes"
+)]
 mod tests {
     use serde_json::{Value, json};
 

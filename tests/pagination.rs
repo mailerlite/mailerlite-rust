@@ -1,6 +1,9 @@
 //! Lazy pagination preserves query context without trusting response destinations.
 #![cfg(feature = "stream")]
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+#![allow(
+    clippy::unwrap_used,
+    reason = "Tests assert fixture and operation outcomes"
+)]
 mod support;
 use futures_util::{StreamExt, TryStreamExt};
 use mailerlite_rs::{
