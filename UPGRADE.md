@@ -82,15 +82,15 @@ Use the builder for timeouts, API version pinning, or an injected HTTP client:
 use mailerlite_rs::{ApiVersion, MailerLite};
 use std::time::Duration;
 
-fn configured_client(token: String) -> mailerlite_rs::Result<MailerLite> {
+fn configured_client(token: String, version_date: String) -> mailerlite_rs::Result<MailerLite> {
     let http = MailerLite::http_client_builder()
         .connect_timeout(Duration::from_secs(5))
         .build()?;
 
     MailerLite::builder(token)
         .http_client(http)
-        // Optional: pin a date instead of using the latest version.
-        .api_version(ApiVersion::pinned("2026-10-30")?)
+        // Optional: pin the caller's chosen date instead of using the latest version.
+        .api_version(ApiVersion::pinned(version_date)?)
         .request_timeout(Duration::from_secs(30))
         .operation_timeout(Duration::from_secs(60))
         .build()
@@ -119,7 +119,9 @@ dispatch does not imply that a write was rolled back.
 
 Like v1, v2 omits `X-Version` by default. `ApiVersion::Latest` selects the server's
 latest API behavior. To opt into a dated version, use `ApiVersion::pinned(...)`.
-Choose the date explicitly, as in the configuration example above.
+MailerLite recommends using the date when you implement the integration; see
+its [versioning guidance](https://developers.mailerlite.com/getting-started#versioning).
+The SDK validates date syntax and calendar validity, not server support.
 
 Automatic retries remain **disabled by default**. Opt in with
 `.retry_policy(RetryPolicy::safe_reads().max_retries(2))`, importing

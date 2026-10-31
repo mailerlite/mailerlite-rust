@@ -15,12 +15,17 @@ pub enum ApiVersion {
 impl ApiVersion {
     /// Validate a Gregorian date and select it as the API version.
     ///
+    /// MailerLite recommends the date when you implement the integration; see
+    /// its [versioning guidance](https://developers.mailerlite.com/getting-started#versioning).
+    /// The example date below is illustrative, not an SDK-recommended version.
+    ///
     /// # Examples
     ///
     /// ```
     /// use mailerlite_rs::ApiVersion;
     ///
     /// # fn main() -> mailerlite_rs::Result<()> {
+    /// // Illustrative date only; choose the date for your integration.
     /// let version = ApiVersion::pinned("2026-10-30")?;
     /// # let _ = version;
     /// # Ok(())
@@ -183,6 +188,7 @@ impl MailerLiteBuilder {
     ///
     /// # fn main() -> mailerlite_rs::Result<()> {
     /// let mailerlite = MailerLite::builder("your-api-token")
+    ///     // Illustrative date only; choose the date for your integration.
     ///     .api_version(ApiVersion::pinned("2026-10-30")?)
     ///     .build()?;
     /// # let _ = mailerlite;

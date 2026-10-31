@@ -517,6 +517,10 @@ async fn count_subscribers(mailerlite: &MailerLite) -> mailerlite_rs::Result<()>
 Rustfmt does not insert these logical gaps into documentation snippets; review
 their rendered appearance as well as their compilation.
 
+Version-pinning guides and runnable examples should take a caller-supplied date.
+Label fixed dates in rustdoc as illustrative, and link to MailerLite's versioning
+guidance instead of presenting a sample date as a supported release version.
+
 Preserve nonduplicate examples, including the original v1 operation filenames.
 Update examples must take replacement values from explicit input, including
 names, prices, quantities, and attribute maps. Document required environment

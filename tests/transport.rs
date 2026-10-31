@@ -23,11 +23,13 @@ use wiremock::{
 
 #[tokio::test]
 async fn injected_http_client_preserves_base_prefix_auth_version_and_encoded_ids() {
+    const PINNED: &str = "2026-10-30";
+
     let server = MockServer::start().await;
     let http = MailerLite::http_client_builder().build().unwrap();
     let builder = MailerLite::builder("private-test-token")
         .base_url(format!("{}/proxy/api/", server.uri()))
-        .api_version(ApiVersion::pinned("2026-10-30").unwrap())
+        .api_version(ApiVersion::pinned(PINNED).unwrap())
         .http_client(http)
         .rate_limit_intervals(Duration::ZERO, Duration::ZERO);
     assert!(!format!("{builder:?}").contains("private-test-token"));
@@ -40,7 +42,7 @@ async fn injected_http_client_preserves_base_prefix_auth_version_and_encoded_ids
         .and(header("authorization", "Bearer private-test-token"))
         .and(header("accept", "application/json"))
         .and(header("content-type", "application/json"))
-        .and(header("x-version", "2026-10-30"))
+        .and(header("x-version", PINNED))
         .and(header(
             "user-agent",
             concat!("mailerlite-rs/", env!("CARGO_PKG_VERSION")),
