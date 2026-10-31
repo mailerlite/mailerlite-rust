@@ -1,21 +1,20 @@
+//! Find email. Requires MAILERLITE_API_KEY.
 use mailerlite_rs::{
-    api_response::{ApiResponse, WithEtag},
-    email::EmailDocument,
-    MailerLite,
+    MailerLite, Response, models::emails::EmailDocument, models::emails::WithEtag,
 };
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let api_key: String = String::from("Your MailerLite API Key");
+    let api_key: String = std::env::var("MAILERLITE_API_KEY")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let mailerlite: MailerLite = MailerLite::new(api_key)?;
 
-    let email_id: String = String::from("Your Email ID");
+    let email_id: String = std::env::var("MAILERLITE_EMAIL_ID")?;
 
-    let response: ApiResponse<WithEtag<EmailDocument>> = mailerlite.email().find(email_id).await?;
+    let response: Response<WithEtag<EmailDocument>> = mailerlite.emails().get(email_id).await?;
 
-    println!("{:#?}", response.data);
-    println!("Etag: {}", response.etag);
+    println!("{:#?}", response.data.data);
+    println!("Etag: {}", response.data.etag);
 
     Ok(())
 }

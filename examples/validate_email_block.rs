@@ -1,15 +1,16 @@
+//! Validate email block. Requires MAILERLITE_API_KEY.
 use mailerlite_rs::{
-    api_response::ApiResponse,
-    email::{BlockType, NewBlock, Validation},
-    MailerLite,
+    MailerLite, Response,
+    models::emails::{BlockType, Validation},
+    resources::emails::NewBlock,
 };
-use serde_json::{json, Map, Value};
+use serde_json::{Map, Value, json};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let api_key: String = String::from("Your MailerLite API Key");
+    let api_key: String = std::env::var("MAILERLITE_API_KEY")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let mailerlite: MailerLite = MailerLite::new(api_key)?;
 
     let editor_content: Map<String, Value> = json!({
         "attrs": {"href": "https://example.com"},
@@ -25,10 +26,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         placement: None,
     };
 
-    let response: ApiResponse<Validation> = mailerlite.email().validate_block(&block).await?;
+    let response: Response<Validation> = mailerlite.emails().validate_block(&block).await?;
 
-    if !response.valid {
-        println!("{:#?}", response.errors);
+    if !response.data.valid {
+        println!("{:#?}", response.data.errors);
     }
 
     Ok(())

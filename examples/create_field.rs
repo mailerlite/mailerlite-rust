@@ -1,14 +1,21 @@
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
+//! Create a text custom field.
+//!
+//! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_FIELD_NAME`.
+
+use mailerlite_rs::MailerLite;
+use mailerlite_rs::{models::fields::FieldType, resources::fields::CreateField};
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let name = std::env::var("MAILERLITE_FIELD_NAME")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let field = mailerlite
+        .fields()
+        .create(CreateField::new(name, FieldType::Text))
+        .await?;
 
-    let data: Data = Data::new().add("name", "Dummy Field").add("type", "text");
+    println!("Created field: {} (key: {})", field.data.id, field.data.key);
 
-    let response: Response = mailerlite.field().create(data.clone()).await;
-
-    println!("{:#?}", response);
+    Ok(())
 }

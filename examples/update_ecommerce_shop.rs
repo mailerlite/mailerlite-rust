@@ -1,19 +1,24 @@
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
+//! Update an existing e-commerce shop.
+//!
+//! Required environment: `MAILERLITE_API_TOKEN`, `MAILERLITE_SHOP_ID`, `MAILERLITE_SHOP_URL`.
+//! Also required: `MAILERLITE_SHOP_NAME`, `MAILERLITE_SHOP_CURRENCY`.
+//! Replaces the shop's name, URL, and currency with these supplied values.
+use mailerlite_rs::MailerLite;
+use mailerlite_rs::resources::ecommerce::params::SaveShop;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let shop_id = std::env::var("MAILERLITE_SHOP_ID")?;
+    let shop_url = std::env::var("MAILERLITE_SHOP_URL")?;
+    let shop_name = std::env::var("MAILERLITE_SHOP_NAME")?;
+    let shop_currency = std::env::var("MAILERLITE_SHOP_CURRENCY")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let params = SaveShop::new(shop_name, shop_url, shop_currency);
 
-    let shop_id: String = String::from("Your Shop ID");
+    let response = mailerlite.ecommerce().update(shop_id, params).await?;
 
-    let data: Data = Data::new().add("name", "Dummy Shop");
+    println!("{}", response.data.id);
 
-    let response: Response = mailerlite
-        .ecommerce_shop()
-        .update(shop_id, data.clone())
-        .await;
-
-    println!("{:#?}", response);
+    Ok(())
 }

@@ -1,19 +1,26 @@
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+//! Fetch one page of subscribers matching a segment.
+//!
+//! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_SEGMENT_ID`.
+
+use mailerlite_rs::MailerLite;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let id = std::env::var("MAILERLITE_SEGMENT_ID")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let page = mailerlite
+        .segments()
+        .subscribers(id)
+        .limit(25)
+        .send()
+        .await?;
 
-    let id: String = String::from("Your Segment ID");
+    for subscriber in &page.data.data {
+        println!("{}: {}", subscriber.id, subscriber.email);
+    }
 
-    let parameter: Parameter = Parameter::new().add("filter[status]", "unsubscribed");
+    println!("Next cursor: {:?}", page.data.next_cursor());
 
-    let response: Response = mailerlite
-        .segment()
-        .get_subscribers(id, parameter.clone())
-        .await;
-
-    println!("{:#?}", response);
+    Ok(())
 }

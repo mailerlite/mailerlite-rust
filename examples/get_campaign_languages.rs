@@ -1,12 +1,17 @@
-use mailerlite_rs::{response::Response, MailerLite};
+//! List languages available for campaign unsubscribe templates.
+//!
+//! Required environment variables: `MAILERLITE_API_TOKEN`.
+use mailerlite_rs::MailerLite;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let response = mailerlite.reference().campaign_languages().await?;
 
-    let response: Response = mailerlite.campaign().languages().await;
+    for language in response.data {
+        println!("{}: {} ({})", language.id, language.name, language.iso639);
+    }
 
-    println!("{:#?}", response);
+    Ok(())
 }

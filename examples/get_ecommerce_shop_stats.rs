@@ -1,21 +1,25 @@
-use mailerlite_rs::{response::Response, MailerLite};
+//! Read shop revenue statistics over an inclusive YYYY-MM-DD date range.
+//!
+//! Required environment: `MAILERLITE_API_TOKEN`, `MAILERLITE_SHOP_ID`, `MAILERLITE_START_DATE`, `MAILERLITE_END_DATE`.
+use mailerlite_rs::MailerLite;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let shop_id = std::env::var("MAILERLITE_SHOP_ID")?;
+    let start_date = std::env::var("MAILERLITE_START_DATE")?;
+    let end_date = std::env::var("MAILERLITE_END_DATE")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let response = mailerlite
+        .ecommerce()
+        .shop(shop_id)
+        .stats(start_date, end_date)
+        .await?;
 
-    let shop_id: String = String::from("Your Shop ID");
+    println!(
+        "Orders: {}; revenue: {}",
+        response.data.ecommerce.orders_count, response.data.ecommerce.revenue
+    );
 
-    let start_date: String = String::from("2026-10-01");
-
-    let end_date: String = String::from("2026-10-31");
-
-    let response: Response = mailerlite
-        .ecommerce_shop()
-        .stats(shop_id, start_date, end_date)
-        .await;
-
-    println!("{:#?}", response);
+    Ok(())
 }

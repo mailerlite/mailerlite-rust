@@ -1,15 +1,16 @@
+//! Get files. Requires MAILERLITE_API_KEY.
 use mailerlite_rs::{
-    api_response::ApiResponse,
-    file::{FileSort, FileType, ListFilesOptions, MediaFile},
-    pagination::Paginated,
-    MailerLite,
+    MailerLite, Response,
+    models::files::{FileSort, FileType, MediaFile},
+    pagination::NumberedPage,
+    resources::files::ListFilesOptions,
 };
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let api_key: String = String::from("Your MailerLite API Key");
+    let api_key: String = std::env::var("MAILERLITE_API_KEY")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let mailerlite: MailerLite = MailerLite::new(api_key)?;
 
     let options: ListFilesOptions = ListFilesOptions {
         name: Some(String::from("summer sale")),
@@ -19,9 +20,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         limit: Some(25),
     };
 
-    let response: ApiResponse<Paginated<MediaFile>> = mailerlite.file().get(options).await?;
+    let response: Response<NumberedPage<MediaFile>> =
+        mailerlite.files().list().options(options).send().await?;
 
-    for file in &response.data {
+    for file in &response.data.data {
         println!("{}: {}", file.name, file.url);
     }
 

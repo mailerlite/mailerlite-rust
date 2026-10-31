@@ -1,14 +1,15 @@
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+//! List webhook subscriptions. Requires MAILERLITE_API_TOKEN.
+use mailerlite_rs::MailerLite;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let response = mailerlite.webhooks().list().await?;
 
-    let parameter: Parameter = Parameter::new();
+    for webhook in response.data.data {
+        println!("{}: {}", webhook.id, webhook.url);
+    }
 
-    let response: Response = mailerlite.webhook().get(parameter.clone()).await;
-
-    println!("{:#?}", response);
+    Ok(())
 }

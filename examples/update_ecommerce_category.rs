@@ -1,21 +1,27 @@
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
+//! Update an existing e-commerce category.
+//!
+//! Required environment: `MAILERLITE_API_TOKEN`, `MAILERLITE_SHOP_ID`, `MAILERLITE_CATEGORY_ID`.
+//! Also required: `MAILERLITE_CATEGORY_NAME`, which replaces the category name.
+use mailerlite_rs::MailerLite;
+use mailerlite_rs::resources::ecommerce::params::SaveCategory;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let shop_id = std::env::var("MAILERLITE_SHOP_ID")?;
+    let category_id = std::env::var("MAILERLITE_CATEGORY_ID")?;
+    let name = std::env::var("MAILERLITE_CATEGORY_NAME")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let params = SaveCategory::new(name);
 
-    let shop_id: String = String::from("Your Shop ID");
+    let response = mailerlite
+        .ecommerce()
+        .shop(shop_id)
+        .categories()
+        .update(category_id, params)
+        .await?;
 
-    let category_id: String = String::from("Your Category ID");
+    println!("{}", response.data.id);
 
-    let data: Data = Data::new().add("name", "Dummy Category");
-
-    let response: Response = mailerlite
-        .ecommerce_category()
-        .update(shop_id, category_id, data.clone())
-        .await;
-
-    println!("{:#?}", response);
+    Ok(())
 }

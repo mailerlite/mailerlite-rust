@@ -1,14 +1,21 @@
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
+//! Create or update a subscriber by email.
+//!
+//! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_SUBSCRIBER_EMAIL`.
+
+use mailerlite_rs::MailerLite;
+use mailerlite_rs::resources::subscribers::UpsertSubscriber;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let email = std::env::var("MAILERLITE_SUBSCRIBER_EMAIL")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let subscriber = mailerlite
+        .subscribers()
+        .upsert(UpsertSubscriber::new(email).field("name", "Jane"))
+        .await?;
 
-    let data: Data = Data::new().add("email", "john@gmail.com");
+    println!("Subscriber ID: {}", subscriber.data.id);
 
-    let response: Response = mailerlite.subscriber().create(data.clone()).await;
-
-    println!("{:#?}", response);
+    Ok(())
 }

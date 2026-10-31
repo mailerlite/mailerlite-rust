@@ -1,21 +1,26 @@
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+//! List products assigned to a category.
+//!
+//! Required environment: `MAILERLITE_API_TOKEN`, `MAILERLITE_SHOP_ID`, `MAILERLITE_CATEGORY_ID`.
+use mailerlite_rs::MailerLite;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let shop_id = std::env::var("MAILERLITE_SHOP_ID")?;
+    let category_id = std::env::var("MAILERLITE_CATEGORY_ID")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let response = mailerlite
+        .ecommerce()
+        .shop(shop_id)
+        .categories()
+        .products(category_id)
+        .limit(25)
+        .send()
+        .await?;
 
-    let shop_id: String = String::from("Your Shop ID");
+    for product in response.data.data {
+        println!("{}", product.id);
+    }
 
-    let category_id: String = String::from("Your Category ID");
-
-    let parameter: Parameter = Parameter::new().add("limit", "25");
-
-    let response: Response = mailerlite
-        .ecommerce_category()
-        .products(shop_id, category_id, parameter.clone())
-        .await;
-
-    println!("{:#?}", response);
+    Ok(())
 }

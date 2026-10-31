@@ -1,16 +1,22 @@
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
+//! Rename a subscriber group.
+//!
+//! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_GROUP_ID`, `MAILERLITE_GROUP_NAME`.
+
+use mailerlite_rs::MailerLite;
+use mailerlite_rs::resources::groups::UpdateGroup;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let id = std::env::var("MAILERLITE_GROUP_ID")?;
+    let name = std::env::var("MAILERLITE_GROUP_NAME")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let group = mailerlite
+        .groups()
+        .update(id, UpdateGroup::new(name))
+        .await?;
 
-    let id: String = String::from("Your Group ID");
+    println!("Updated group: {} ({})", group.data.id, group.data.name);
 
-    let data: Data = Data::new().add("name", "Dummy Group");
-
-    let response: Response = mailerlite.group().update(id, data.clone()).await;
-
-    println!("{:#?}", response);
+    Ok(())
 }

@@ -1,0 +1,7 @@
+{
+  "id": "900719925474099312345",
+  "email": "reader@example.test",
+  "status": "active",
+  "fields": {"name": "Reader", "company": null},
+  "created_at": "2026-10-30 12:00:00"
+}

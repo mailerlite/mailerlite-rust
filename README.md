@@ -1,4382 +1,484 @@
 <a href="https://www.mailerlite.com"><img src="https://app.mailerlite.com/assets/images/logo-color.png" width="200px"/></a>
 
-MailerLite Rust SDK
+# MailerLite Rust SDK
 
 ![Build](https://img.shields.io/github/actions/workflow/status/mailerlite/mailerlite-rust/main.yaml)
 ![Downloads](https://img.shields.io/crates/d/mailerlite-rs?label=downloads)
 ![Crates.io](https://img.shields.io/crates/v/mailerlite-rs)
 ![License](https://img.shields.io/crates/l/mailerlite-rs)
 
-# Table of Contents
+A typed, asynchronous Rust client for the
+[current MailerLite API](https://developers.mailerlite.com/getting-started).
+Manage subscribers, campaigns, automations, and ecommerce through resource APIs
+with typed requests, responses, pagination, and errors.
 
-- [Installation](#installation)
-- [Usage](#usage)
-    - [Subscribers](#subscribers)
-        - [Get a list of subscribers](#get-a-list-of-subscribers)
-        - [Get a subscriber](#get-a-subscriber)
-        - [Create a subscriber](#create-a-subscriber)
-        - [Update a subscriber](#update-a-subscriber)
-        - [Delete a subscriber](#delete-a-subscriber)
-        - [Get subscriber activity](#get-subscriber-activity)
-        - [Forget a subscriber](#forget-a-subscriber)
-        - [Get a subscriber import status](#get-a-subscriber-import-status)
-    - [Campaigns](#campaigns)
-        - [Get a list of campaigns](#get-a-list-of-campaigns)
-        - [Get a campaign](#get-a-campaign)
-        - [Create a campaign](#create-a-campaign)
-        - [Create a campaign with the simple editor](#create-a-campaign-with-the-simple-editor)
-        - [Update a campaign](#update-a-campaign)
-        - [Delete a campaign](#delete-a-campaign)
-        - [Schedule a campaign](#schedule-a-campaign)
-        - [Cancel a ready campaign](#cancel-a-ready-campaign)
-        - [Get subscribers activity of sent campaign](#get-subscribers-activity-of-sent-campaign)
-    - [Emails](#emails)
-        - [Get an email](#get-an-email)
-        - [Get the HTML of an email](#get-the-html-of-an-email)
-        - [Get a block](#get-a-block)
-        - [Insert a block](#insert-a-block)
-        - [Update a block](#update-a-block)
-        - [Delete a block](#delete-a-block)
-        - [Move a block](#move-a-block)
-        - [Validate a block](#validate-a-block)
-        - [Update the design settings](#update-the-design-settings)
-        - [Validate the design settings](#validate-the-design-settings)
-        - [Save an email as a template](#save-an-email-as-a-template)
-        - [Get a list of email versions](#get-a-list-of-email-versions)
-        - [Save a version of an email](#save-a-version-of-an-email)
-        - [Restore a version of an email](#restore-a-version-of-an-email)
-        - [Retry a write safely](#retry-a-write-safely)
-    - [Brand styles](#brand-styles)
-        - [Get the brand styles](#get-the-brand-styles)
-    - [Files](#files)
-        - [Get a list of files](#get-a-list-of-files)
-    - [Groups](#groups)
-        - [Get a list of groups](#get-a-list-of-groups)
-        - [Create a group](#create-a-group)
-        - [Update a group](#update-a-group)
-        - [Delete a group](#delete-a-group)
-        - [Get subscribers from a group](#get-subscribers-from-a-group)
-        - [Assign subscriber to a group](#assign-subscriber-to-a-group)
-        - [Unassign subscriber from a group](#unassign-subscriber-from-a-group)
-        - [Import subscribers to a group](#import-subscribers-to-a-group)
-    - [Segments](#segments)
-        - [Get a list of segments](#get-a-list-of-segments)
-        - [Update a segment](#update-a-segment)
-        - [Delete a segment](#delete-a-segment)
-        - [Get subscribers from a segment](#get-subscribers-from-a-segment)
-    - [Fields](#fields)
-        - [Get a list of fields](#get-a-list-of-fields)
-        - [Create a field](#create-a-field)
-        - [Update a field](#update-a-field)
-        - [Delete a field](#delete-a-field)
-    - [Forms](#forms)
-        - [Get a list of forms](#get-a-list-of-forms)
-        - [Get a form](#get-a-form)
-        - [Update a form](#update-a-form)
-        - [Delete a form](#delete-a-form)
-        - [Get subscribers who signed up to a specific form](#get-subscribers-who-signed-up-to-a-specific-form)
-    - [Automations](#automations)
-        - [Get a list of automations](#get-a-list-of-automations)
-        - [Get an automation](#get-an-automation)
-        - [Get the subscribers activity for an automation](#get-the-subscribers-activity-for-an-automation)
-        - [Create an automation](#create-an-automation)
-        - [Delete an automation](#delete-an-automation)
-    - [Webhooks](#webhooks)
-        - [Get a list of webhooks](#get-a-list-of-webhooks)
-        - [Get a webhook](#get-a-webhook)
-        - [Create a webhook](#create-a-webhook)
-        - [Update a webhook](#update-a-webhook)
-        - [Delete a webhook](#delete-a-webhook)
-    - [Batch](#batch)
-        - [Create a batch](#create-a-batch)
-    - [Timezones](#timezones)
-        - [Get a list of timezones](#get-a-list-of-timezones)
-    - [Campaign languages](#campaign-languages)
-        - [Get a list of campaign languages](#get-a-list-of-campaign-languages)
-    - [E-commerce shops](#e-commerce-shops)
-        - [Get a list of shops](#get-a-list-of-shops)
-        - [Get a shop](#get-a-shop)
-        - [Create a shop](#create-a-shop)
-        - [Update a shop](#update-a-shop)
-        - [Delete a shop](#delete-a-shop)
-        - [Get shop stats](#get-shop-stats)
-    - [E-commerce products](#e-commerce-products)
-        - [Get a list of products](#get-a-list-of-products)
-        - [Get a product](#get-a-product)
-        - [Create a product](#create-a-product)
-        - [Update a product](#update-a-product)
-        - [Delete a product](#delete-a-product)
-        - [Enable or disable a product](#enable-or-disable-a-product)
-        - [Assign categories to a product](#assign-categories-to-a-product)
-    - [E-commerce product variants](#e-commerce-product-variants)
-        - [Get a list of product variants](#get-a-list-of-product-variants)
-        - [Sync product variants](#sync-product-variants)
-        - [Update a product variant](#update-a-product-variant)
-        - [Delete a product variant](#delete-a-product-variant)
-    - [E-commerce categories](#e-commerce-categories)
-        - [Get a list of categories](#get-a-list-of-categories)
-        - [Get a category](#get-a-category)
-        - [Create a category](#create-a-category)
-        - [Update a category](#update-a-category)
-        - [Delete a category](#delete-a-category)
-        - [Get a list of category products](#get-a-list-of-category-products)
-        - [Assign a product to a category](#assign-a-product-to-a-category)
-        - [Unassign a product from a category](#unassign-a-product-from-a-category)
-    - [E-commerce customers](#e-commerce-customers)
-        - [Get a list of customers](#get-a-list-of-customers)
-        - [Get a customer](#get-a-customer)
-        - [Create a customer](#create-a-customer)
-        - [Update a customer](#update-a-customer)
-        - [Delete a customer](#delete-a-customer)
-    - [E-commerce orders](#e-commerce-orders)
-        - [Get a list of orders](#get-a-list-of-orders)
-        - [Get an order](#get-an-order)
-        - [Create an order](#create-an-order)
-        - [Update an order](#update-an-order)
-        - [Delete an order](#delete-an-order)
-    - [E-commerce carts](#e-commerce-carts)
-        - [Get a list of carts](#get-a-list-of-carts)
-        - [Get a cart](#get-a-cart)
-        - [Update a cart](#update-a-cart)
-    - [E-commerce cart items](#e-commerce-cart-items)
-        - [Get a list of cart items](#get-a-list-of-cart-items)
-        - [Get a cart item](#get-a-cart-item)
-        - [Create a cart item](#create-a-cart-item)
-        - [Update a cart item](#update-a-cart-item)
-        - [Delete a cart item](#delete-a-cart-item)
-    - [E-commerce imports](#e-commerce-imports)
-        - [Import products](#import-products)
-        - [Import categories](#import-categories)
-        - [Import customers](#import-customers)
-        - [Import orders](#import-orders)
-    - [E-commerce settings](#e-commerce-settings)
-        - [Get e-commerce settings](#get-e-commerce-settings)
-    - [E-commerce reports](#e-commerce-reports)
-        - [Get campaign e-commerce stats](#get-campaign-e-commerce-stats)
-        - [Get campaign e-commerce orders](#get-campaign-e-commerce-orders)
-        - [Get subscriber e-commerce stats](#get-subscriber-e-commerce-stats)
-        - [Get subscriber e-commerce orders](#get-subscriber-e-commerce-orders)
-        - [Get automation e-commerce stats](#get-automation-e-commerce-stats)
-        - [Get automation email e-commerce stats](#get-automation-email-e-commerce-stats)
-        - [Get automation e-commerce orders](#get-automation-e-commerce-orders)
+[API reference](https://docs.rs/mailerlite-rs) ·
+[Examples](examples/README.md) ·
+[Upgrade from v1](UPGRADE.md) ·
+[Contributing](CONTRIBUTING.md)
 
-# Installation
+## Installation
 
-Run the following Cargo command in your project directory:
+Requires **Rust 1.88 or newer** and a Tokio runtime. Add these dependencies to
+your application's `Cargo.toml`:
 
-```shell
-cargo add mailerlite-rs
+```toml
+[dependencies]
+mailerlite-rs = "2"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
 
-# Usage
+Rustls provides HTTPS by default. Optional features are listed [below](#features).
+To test an unpublished checkout, use a local path dependency instead of a
+crates.io version. Version 2 is a breaking redesign; existing users should follow [UPGRADE.md](UPGRADE.md).
 
-## Subscribers
+## Quick start
 
-### Get a list of subscribers
+Provide your API token through `MAILERLITE_API_TOKEN`, then create or update a
+subscriber:
 
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example get_subscribers
-```
-</details>
-
-```rust
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let parameter: Parameter = Parameter::new()
-        .add("filter[status]", "active")
-        .add("limit", "10");
-
-    let response: Response = mailerlite.subscriber().get(parameter.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Get a subscriber
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example find_subscriber
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Subscriber ID");
-
-    let response: Response = mailerlite.subscriber().find(id).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Create a subscriber
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example create_subscriber
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let data: Data = Data::new().add("email", "john@gmail.com");
-
-    let response: Response = mailerlite.subscriber().create(data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Update a subscriber
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example update_subscriber
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Subscriber ID");
-
-    let data: Data = Data::new()
-        .add("fields[name]", "John")
-        .add("fields[last_name]", "Doe");
-
-    let response: Response = mailerlite.subscriber().update(id, data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Delete a subscriber
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example delete_subscriber
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Subscriber ID");
-
-    let response: Response = mailerlite.subscriber().delete(id).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Get subscriber activity
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example get_subscriber_activity
-```
-</details>
-
-```rust
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Subscriber ID");
-
-    let parameter: Parameter = Parameter::new().add("filter[log_name]", "email_open");
-
-    let response: Response = mailerlite.subscriber().activity(id, parameter.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Forget a subscriber
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example forget_subscriber
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Subscriber ID");
-
-    let response: Response = mailerlite.subscriber().forget(id).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Get a subscriber import status
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example get_subscriber_import_status
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let import_id: String = String::from("Your Import ID");
-
-    let response: Response = mailerlite.subscriber().import_status(import_id).await;
-
-    println!("{:#?}", response);
-}
-```
-
-## Campaigns
-
-### Get a list of campaigns
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example get_campaigns
-```
-</details>
-
-```rust
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let parameter: Parameter = Parameter::new().add("filter[status]", "sent");
-
-    let response: Response = mailerlite.campaign().get(parameter.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Get a campaign
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example find_campaign
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Campaign ID");
-
-    let response: Response = mailerlite.campaign().find(id).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Create a campaign
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example create_campaign
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let data: Data = Data::new()
-        .add("name", "Regular Campaign")
-        .add("type", "regular")
-        .add("emails[0][subject]", "Test Subject")
-        .add("emails[0][from_name]", "John Doe")
-        .add("emails[0][from]", "john@gmail.com");
-
-    let response: Response = mailerlite.campaign().create(data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-
-### Create a campaign with the simple editor
-
-To build the email with the simple editor, add `emails[0][editor]` with the value `campaign::EDITOR_SIMPLE`, and do not add `content`. The ID of the new email is in `data.emails[0].id` of the response. Then edit the email with [the email methods](#emails).
-
-- `editor`: the only accepted value is `simple`, which selects the simple editor instead of the drag-and-drop builder. It has to be the same across every email in the payload; a mixed array is rejected. Setting it prohibits `emails.*.content`.
-- `template_id`: the template the new email starts from. Allowed only when `editor` is `simple`, accepts only a template from the shared gallery, and also has to be the same across every email.
-- Only `create` accepts `editor` and `template_id`. `update` does not accept them.
-- `Data` accepts only `&'static str` values. If you get the template ID at run time, use `Box::leak(template_id.into_boxed_str())`. The string then stays in memory until the program stops.
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example create_campaign_with_simple_editor
-```
-</details>
-
-```rust
-use mailerlite_rs::{campaign::EDITOR_SIMPLE, data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let data: Data = Data::new()
-        .add("name", "Simple Editor Campaign")
-        .add("type", "regular")
-        .add("emails[0][subject]", "Test Subject")
-        .add("emails[0][from_name]", "John Doe")
-        .add("emails[0][from]", "john@gmail.com")
-        .add("emails[0][editor]", EDITOR_SIMPLE);
-
-    let response: Response = mailerlite.campaign().create(data.clone()).await;
-
-    println!("Email ID: {}", response.content["data"]["emails"][0]["id"]);
-}
-```
-
-### Update a campaign
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example update_campaign
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Campaign ID");
-
-    let data: Data = Data::new()
-        .add("name", "Regular Campaign")
-        .add("emails[0][subject]", "Test Subject")
-        .add("emails[0][from_name]", "John Doe")
-        .add("emails[0][from]", "john@gmail.com");
-
-    let response: Response = mailerlite.campaign().update(id, data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Delete a campaign
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example delete_campaign
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Campaign ID");
-
-    let response: Response = mailerlite.campaign().delete(id).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Schedule a campaign
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example schedule_campaign
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Campaign ID");
-
-    let data: Data = Data::new().add("delivery", "instant");
-
-    let response: Response = mailerlite.campaign().schedule(id, data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Cancel a ready campaign
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example cancel_campaign
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Campaign ID");
-
-    let response: Response = mailerlite.campaign().cancel(id).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Get subscribers activity of sent campaign
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example get_subscribers_activity_for_campaign
-```
-</details>
-
-```rust
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Campaign ID");
-
-    let parameter: Parameter = Parameter::new().add("filter[type]", "opened");
-
-    let response: Response = mailerlite.campaign().subscribers_activity(id, parameter.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-## Emails
-
-These methods edit emails built with the simple editor. To create such an email, [create a campaign with the simple editor](#create-a-campaign-with-the-simple-editor). The ID of the email is in `data.emails[0].id` of the response.
-
-- The methods return `Result<ApiResponse<T>, Error>`. `ApiResponse` acts like the body, so `response.data` and `response.etag` work. `response.status_code` and `response.headers` give the status code and the headers. These methods do not panic.
-- IDs are strings of the digits 0-9. An empty ID gives `Error::EmptyId`, and an ID with other characters gives `Error::InvalidId`. In these cases, the SDK sends no request.
-- A `4xx` or `5xx` status gives `Error::Api` with a boxed `ApiError`. You can read its fields directly, for example `error.code`. The `ApiError` has `status_code`, `message`, `code`, `etag`, `errors`, `headers` and the raw `body`. A network error gives `Error::Transport`.
-- Each write needs the etag from the last response for the email, and returns a new etag. The etag covers the whole email, so send the writes to one email one after another. The SDK sends the etag as you give it. An empty etag gives a `422` error from the API.
-- If the email changed after you read it, the write gives a `409` error, and `ApiError::is_version_conflict()` is `true`. Then `ApiError::etag` has the current etag. Get the email again, and then send the write again with the current etag.
-- The keys of `editor_content` are camelCase, for example `textAlign`. The SDK sends them as you give them.
-
-### Get an email
-
-Returns the email with its settings and blocks, and the etag of the email.
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example find_email
-```
-</details>
-
-```rust
-use mailerlite_rs::{
-    api_response::{ApiResponse, WithEtag},
-    email::EmailDocument,
-    MailerLite,
-};
+```rust no_run
+use mailerlite_rs::{MailerLite, resources::subscribers::UpsertSubscriber};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let api_key: String = String::from("Your MailerLite API Key");
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let email_id: String = String::from("Your Email ID");
-
-    let response: ApiResponse<WithEtag<EmailDocument>> = mailerlite.email().find(email_id).await?;
-
-    println!("{:#?}", response.data);
-    println!("Etag: {}", response.etag);
-
-    Ok(())
-}
-```
-
-### Get the HTML of an email
-
-Returns the HTML that the email sends, and the etag of the email. The API can give a temporary `503` error. If it does, try again later.
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example get_email_html
-```
-</details>
-
-```rust
-use mailerlite_rs::{
-    api_response::{ApiResponse, WithEtag},
-    email::EmailHtml,
-    MailerLite,
-};
-
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let email_id: String = String::from("Your Email ID");
-
-    let response: ApiResponse<WithEtag<EmailHtml>> = mailerlite.email().html(email_id).await?;
-
-    println!("{}", response.data.html);
-
-    Ok(())
-}
-```
-
-### Get a block
-
-Returns the block and its place in the email. `placement` has the IDs of the blocks `after` and `before` it, or `None`.
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example find_email_block
-```
-</details>
-
-```rust
-use mailerlite_rs::{
-    api_response::{ApiResponse, WithEtag},
-    email::EmailBlock,
-    MailerLite,
-};
-
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let email_id: String = String::from("Your Email ID");
-
-    let block_id: String = String::from("Your Block ID");
-
-    let response: ApiResponse<WithEtag<EmailBlock>> =
-        mailerlite.email().find_block(email_id, block_id).await?;
-
-    println!("{:#?}", response.data);
-
-    Ok(())
-}
-```
-
-### Insert a block
-
-Inserts a block, and returns the new block and the new etag. Use the block types of `BlockType`. `editor_content` can be an empty map. Without `placement`, the API puts the block at the end of the email. `Placement::before` and `Placement::after` need the ID of a block. The SDK sends the placement as you give it, and the API checks it.
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example create_email_block
-```
-</details>
-
-```rust
-use mailerlite_rs::{
-    api_response::{ApiResponse, WithEtag},
-    email::{BlockType, EmailBlock, EmailDocument, NewBlock, Placement},
-    MailerLite,
-};
-use serde_json::{json, Map, Value};
-
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let email_id: String = String::from("Your Email ID");
-
-    let email: ApiResponse<WithEtag<EmailDocument>> = mailerlite.email().find(&email_id).await?;
-
-    let editor_content: Map<String, Value> = json!({
-        "attrs": {"textAlign": "left"},
-        "content": [{"type": "text", "text": "Hello"}]
-    })
-    .as_object()
-    .cloned()
-    .unwrap_or_default();
-
-    let block: NewBlock = NewBlock {
-        block_type: BlockType::Paragraph,
-        editor_content,
-        placement: Some(Placement::start()),
-    };
-
-    let response: ApiResponse<WithEtag<EmailBlock>> = mailerlite
-        .email()
-        .create_block(&email_id, &email.etag, &block)
+    let response = mailerlite
+        .subscribers()
+        .upsert(UpsertSubscriber::new("jane@example.com").field("name", "Jane"))
         .await?;
 
-    println!("Block ID: {}", response.data.id);
-    println!("New etag: {}", response.etag);
+    println!("Subscriber ID: {}", response.data.id);
 
     Ok(())
 }
 ```
 
-### Update a block
+`upsert` creates a subscriber or updates the subscriber with that email address.
+Required values go in request constructors; optional values use builder methods.
+The SDK accepts the token directly and does not load `.env` files automatically.
+An application using `MAILERLITE_API_KEY` can pass that variable's value instead.
 
-The new `editor_content` replaces the whole content of the block. The API removes the keys that you do not send. The response has the block and the new etag.
+Create one client and reuse it. Cloning `MailerLite` shares its HTTP connection
+pool, rate-limit pacing, and server cooldowns.
 
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
+## Resources
 
-```bash
-cargo run --package mailerlite-rs --example update_email_block
-```
-</details>
+Start with a resource accessor, then choose the operation:
+
+| Resource | Accessor |
+| --- | --- |
+| Subscribers | `mailerlite.subscribers()` |
+| Groups | `mailerlite.groups()` |
+| Segments | `mailerlite.segments()` |
+| Fields | `mailerlite.fields()` |
+| Campaigns | `mailerlite.campaigns()` |
+| Automations | `mailerlite.automations()` |
+| Automation steps | `mailerlite.automation_steps()` |
+| Automation triggers | `mailerlite.automation_triggers()` |
+| Automation templates | `mailerlite.automation_templates()` |
+| Forms | `mailerlite.forms()` |
+| Webhook subscriptions | `mailerlite.webhooks()` |
+| Batch requests | `mailerlite.batch()` |
+| Subscriber imports | `mailerlite.imports()` |
+| Reference data | `mailerlite.reference()` |
+| Ecommerce | `mailerlite.ecommerce()` |
+
+Subscriber imports include group import creation and progress tracking. Reference
+data includes timezones and campaign languages. Ecommerce manages shops and
+settings; select a shop with `let shop = mailerlite.ecommerce().shop(shop_id)`
+to access its resources:
+
+| Shop resource | Accessor |
+| --- | --- |
+| Products | `shop.products()` |
+| Categories | `shop.categories()` |
+| Customers | `shop.customers()` |
+| Orders | `shop.orders()` |
+| Carts | `shop.carts()` |
+
+Request parameters live under `mailerlite_rs::resources`; response models live
+under `mailerlite_rs::models`. A successful operation returns `Response<T>`:
+`.data` contains the endpoint's result and `.metadata` contains HTTP status and
+selected headers. Documented empty responses use `Response<()>`.
+
+Models preserve exact identifiers and monetary values. Nullable updates
+separate omission from explicit null where the endpoint supports it. Known
+schemas are typed; heterogeneous batch bodies and unknown future variants stay
+explicitly inspectable. Malformed known fields return decoding errors.
+
+Use `mailerlite_rs::Decimal` for exact monetary values and
+`mailerlite_rs::StatusCode` for HTTP status comparisons. These re-export the
+underlying library types, so basic usage needs no additional direct dependency.
+See the [public dependency policy](CONTRIBUTING.md#public-exports-and-dependency-types)
+when using HTTP, JSON, serialization, or stream types directly.
+
+## Simple-editor emails
+
+Create a draft using `CreateCampaign::simple_editor()` or
+`.simple_editor_template(template_id)`, then edit its returned email IDs through
+`mailerlite.emails()`. Simple-editor creation cannot include HTML `content`.
 
 ```rust
-use mailerlite_rs::{
-    api_response::{ApiResponse, WithEtag},
-    email::EmailBlock,
-    MailerLite,
-};
-use serde_json::{json, Map, Value};
+use mailerlite_rs::{MailerLite, resources::campaigns::{CreateCampaign, Email}};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let api_key: String = String::from("Your MailerLite API Key");
+    let client = MailerLite::new(std::env::var("MAILERLITE_API_KEY")?)?;
+    let draft = CreateCampaign::new(
+        "Newsletter", Email::new("Hello", "Example", "sender@example.com"),
+    ).simple_editor();
+    let campaign = client.campaigns().create(draft).await?;
+    if let Some(id) = campaign.data.default_email_id {
+        let email = client.emails().get(id).await?;
+        println!("Current email version: {}", email.data.etag);
+    }
+    Ok(())
+}
+```
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+`emails()` supports document and HTML reads, block reads/creation/replacement/
+deletion/movement, block and settings validation, settings updates, template
+creation, version listing/creation, and version restoration. Response models
+live in `models::emails`; write parameters live in `resources::emails`.
 
-    let email_id: String = String::from("Your Email ID");
+Versioned operations return `Response<WithEtag<T>>`: HTTP metadata is in
+`response.metadata`, the current version is `response.data.etag`, and the
+resource is `response.data.data`. Pass the latest etag to the next write.
+For HTTP 409 conflicts, inspect `ApiError::is_version_conflict()` and `etag()`;
+refetch and reconcile before attempting another write.
 
-    let block_id: String = String::from("Your Block ID");
+Set `client.emails().with_idempotency_key(key)` for an explicit write. Use one
+key per logical operation and reuse it only when resubmitting that same request.
+Writes are never automatically retried. Read and validation methods ignore the
+key. `response.metadata.is_idempotent_replay()` reports server-side replay.
 
-    let etag: String = String::from("The etag from the last response");
+Retrieve palettes with `client.brand_styles().get().await?` and files with
+`client.files().list().kind(FileType::Image).limit(25).send().await?`, importing
+`FileType` from `models::files`. Files and email versions use `NumberedPage<T>`.
 
-    let editor_content: Map<String, Value> = json!({
-        "attrs": {"textAlign": "center"},
-        "content": [{"type": "text", "text": "Hello again"}]
-    })
-    .as_object()
-    .cloned()
-    .unwrap_or_default();
+See [the simple-editor example guide](examples/README.md#simple-editor-emails).
 
-    let response: ApiResponse<WithEtag<EmailBlock>> = mailerlite
-        .email()
-        .update_block(email_id, block_id, etag, &editor_content)
+
+## Listing and pagination
+
+List builders end in `.send().await?`. Subscriber lists use cursors, while groups
+and many other lists use page numbers:
+
+```rust
+use mailerlite_rs::{MailerLite, models::subscribers::SubscriberStatus};
+
+async fn list_subscribers(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
+    let subscribers = mailerlite.subscribers();
+    let first = subscribers
+        .list()
+        .status(SubscriberStatus::Active)
+        .limit(100)
+        .send()
         .await?;
 
-    println!("New etag: {}", response.etag);
-
-    Ok(())
-}
-```
-
-### Delete a block
-
-Deletes the block and the blocks in it. The response has only the new etag.
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example delete_email_block
-```
-</details>
-
-```rust
-use mailerlite_rs::{
-    api_response::{ApiResponse, EtagOnly},
-    MailerLite,
-};
-
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let email_id: String = String::from("Your Email ID");
-
-    let block_id: String = String::from("Your Block ID");
-
-    let etag: String = String::from("The etag from the last response");
-
-    let response: ApiResponse<EtagOnly> = mailerlite
-        .email()
-        .delete_block(email_id, block_id, etag)
-        .await?;
-
-    println!("New etag: {}", response.etag);
-
-    Ok(())
-}
-```
-
-### Move a block
-
-Moves the block among the blocks at the same level. `Placement::before` and `Placement::after` need the ID of a block. The response has the block and the new etag.
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example move_email_block
-```
-</details>
-
-```rust
-use mailerlite_rs::{
-    api_response::{ApiResponse, WithEtag},
-    email::{EmailBlock, Placement},
-    MailerLite,
-};
-
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let email_id: String = String::from("Your Email ID");
-
-    let block_id: String = String::from("Your Block ID");
-
-    let etag: String = String::from("The etag from the last response");
-
-    let placement: Placement = Placement::after("The ID of the block before the new place");
-
-    let response: ApiResponse<WithEtag<EmailBlock>> = mailerlite
-        .email()
-        .move_block(email_id, block_id, etag, &placement)
-        .await?;
-
-    println!("New etag: {}", response.etag);
-
-    Ok(())
-}
-```
-
-### Validate a block
-
-Checks a block before you insert it. It needs no email and no etag. An invalid block is not an error: `valid` is `false`, and `errors` has the messages for each field.
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example validate_email_block
-```
-</details>
-
-```rust
-use mailerlite_rs::{
-    api_response::ApiResponse,
-    email::{BlockType, NewBlock, Validation},
-    MailerLite,
-};
-use serde_json::{json, Map, Value};
-
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let editor_content: Map<String, Value> = json!({
-        "attrs": {"href": "https://example.com"},
-        "content": [{"type": "text", "text": "Buy now"}]
-    })
-    .as_object()
-    .cloned()
-    .unwrap_or_default();
-
-    let block: NewBlock = NewBlock {
-        block_type: BlockType::Button,
-        editor_content,
-        placement: None,
-    };
-
-    let response: ApiResponse<Validation> = mailerlite.email().validate_block(&block).await?;
-
-    if !response.valid {
-        println!("{:#?}", response.errors);
+    for subscriber in &first.data.data {
+        println!("{}", subscriber.id);
     }
 
-    Ok(())
-}
-```
+    if let Some(cursor) = first.data.next_cursor() {
+        let next = subscribers
+            .list()
+            .status(SubscriberStatus::Active)
+            .limit(100)
+            .cursor(cursor)
+            .send()
+            .await?;
 
-### Update the design settings
-
-Changes the design settings of the email. `EmailSettingsUpdate` has the groups `brand`, `layout`, `typography`, `button` and `footer`.
-
-- Each value has three states. `None` does not send the key, so the value does not change. `Some(value)` sets the value. `Some(String::new())` sends an empty value.
-- Only the brand colors accept an empty value: `brand.background_color`, `brand.text_color` and `brand.border_color`. For them, the API removes the value, and the email uses the color of your account again. Other colors, the sizes and `brand.style` do not accept an empty value. For them, the API gives a `422` error.
-- To remove a footer text, send an empty editor document: `EditorText::default()` (`{}`) or `{"content": []}`. Then the email uses the text of your account again.
-- Send all style values as strings, for example `"16"` and not `16`.
-- The API stores each value that you send, also a value that the email gets from your account. Then the email no longer follows your account for that value. For this reason, set only the values to change, and do not copy the full settings of the email.
-- `footer.social_links` replaces the whole list. Keep the `link_id` of each link to keep its click history.
-- `brand.mode` is one of the `BrandMode` values. To apply a palette, send its `identifier` from the brand styles in `brand.style`.
-- Each group has an `extra` map for keys that the SDK does not know yet. A key of an `extra` map must not be the name of a typed field at the same level. If it is, the SDK gives `Error::DuplicateSettingsKey` and sends no request. Set the typed field instead.
-- Do not put `etag` in the `extra` map of `EmailSettingsUpdate`: this gives `Error::EtagInSettings`. Use the `etag` argument.
-- If the API removed unsafe values, `rejected` has the keys of these values.
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example update_email_settings
-```
-</details>
-
-```rust
-use mailerlite_rs::{
-    api_response::ApiResponse,
-    email::{
-        BrandMode, BrandUpdate, EmailSettingsUpdate, ParagraphStyleUpdate, SettingsResult,
-        TextStyleUpdate, TypographyUpdate,
-    },
-    MailerLite,
-};
-
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let email_id: String = String::from("Your Email ID");
-
-    let etag: String = String::from("The etag from the last response");
-
-    let settings: EmailSettingsUpdate = EmailSettingsUpdate {
-        brand: Some(BrandUpdate {
-            mode: Some(BrandMode::Custom.into()),
-            background_color: Some(String::from("#f4f4f4")),
-            ..Default::default()
-        }),
-        typography: Some(TypographyUpdate {
-            paragraph: Some(ParagraphStyleUpdate {
-                p1: Some(TextStyleUpdate {
-                    size: Some(String::from("18")),
-                    ..Default::default()
-                }),
-                ..Default::default()
-            }),
-            ..Default::default()
-        }),
-        ..Default::default()
-    };
-
-    let response: ApiResponse<SettingsResult> = mailerlite
-        .email()
-        .update_settings(email_id, etag, &settings)
-        .await?;
-
-    println!("New etag: {}", response.etag);
-
-    if let Some(rejected) = &response.rejected {
-        println!("Removed values: {:?}", rejected.keys);
+        println!("Next page: {} subscribers", next.data.data.len());
     }
 
+    let groups = mailerlite.groups().list().page(1).limit(25).send().await?;
+
+    println!("Groups on this page: {}", groups.data.data.len());
+
     Ok(())
 }
 ```
 
-### Validate the design settings
+Lists return a page inside `Response`, so the items are at `response.data.data`.
+Retain filters when requesting another page and use the endpoint's continuation
+metadata to decide whether more pages exist.
 
-Checks a settings change with the rules of the update, and saves nothing. It needs no etag. Invalid settings are not an error: `valid` is `false`, and `errors` has the messages for each field.
+Enable `stream` for lazy `.into_stream()` pagination. Streams fetch pages as
+needed, preserve filters, and detect repeated continuations without collecting
+the whole result. See [stream_subscribers.rs](examples/stream_subscribers.rs),
+which uses `futures-util` to consume the stream.
 
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
+Subscriber activity supports manual requests only: backend continuation can
+return incomplete or overlapping pages. Webhook management also has no automatic
+traversal contract. The SDK does not infer pagination from a full page alone or
+follow arbitrary server-provided URLs with your credentials.
 
-```bash
-cargo run --package mailerlite-rs --example validate_email_settings
-```
-</details>
+## Configuration
+
+`MailerLite::new(token)?` uses these defaults:
+
+| Setting | Default |
+| --- | --- |
+| API version | `ApiVersion::Latest` |
+| Automatic retries | `RetryPolicy::none()` |
+| Request timeout | 30 seconds |
+| Operation deadline | 60 seconds |
+| Global pacing | 1 request / 500 ms |
+| Subscriber-import pacing | 1 request / 12 seconds |
+
+The latest version policy omits `X-Version`, and automatic retries are disabled.
+The operation deadline covers request serialization, pacing, HTTP attempts,
+retry waits, and response decoding. Synchronous JSON work cannot be interrupted;
+an overrun returns `Error::Timeout` once that work finishes. Serialization that
+exhausts the budget prevents dispatch. Parameter construction and local
+validation before dispatch are outside the deadline. Each page or progress
+request gets its own budget; a timeout after dispatch does not roll back a write.
+Import pacing applies to qualifying subscriber-import operations.
+
+Use the builder to customize configuration or inject a reusable HTTP client:
 
 ```rust
-use mailerlite_rs::{
-    api_response::ApiResponse,
-    email::{ButtonUpdate, EmailSettingsUpdate, Validation},
-    MailerLite,
-};
+use mailerlite_rs::MailerLite;
+use std::time::Duration;
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let api_key: String = String::from("Your MailerLite API Key");
+fn configured_client(token: String) -> mailerlite_rs::Result<MailerLite> {
+    let http = MailerLite::http_client_builder()
+        .connect_timeout(Duration::from_secs(5))
+        .build()?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    MailerLite::builder(token)
+        .http_client(http)
+        .request_timeout(Duration::from_secs(30))
+        .operation_timeout(Duration::from_secs(60))
+        .build()
+}
+```
 
-    let email_id: String = String::from("Your Email ID");
+Build injected clients with
+`MailerLite::http_client_builder()` to retain disabled redirects and underlying
+HTTP retries. The SDK cannot inspect or override those policies on an arbitrary
+reqwest client. The current SDK uses reqwest 0.13.
 
-    let settings: EmailSettingsUpdate = EmailSettingsUpdate {
-        button: Some(ButtonUpdate {
-            border_radius: Some(String::from("8")),
-            ..Default::default()
-        }),
-        ..Default::default()
-    };
+Version pinning is optional; omitting it keeps `ApiVersion::Latest`.
+To pin API behavior, import `mailerlite_rs::ApiVersion` and add
+`.api_version(ApiVersion::pinned(version_date)?)` to the builder, where
+`version_date` is your chosen `YYYY-MM-DD` date. MailerLite recommends the date
+when you implement the integration; see its [versioning guidance](https://developers.mailerlite.com/getting-started#versioning).
+`ApiVersion::pinned` trims surrounding whitespace and rejects blank or invalid
+dates. It validates the calendar date locally, not server support for that date.
 
-    let response: ApiResponse<Validation> = mailerlite
-        .email()
-        .validate_settings(email_id, &settings)
-        .await?;
+### Retries and rate limits
 
-    if !response.valid {
-        println!("{:#?}", response.errors);
+To opt into retries, import `mailerlite_rs::RetryPolicy` and add
+`.retry_policy(RetryPolicy::safe_reads().max_retries(2))`. Reviewed reads can then
+retry with bounded exponential backoff and jitter. A valid `Retry-After` is a
+minimum delay; the SDK will not retry early to fit an operation deadline.
+
+Writes and batches are never automatically replayed by the SDK, even with
+retries enabled. Shop listing and counting also disable retries because the
+server may initialize an internal shop. After a write times out, check its
+outcome before submitting it again.
+
+Clones share pacing and server cooldowns. Independently created clients and
+separate processes do not coordinate account-wide limits.
+
+Each 429 or 503 response can impose a shared cooldown of at most five minutes,
+so an excessive `Retry-After` cannot permanently block the client. This limits
+waiting for later caller-initiated operations. Automatic retries still honor the
+full header value; if that delay exceeds the operation deadline, the API error
+is returned without retrying. Error metadata retains the original delay so your
+application can decide when to submit another request.
+
+## Handling errors
+
+Operations return `mailerlite_rs::Result<T>`. Match `Error::Api` for HTTP failures
+and use the structured status, validation details, and response metadata:
+
+```rust
+use mailerlite_rs::{Error, MailerLite};
+
+async fn find_subscriber(mailerlite: &MailerLite, id: &str) -> mailerlite_rs::Result<()> {
+    match mailerlite.subscribers().get(id).await {
+        Ok(response) => {
+            println!("{}", response.data.id);
+
+            Ok(())
+        }
+
+        Err(Error::Api(error)) => {
+            eprintln!("HTTP {}", error.status());
+
+            if error.is_validation() {
+                eprintln!("Invalid fields: {}", error.validation_errors().len());
+            } else if error.is_rate_limited() {
+                eprintln!("Retry delay: {:?}", error.metadata().retry_after());
+            }
+
+            Err(Error::Api(error))
+        }
+
+        Err(error) => Err(error),
     }
-
-    Ok(())
-}
-```
-
-### Save an email as a template
-
-Copies the email to a new template. The API cannot delete templates.
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example create_email_template
-```
-</details>
-
-```rust
-use mailerlite_rs::{
-    api_response::{ApiResponse, DataOnly},
-    email::EmailTemplate,
-    MailerLite,
-};
-
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let email_id: String = String::from("Your Email ID");
-
-    let response: ApiResponse<DataOnly<EmailTemplate>> = mailerlite
-        .email()
-        .create_template(email_id, "Monthly newsletter")
-        .await?;
-
-    println!("Template ID: {}", response.data.id);
-
-    Ok(())
-}
-```
-
-### Get a list of email versions
-
-A version is a saved copy of the content and the settings of an email. The list starts with the newest version. `current` marks the version that the email has now. To get the first page with the default size, use `versions(email_id, Default::default())`.
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example get_email_versions
-```
-</details>
-
-```rust
-use mailerlite_rs::{
-    api_response::ApiResponse,
-    email::{EmailVersion, ListVersionsOptions},
-    pagination::Paginated,
-    MailerLite,
-};
-
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let email_id: String = String::from("Your Email ID");
-
-    let options: ListVersionsOptions = ListVersionsOptions {
-        page: Some(1),
-        limit: Some(10),
-    };
-
-    let response: ApiResponse<Paginated<EmailVersion>> =
-        mailerlite.email().versions(email_id, options).await?;
-
-    for version in &response.data {
-        println!("{} {} {}", version.id, version.created_at, version.current);
-    }
-
-    Ok(())
-}
-```
-
-### Save a version of an email
-
-Writes through the API do not save versions. If nothing changed after the last version, the API saves no new version and returns the last version. `status_code` is `201` for a new version and `200` for the last version.
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example create_email_version
-```
-</details>
-
-```rust
-use mailerlite_rs::{
-    api_response::{ApiResponse, DataOnly},
-    email::EmailVersion,
-    MailerLite,
-};
-
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let email_id: String = String::from("Your Email ID");
-
-    let response: ApiResponse<DataOnly<EmailVersion>> =
-        mailerlite.email().create_version(email_id).await?;
-
-    let is_new: bool = response.status_code == 201;
-
-    println!("Version ID: {}, new: {}", response.data.id, is_new);
-
-    Ok(())
-}
-```
-
-### Restore a version of an email
-
-Puts the email back to the version, and returns the full email with the new etag. Before the restore, the API saves the current state as a version, so you can undo the restore.
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example restore_email_version
-```
-</details>
-
-```rust
-use mailerlite_rs::{
-    api_response::{ApiResponse, WithEtag},
-    email::EmailDocument,
-    MailerLite,
-};
-
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let email_id: String = String::from("Your Email ID");
-
-    let version_id: String = String::from("Your Version ID");
-
-    let etag: String = String::from("The etag from the last response");
-
-    let response: ApiResponse<WithEtag<EmailDocument>> = mailerlite
-        .email()
-        .restore_version(email_id, version_id, etag)
-        .await?;
-
-    println!("New etag: {}", response.etag);
-
-    Ok(())
-}
-```
-
-### Retry a write safely
-
-If a write fails with a network error (`Error::Transport`), you do not know if the API did the write. Give the write an idempotency key with `email().with_idempotency_key(key)`, and send the write again with the same key and the same arguments. If the first request was a success, the API returns the stored response and does not do the write two times. Then `response.is_idempotent_replay()` is `true`.
-
-- Use a new key for each write. Do not use an `Email` value that has a key for a different write. The API keeps a key for 24 hours.
-- The SDK sends the key as you give it. The key must be 1 to 255 printable ASCII characters. Otherwise the API gives a `400` error. HTTP removes a space at the start or the end of the key.
-- If HTTP cannot carry the key, for example because of a new line, the SDK gives `Error::InvalidIdempotencyKey` and sends no request.
-- The same key with different arguments gives a `422` error. If the first request is still running, the API gives a `409` error without a `code`.
-- These methods send the key: `create_block`, `update_block`, `delete_block`, `move_block`, `update_settings`, `create_template`, `create_version` and `restore_version`. The read methods and the validate methods ignore it.
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example retry_email_write
-```
-</details>
-
-```rust
-use mailerlite_rs::{
-    api_response::{ApiResponse, WithEtag},
-    email::{BlockType, Email, EmailBlock, NewBlock},
-    error::Error,
-    MailerLite,
-};
-use serde_json::Map;
-
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let email_id: String = String::from("Your Email ID");
-
-    let etag: String = String::from("The etag from the last response");
-
-    // Use a new key for each write, for example a UUID.
-    let idempotency_key: String = String::from("A new key for this write");
-
-    let block: NewBlock = NewBlock {
-        block_type: BlockType::Divider,
-        editor_content: Map::new(),
-        placement: None,
-    };
-
-    let email: Email = mailerlite.email().with_idempotency_key(idempotency_key);
-
-    let response: ApiResponse<WithEtag<EmailBlock>> =
-        match email.create_block(&email_id, &etag, &block).await {
-            // A network error: send the same write again with the same key.
-            Err(Error::Transport(_)) => email.create_block(&email_id, &etag, &block).await?,
-            result => result?,
-        };
-
-    println!(
-        "Block ID: {}, replay: {}",
-        response.data.id,
-        response.is_idempotent_replay()
-    );
-
-    Ok(())
-}
-```
-
-## Brand styles
-
-### Get the brand styles
-
-Returns the palettes of your account: `brand` (your brand styles, or `None` if your account has none), `default` and the `presets`. Match a palette on its `identifier`, not on its `name`. To apply a palette to an email, [update the design settings](#update-the-design-settings) with the `identifier` in `brand.style`.
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example get_brand_styles
-```
-</details>
-
-```rust
-use mailerlite_rs::{
-    api_response::{ApiResponse, DataOnly},
-    brand_style::BrandStyles,
-    MailerLite,
-};
-
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let response: ApiResponse<DataOnly<BrandStyles>> = mailerlite.brand_style().get().await?;
-
-    for preset in &response.data.presets {
-        println!("{}: {}", preset.identifier, preset.name);
-    }
-
-    Ok(())
-}
-```
-
-## Files
-
-### Get a list of files
-
-Returns the files of your media library. Use their `url` in image blocks. `width` and `height` are `None` for files that are not images.
-
-- `name` gets the files with a name that contains the text. `file_type` is one of the `FileType` values.
-- `sort` is one of the `FileSort` values. The default is newest first.
-- The SDK does not send `None` values. To get the first page with no filter, use `get(Default::default())`.
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example get_files
-```
-</details>
-
-```rust
-use mailerlite_rs::{
-    api_response::ApiResponse,
-    file::{FileSort, FileType, ListFilesOptions, MediaFile},
-    pagination::Paginated,
-    MailerLite,
-};
-
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let options: ListFilesOptions = ListFilesOptions {
-        name: Some(String::from("summer sale")),
-        file_type: Some(FileType::Image),
-        sort: Some(FileSort::SizeDesc),
-        page: Some(1),
-        limit: Some(25),
-    };
-
-    let response: ApiResponse<Paginated<MediaFile>> = mailerlite.file().get(options).await?;
-
-    for file in &response.data {
-        println!("{}: {}", file.name, file.url);
-    }
-
-    Ok(())
-}
-```
-
-## Groups
-
-### Get a list of groups
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example get_groups
-```
-</details>
-
-```rust
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let parameter: Parameter = Parameter::new().add("limit", "10");
-
-    let response: Response = mailerlite.group().get(parameter.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Create a group
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example create_group
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let data: Data = Data::new().add("name", "Dummy Group");
-
-    let response: Response = mailerlite.group().create(data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Update a group
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example update_group
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Group ID");
-
-    let data: Data = Data::new().add("name", "Dummy Group");
-
-    let response: Response = mailerlite.group().update(id, data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Delete a group
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example delete_group
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Group ID");
-
-    let response: Response = mailerlite.group().delete(id).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Get subscribers from a group
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example get_group_subscribers
-```
-</details>
-
-```rust
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Group ID");
-
-    let parameter: Parameter = Parameter::new().add("filter[status]", "unsubscribed");
-
-    let response: Response = mailerlite.group().get_subscribers(id, parameter.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Assign subscriber to a group
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example assign_subscriber_to_group
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let group_id: String = String::from("Your Group ID");
-
-    let subscriber_id: String = String::from("Your Subscriber ID");
-
-    let response: Response = mailerlite.group().assign_subscriber(group_id, subscriber_id).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Unassign subscriber from a group
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example unassign_subscriber_from_group
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let group_id: String = String::from("Your Group ID");
-
-    let subscriber_id: String = String::from("Your Subscriber ID");
-
-    let response: Response = mailerlite.group().unassign_subscriber(group_id, subscriber_id).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Import subscribers to a group
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example import_subscribers_to_group
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Group ID");
-
-    let data: Data = Data::new()
-        .add("subscribers[0][email]", "dummy@example.com")
-        .add("subscribers[0][fields][name]", "Dummy");
-
-    let response: Response = mailerlite.group().import_subscribers(id, data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-## Segments
-
-### Get a list of segments
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example get_segments
-```
-</details>
-
-```rust
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let parameter: Parameter = Parameter::new().add("page", "1");
-
-    let response: Response = mailerlite.segment().get(parameter.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Update a segment
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example update_segment
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Segment ID");
-
-    let data: Data = Data::new().add("name", "Dummy Segment");
-
-    let response: Response = mailerlite.segment().update(id, data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Delete a segment
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example delete_segment
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Segment ID");
-
-    let response: Response = mailerlite.segment().delete(id).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Get subscribers from a segment
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example get_segment_subscribers
-```
-</details>
-
-```rust
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Segment ID");
-
-    let parameter: Parameter = Parameter::new().add("filter[status]", "unsubscribed");
-
-    let response: Response = mailerlite.segment().get_subscribers(id, parameter.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-## Fields
-
-### Get a list of fields
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example get_fields
-```
-</details>
-
-```rust
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let parameter: Parameter = Parameter::new().add("filter[type]", "number");
-
-    let response: Response = mailerlite.field().get(parameter.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Create a field
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example create_field
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let data: Data = Data::new().add("name", "Dummy Field").add("type", "text");
-
-    let response: Response = mailerlite.field().create(data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Update a field
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example update_field
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Field ID");
-
-    let data: Data = Data::new().add("name", "Dummy Field");
-
-    let response: Response = mailerlite.field().update(id, data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Delete a field
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example delete_field
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Field ID");
-
-    let response: Response = mailerlite.field().delete(id).await;
-
-    println!("{:#?}", response);
-}
-```
-
-## Forms
-
-### Get a list of forms
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example get_forms
-```
-</details>
-
-```rust
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let form_type: String = String::from("Your Form Type");
-
-    let parameter: Parameter = Parameter::new().add("sort", "created_at");
-
-    let response: Response = mailerlite.form().get(form_type, parameter.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Get a form
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example find_form
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Form ID");
-
-    let response: Response = mailerlite.form().find(id).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Update a form
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example update_form
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Group ID");
-
-    let data: Data = Data::new().add("name", "Dummy Group");
-
-    let response: Response = mailerlite.group().update(id, data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Delete a form
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example delete_form
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Form ID");
-
-    let response: Response = mailerlite.form().delete(id).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Get subscribers who signed up to a specific form
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example get_form_subscribers
-```
-</details>
-
-```rust
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Form ID");
-
-    let parameter: Parameter = Parameter::new().add("filter[status]", "unsubscribed");
-
-    let response: Response = mailerlite.form().get_subscribers(id, parameter.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-## Automations
-
-### Get a list of automations
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example get_automations
-```
-</details>
-
-```rust
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let parameter: Parameter = Parameter::new().add("filter[enabled]", "true");
-
-    let response: Response = mailerlite.automation().get(parameter.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Get an automation
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example find_automation
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Automation ID");
-
-    let response: Response = mailerlite.automation().find(id).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Get the subscribers activity for an automation
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example get_subscribers_activity_for_automation
-```
-</details>
-
-```rust
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Automation ID");
-
-    let parameter: Parameter = Parameter::new().add("filter[status]", "completed");
-
-    let response: Response = mailerlite.automation().subscribers_activity(id, parameter.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Create an automation
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example create_automation
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let data: Data = Data::new().add("name", "Dummy Automation");
-
-    let response: Response = mailerlite.automation().create(data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Delete an automation
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example delete_automation
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Automation ID");
-
-    let response: Response = mailerlite.automation().delete(id).await;
-
-    println!("{:#?}", response);
-}
-```
-
-## Webhooks
-
-### Get a list of webhooks
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example get_webhooks
-```
-</details>
-
-```rust
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let parameter: Parameter = Parameter::new();
-
-    let response: Response = mailerlite.webhook().get(parameter.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Get a webhook
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example find_webhook
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Webhook ID");
-
-    let response: Response = mailerlite.webhook().find(id).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Create a webhook
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example create_webhook
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let data: Data = Data::new()
-        .add("name", "Dummy Webhook")
-        .add("events[]", "subscriber.created")
-        .add("url", "https://example.com/webhook");
-
-    let response: Response = mailerlite.webhook().create(data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Update a webhook
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example update_webhook
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Webhook ID");
-
-    let data: Data = Data::new().add("name", "Dummy Webhook");
-
-    let response: Response = mailerlite.webhook().update(id, data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Delete a webhook
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example delete_webhook
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Webhook ID");
-
-    let response: Response = mailerlite.webhook().delete(id).await;
-
-    println!("{:#?}", response);
-}
-```
-
-## Batch
-
-### Create a batch
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example create_batch
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let data: Data = Data::new()
-        .add("requests[0][method]", "POST")
-        .add("requests[0][path]", "api/subscribers")
-        .add("requests[0][body][email]", "dummy@example.com");
-
-    let response: Response = mailerlite.batch().create(data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-## Timezones
-
-### Get a list of timezones
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example get_timezones
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let response: Response = mailerlite.timezone().get().await;
-
-    println!("{:#?}", response);
-}
-```
-
-## Campaign languages
-
-### Get a list of campaign languages
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example get_campaign_languages
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let response: Response = mailerlite.campaign().languages().await;
-
-    println!("{:#?}", response);
-}
-```
-
-## E-commerce shops
-
-### Get a list of shops
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example get_ecommerce_shops
-```
-</details>
-
-```rust
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let parameter: Parameter = Parameter::new().add("limit", "25");
-
-    let response: Response = mailerlite.ecommerce_shop().get(parameter.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Get a shop
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example find_ecommerce_shop
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let response: Response = mailerlite.ecommerce_shop().find(shop_id).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Create a shop
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example create_ecommerce_shop
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let data: Data = Data::new()
-        .add("name", "Dummy Shop")
-        .add("url", "https://shop.example.com")
-        .add("currency", "EUR");
-
-    let response: Response = mailerlite.ecommerce_shop().create(data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Update a shop
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example update_ecommerce_shop
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let data: Data = Data::new()
-        .add("name", "Dummy Shop");
-
-    let response: Response = mailerlite.ecommerce_shop().update(shop_id, data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Delete a shop
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example delete_ecommerce_shop
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let response: Response = mailerlite.ecommerce_shop().delete(shop_id).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Get shop stats
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example get_ecommerce_shop_stats
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let start_date: String = String::from("2026-10-01");
-
-    let end_date: String = String::from("2026-10-31");
-
-    let response: Response = mailerlite.ecommerce_shop().stats(shop_id, start_date, end_date).await;
-
-    println!("{:#?}", response);
-}
-```
-
-## E-commerce products
-
-### Get a list of products
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example get_ecommerce_products
-```
-</details>
-
-```rust
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let parameter: Parameter = Parameter::new().add("filter[enabled]", "true");
-
-    let response: Response = mailerlite.ecommerce_product().get(shop_id, parameter.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Get a product
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example find_ecommerce_product
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let product_id: String = String::from("Your Product ID");
-
-    let response: Response = mailerlite.ecommerce_product().find(shop_id, product_id).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Create a product
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example create_ecommerce_product
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let data: Data = Data::new()
-        .add("name", "Dummy Product")
-        .add("price", "19.99")
-        .add("url", "https://shop.example.com/dummy-product");
-
-    let response: Response = mailerlite.ecommerce_product().create(shop_id, data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Update a product
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example update_ecommerce_product
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let product_id: String = String::from("Your Product ID");
-
-    let data: Data = Data::new()
-        .add("price", "24.99");
-
-    let response: Response = mailerlite.ecommerce_product().update(shop_id, product_id, data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Delete a product
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example delete_ecommerce_product
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let product_id: String = String::from("Your Product ID");
-
-    let response: Response = mailerlite.ecommerce_product().delete(shop_id, product_id).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Enable or disable a product
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example change_ecommerce_product_status
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let product_id: String = String::from("Your Product ID");
-
-    let data: Data = Data::new()
-        .add("status", "0");
-
-    let response: Response = mailerlite.ecommerce_product().change_status(shop_id, product_id, data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Assign categories to a product
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example assign_categories_to_ecommerce_product
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let product_id: String = String::from("Your Product ID");
-
-    let data: Data = Data::new()
-        .add("categories[]", "Your Category ID")
-        .add("replace", "0");
-
-    let response: Response = mailerlite.ecommerce_product().assign_categories(shop_id, product_id, data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-## E-commerce product variants
-
-### Get a list of product variants
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example get_ecommerce_product_variants
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let product_id: String = String::from("Your Product ID");
-
-    let response: Response = mailerlite.ecommerce_product_variant().get(shop_id, product_id).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Sync product variants
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example sync_ecommerce_product_variants
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let product_id: String = String::from("Your Product ID");
-
-    let data: Data = Data::new()
-        .add("0[name]", "Large")
-        .add("0[attributes][size]", "L")
-        .add("0[resource_id]", "variant-l");
-
-    let response: Response = mailerlite.ecommerce_product_variant().sync(shop_id, product_id, data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Update a product variant
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example update_ecommerce_product_variant
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let product_id: String = String::from("Your Product ID");
-
-    let variant_id: String = String::from("Your Variant ID");
-
-    let data: Data = Data::new()
-        .add("name", "Extra large")
-        .add("attributes[size]", "XL");
-
-    let response: Response = mailerlite.ecommerce_product_variant().update(shop_id, product_id, variant_id, data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Delete a product variant
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example delete_ecommerce_product_variant
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let product_id: String = String::from("Your Product ID");
-
-    let variant_id: String = String::from("Your Variant ID");
-
-    let response: Response = mailerlite.ecommerce_product_variant().delete(shop_id, product_id, variant_id).await;
-
-    println!("{:#?}", response);
-}
-```
-
-## E-commerce categories
-
-### Get a list of categories
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example get_ecommerce_categories
-```
-</details>
-
-```rust
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let parameter: Parameter = Parameter::new().add("limit", "25");
-
-    let response: Response = mailerlite.ecommerce_category().get(shop_id, parameter.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Get a category
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example find_ecommerce_category
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let category_id: String = String::from("Your Category ID");
-
-    let response: Response = mailerlite.ecommerce_category().find(shop_id, category_id).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Create a category
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example create_ecommerce_category
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let data: Data = Data::new()
-        .add("name", "Dummy Category");
-
-    let response: Response = mailerlite.ecommerce_category().create(shop_id, data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Update a category
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example update_ecommerce_category
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let category_id: String = String::from("Your Category ID");
-
-    let data: Data = Data::new()
-        .add("name", "Dummy Category");
-
-    let response: Response = mailerlite.ecommerce_category().update(shop_id, category_id, data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Delete a category
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example delete_ecommerce_category
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let category_id: String = String::from("Your Category ID");
-
-    let response: Response = mailerlite.ecommerce_category().delete(shop_id, category_id).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Get a list of category products
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example get_ecommerce_category_products
-```
-</details>
-
-```rust
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let category_id: String = String::from("Your Category ID");
-
-    let parameter: Parameter = Parameter::new().add("limit", "25");
-
-    let response: Response = mailerlite.ecommerce_category().products(shop_id, category_id, parameter.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Assign a product to a category
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example assign_product_to_ecommerce_category
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let category_id: String = String::from("Your Category ID");
-
-    let product_id: String = String::from("Your Product ID");
-
-    let response: Response = mailerlite.ecommerce_category().assign_product(shop_id, category_id, product_id).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Unassign a product from a category
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example unassign_product_from_ecommerce_category
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let category_id: String = String::from("Your Category ID");
-
-    let product_id: String = String::from("Your Product ID");
-
-    let response: Response = mailerlite.ecommerce_category().unassign_product(shop_id, category_id, product_id).await;
-
-    println!("{:#?}", response);
-}
-```
-
-## E-commerce customers
-
-### Get a list of customers
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example get_ecommerce_customers
-```
-</details>
-
-```rust
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let parameter: Parameter = Parameter::new().add("filter[email]", "dummy@example.com");
-
-    let response: Response = mailerlite.ecommerce_customer().get(shop_id, parameter.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Get a customer
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example find_ecommerce_customer
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let customer_id: String = String::from("Your Customer ID");
-
-    let response: Response = mailerlite.ecommerce_customer().find(shop_id, customer_id).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Create a customer
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example create_ecommerce_customer
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let data: Data = Data::new()
-        .add("email", "dummy@example.com")
-        .add("create_subscriber", "1");
-
-    let response: Response = mailerlite.ecommerce_customer().create(shop_id, data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Update a customer
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example update_ecommerce_customer
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let customer_id: String = String::from("Your Customer ID");
-
-    let data: Data = Data::new()
-        .add("accepts_marketing", "1");
-
-    let response: Response = mailerlite.ecommerce_customer().update(shop_id, customer_id, data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Delete a customer
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example delete_ecommerce_customer
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let customer_id: String = String::from("Your Customer ID");
-
-    let response: Response = mailerlite.ecommerce_customer().delete(shop_id, customer_id).await;
-
-    println!("{:#?}", response);
-}
-```
-
-## E-commerce orders
-
-### Get a list of orders
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example get_ecommerce_orders
-```
-</details>
-
-```rust
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let parameter: Parameter = Parameter::new().add("filter[attributed]", "true");
-
-    let response: Response = mailerlite.ecommerce_order().get(shop_id, parameter.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Get an order
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example find_ecommerce_order
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let order_id: String = String::from("Your Order ID");
-
-    let response: Response = mailerlite.ecommerce_order().find(shop_id, order_id).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Create an order
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example create_ecommerce_order
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let data: Data = Data::new()
-        .add("customer[email]", "dummy@example.com")
-        .add("customer[create_subscriber]", "1")
-        .add("cart[items][0][ecommerce_product_id]", "Your Product ID")
-        .add("cart[items][0][quantity]", "1")
-        .add("cart[items][0][price]", "19.99")
-        .add("status", "complete");
-
-    let response: Response = mailerlite.ecommerce_order().create(shop_id, data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Update an order
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example update_ecommerce_order
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let order_id: String = String::from("Your Order ID");
-
-    let data: Data = Data::new()
-        .add("status", "complete");
-
-    let response: Response = mailerlite.ecommerce_order().update(shop_id, order_id, data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Delete an order
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example delete_ecommerce_order
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let order_id: String = String::from("Your Order ID");
-
-    let response: Response = mailerlite.ecommerce_order().delete(shop_id, order_id).await;
-
-    println!("{:#?}", response);
-}
-```
-
-## E-commerce carts
-
-### Get a list of carts
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example get_ecommerce_carts
-```
-</details>
-
-```rust
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let parameter: Parameter = Parameter::new().add("limit", "25");
-
-    let response: Response = mailerlite.ecommerce_cart().get(shop_id, parameter.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Get a cart
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example find_ecommerce_cart
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let cart_id: String = String::from("Your Cart ID");
-
-    let response: Response = mailerlite.ecommerce_cart().find(shop_id, cart_id).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Update a cart
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example update_ecommerce_cart
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let cart_id: String = String::from("Your Cart ID");
-
-    let data: Data = Data::new()
-        .add("checkout_url", "https://shop.example.com/cart");
-
-    let response: Response = mailerlite.ecommerce_cart().update(shop_id, cart_id, data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-## E-commerce cart items
-
-### Get a list of cart items
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example get_ecommerce_cart_items
-```
-</details>
-
-```rust
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let cart_id: String = String::from("Your Cart ID");
-
-    let parameter: Parameter = Parameter::new().add("limit", "25");
-
-    let response: Response = mailerlite.ecommerce_cart_item().get(shop_id, cart_id, parameter.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Get a cart item
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example find_ecommerce_cart_item
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let cart_id: String = String::from("Your Cart ID");
-
-    let item_id: String = String::from("Your Item ID");
-
-    let response: Response = mailerlite.ecommerce_cart_item().find(shop_id, cart_id, item_id).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Create a cart item
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example create_ecommerce_cart_item
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let cart_id: String = String::from("Your Cart ID");
-
-    let data: Data = Data::new()
-        .add("ecommerce_product_id", "Your Product ID")
-        .add("quantity", "1")
-        .add("price", "19.99");
-
-    let response: Response = mailerlite.ecommerce_cart_item().create(shop_id, cart_id, data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Update a cart item
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example update_ecommerce_cart_item
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let cart_id: String = String::from("Your Cart ID");
-
-    let item_id: String = String::from("Your Item ID");
-
-    let data: Data = Data::new()
-        .add("quantity", "2");
-
-    let response: Response = mailerlite.ecommerce_cart_item().update(shop_id, cart_id, item_id, data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Delete a cart item
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example delete_ecommerce_cart_item
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let cart_id: String = String::from("Your Cart ID");
-
-    let item_id: String = String::from("Your Item ID");
-
-    let response: Response = mailerlite.ecommerce_cart_item().delete(shop_id, cart_id, item_id).await;
-
-    println!("{:#?}", response);
-}
-```
-
-## E-commerce imports
-
-### Import products
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example import_ecommerce_products
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let data: Data = Data::new()
-        .add("0[name]", "Dummy Product")
-        .add("0[price]", "19.99")
-        .add("0[url]", "https://shop.example.com/dummy-product");
-
-    let response: Response = mailerlite.ecommerce_import().products(shop_id, data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Import categories
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example import_ecommerce_categories
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let data: Data = Data::new()
-        .add("0[name]", "Dummy Category")
-        .add("0[exclude_from_automations]", "0");
-
-    let response: Response = mailerlite.ecommerce_import().categories(shop_id, data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Import customers
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example import_ecommerce_customers
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let data: Data = Data::new()
-        .add("0[email]", "dummy@example.com")
-        .add("0[accepts_marketing]", "1");
-
-    let response: Response = mailerlite.ecommerce_import().customers(shop_id, data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-### Import orders
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example import_ecommerce_orders
-```
-</details>
-
-```rust
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let data: Data = Data::new()
-        .add("orders[0][customer][email]", "dummy@example.com")
-        .add("orders[0][cart][items][0][ecommerce_product_id]", "Your Product ID")
-        .add("orders[0][cart][items][0][quantity]", "1")
-        .add("orders[0][cart][items][0][price]", "19.99")
-        .add("orders[0][status]", "complete");
-
-    let response: Response = mailerlite.ecommerce_import().orders(shop_id, data.clone()).await;
-
-    println!("{:#?}", response);
-}
-```
-
-## E-commerce settings
-
-### Get e-commerce settings
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example find_ecommerce_settings
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let response: Response = mailerlite.ecommerce_setting().find().await;
-
-    println!("{:#?}", response);
-}
-```
-
-## E-commerce reports
-
-### Get campaign e-commerce stats
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example get_campaign_ecommerce_stats
-```
-</details>
-
-```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Campaign ID");
-
-    let shop_id: String = String::from("Your Shop ID");
-
-    let response: Response = mailerlite.campaign().ecommerce_stats(id, shop_id).await;
-
-    println!("{:#?}", response);
 }
 ```
-
-### Get campaign e-commerce orders
 
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
+`ApiError` provides `is_validation()` for 422, `is_unauthorized()` for 401,
+`is_rate_limited()` for 429, and `is_server_error()` for 5xx. These classify the
+status independently of the response body; they do not enable retries.
 
-```bash
-cargo run --package mailerlite-rs --example get_campaign_ecommerce_orders
-```
-</details>
+`Error::Decode` preserves HTTP metadata and bounded diagnostics for malformed or
+unexpected responses. `DecodeError::json_error()` exposes the original JSON error
+for category and location checks; its standard source chain uses a redacted
+`JsonDecodeError`. Explicit JSON error formatting may include response values.
+Other variants cover configuration, serialization,
+transport, pagination, and operation deadlines. Keep a fallback match arm because
+`Error` is non-exhaustive.
 
-```rust
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+API error messages, validation messages, and raw response bodies are available
+through explicit accessors and may contain submitted personal information.
+API error `Debug` and `Display` omit those values. Client credentials and webhook
+secrets are also redacted from debug output.
 
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+## Imports and batches
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+A group import returns a receipt. Use `mailerlite.imports().progress(&receipt)`
+to inspect its status or `.wait(...)` to poll with an overall timeout. Dropping
+the polling future stops further requests; it does not cancel work the server
+has already accepted. See [group_import.rs](examples/group_import.rs).
 
-    let id: String = String::from("Your Campaign ID");
+A successful batch HTTP response can contain failed operations. Check each
+item's `code` or `is_success()`, then use `.decode::<T>()` with that operation's
+response schema. Results retain submission order. See [batch.rs](examples/batch.rs).
 
-    let shop_id: String = String::from("Your Shop ID");
+Ecommerce order imports accept `Vec<CreateOrder>` and automatically send
+`{"orders": [...]}` to match the backend contract. This intentionally differs
+from the bare-array example in the public reference.
 
-    let parameter: Parameter = Parameter::new().add("page", "1");
+## Receiving webhooks
 
-    let response: Response = mailerlite.campaign().ecommerce_orders(id, shop_id, parameter.clone()).await;
+Manage subscriptions through `mailerlite.webhooks()`. Incoming delivery types
+live under `mailerlite_rs::webhooks` and require no optional feature. For signature
+verification and JSON decoding in your application, use:
 
-    println!("{:#?}", response);
-}
+```toml
+[dependencies]
+mailerlite-rs = { version = "2", features = ["webhook-signatures"] }
+serde_json = "1"
 ```
-
-### Get subscriber e-commerce stats
 
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
+Your HTTP handler supplies the webhook's **signing secret**, the original body
+bytes, and the `Signature` header. Use the signing secret rather than the API
+token, and verify before parsing JSON. Parsing and reserializing a body changes
+the bytes being authenticated.
 
-```bash
-cargo run --package mailerlite-rs --example get_subscriber_ecommerce_stats
-```
-</details>
+The following feature-dependent snippet is also compiled as
+[verify_webhook.rs](examples/verify_webhook.rs):
 
 ```rust
-use mailerlite_rs::{response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Subscriber ID");
+use mailerlite_rs::webhooks::{WebhookPayload, verify_signature};
 
-    let shop_id: String = String::from("Your Shop ID");
+fn receive(
+    secret: &str,
+    signature: &str,
+    body: &[u8],
+) -> Result<WebhookPayload, Box<dyn std::error::Error>> {
+    verify_signature(secret, body, signature)?;
 
-    let response: Response = mailerlite.subscriber().ecommerce_stats(id, shop_id).await;
-
-    println!("{:#?}", response);
+    Ok(serde_json::from_slice(body)?)
 }
-```
-
-### Get subscriber e-commerce orders
-
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example get_subscriber_ecommerce_orders
 ```
-</details>
-
-```rust
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+Reject missing or invalid signatures before processing events. Verification uses
+HMAC-SHA256 with constant-time tag comparison. The header must contain exactly
+64 hexadecimal characters without prefixes or whitespace. Empty secrets, invalid
+encodings, and mismatches return `SignatureError` variants.
 
-    let id: String = String::from("Your Subscriber ID");
+Match `WebhookPayload::Single(event)` or iterate `batch.events` for
+`WebhookPayload::Batch(batch)`. The SDK models all 14 publicly documented events;
+unknown future events remain inspectable, and malformed known payloads fail
+decoding. Keep raw payloads and secrets out of logs.
 
-    let shop_id: String = String::from("Your Shop ID");
+Signature verification does not establish freshness or prevent duplicate
+processing. Make handlers idempotent, queue lengthy work, and return promptly
+after accepting a delivery. Your application supplies the HTTP route and event
+processing logic.
 
-    let parameter: Parameter = Parameter::new().add("page", "1");
+## Features
 
-    let response: Response = mailerlite.subscriber().ecommerce_orders(id, shop_id, parameter.clone()).await;
+| Feature | Purpose |
+| --- | --- |
+| `rustls-tls` | Default HTTPS backend |
+| `native-tls` | Platform TLS backend |
+| `stream` | Lazy pagination |
+| `tracing` | Transport instrumentation |
+| `webhook-signatures` | Incoming webhook signature verification |
 
-    println!("{:#?}", response);
-}
-```
+Tracing events exclude credentials and request/response bodies.
 
-### Get automation e-commerce stats
+To select native TLS alone:
 
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example get_automation_ecommerce_stats
+```toml
+mailerlite-rs = { version = "2", default-features = false, features = ["native-tls"] }
 ```
-</details>
-
-```rust
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
 
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+Disabling default features without enabling a TLS backend does not independently
+provide HTTPS. The SDK uses Rust edition 2024 and supports Rust 1.88 and newer.
+Classic API, blocking clients, and browser/WASM support are outside the current
+scope. Product assets support JSON URL inputs; multipart file uploads are not
+implemented.
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+Additional automation operations use backend-verified schemas. Their availability
+can depend on the deployment; source verification does not guarantee that every
+account exposes those routes. They use the same typed APIs and shared transport
+as the rest of the SDK.
 
-    let id: String = String::from("Your Automation ID");
+## Examples and contributing
 
-    let parameter: Parameter = Parameter::new();
+Browse the [example catalog](examples/README.md) for subscriber management,
+campaigns, automation configuration, ecommerce, imports, and more. Existing v1
+operation filenames are retained with v2 implementations.
 
-    let response: Response = mailerlite.automation().ecommerce_stats(id, parameter.clone()).await;
+From a repository checkout, compile examples without executing API calls:
 
-    println!("{:#?}", response);
-}
+```sh
+cargo check --examples --all-features
 ```
 
-### Get automation email e-commerce stats
+To run a selected example, provide its documented environment variables:
 
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
-
-```bash
-cargo run --package mailerlite-rs --example get_automation_email_ecommerce_stats
+```sh
+cargo run --example get_subscribers
+cargo run --example stream_subscribers --features stream
 ```
-</details>
-
-```rust
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
-
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let id: String = String::from("Your Automation ID");
 
-    let email_id: String = String::from("Your Email ID");
+The webhook example verifies and decodes a signed sample event, then rejects a
+modified body. It runs offline with a public sample signing secret and needs no
+API token:
 
-    let parameter: Parameter = Parameter::new().add("shop_id", "Your Shop ID");
-
-    let response: Response = mailerlite.automation().email_ecommerce_stats(id, email_id, parameter.clone()).await;
-
-    println!("{:#?}", response);
-}
+```sh
+cargo run --example verify_webhook --features webhook-signatures
 ```
-
-### Get automation e-commerce orders
 
-<details>
-<summary>
-You can test out the example by running it with the command provided.
-</summary>
+Most other examples contact your account when executed. Write operations modify
+account data; campaign scheduling can send email. Normal SDK tests use local
+HTTP mocks and require no MailerLite token.
 
-```bash
-cargo run --package mailerlite-rs --example get_automation_ecommerce_orders
-```
-</details>
-
-```rust
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, tests, Conventional
+Commits, and pull requests. For migration and release history, see
+[UPGRADE.md](UPGRADE.md) and [CHANGELOG.md](CHANGELOG.md).
 
-#[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+## Support and Feedback
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+If you find a bug, [submit an issue on GitHub](https://github.com/mailerlite/mailerlite-rust/issues).
 
-    let id: String = String::from("Your Automation ID");
+You are welcome to create a MailerLite SDK for another programming language.
 
-    let parameter: Parameter = Parameter::new().add("time_frame", "all_time");
+If you have trouble using our API or SDK, feel free to contact our support team
+at [info@mailerlite.com](mailto:info@mailerlite.com).
 
-    let response: Response = mailerlite.automation().ecommerce_orders(id, parameter.clone()).await;
+## License
 
-    println!("{:#?}", response);
-}
-```
+[The MIT License (MIT)](./LICENSE).

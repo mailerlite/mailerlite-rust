@@ -1,0 +1,1781 @@
+[
+  {
+    "trigger_data": {
+      "valid": true
+    },
+    "triggers": [
+      {
+        "id": "1",
+        "type": "subscriber_joins_group"
+      }
+    ],
+    "steps": [
+      {
+        "id": "1",
+        "type": "email",
+        "parent_id": null,
+        "email": {
+          "id": "1"
+        },
+        "data": {
+          "name": "Welcome email",
+          "subject": "Welcome email",
+          "track_opens": true
+        },
+        "description": "Send \"Welcome email\" email"
+      }
+    ]
+  },
+  {
+    "trigger_data": {
+      "valid": true
+    },
+    "triggers": [
+      {
+        "id": "1",
+        "type": "field_updated",
+        "value": "1"
+      }
+    ],
+    "steps": [
+      {
+        "id": "1",
+        "type": "email",
+        "parent_id": null,
+        "email": {
+          "id": "1"
+        },
+        "data": {
+          "name": "Discount offer",
+          "subject": "Discount offer",
+          "track_opens": true
+        },
+        "description": "Send \"Discount offer\" email"
+      },
+      {
+        "id": "2",
+        "type": "delay",
+        "parent_id": "1",
+        "data": {
+          "unit": "days",
+          "value": "3"
+        },
+        "description": "Wait for 3 days"
+      },
+      {
+        "id": "3",
+        "type": "condition",
+        "parent_id": "2",
+        "data": {
+          "yes_step_id": "4",
+          "no_step_id": "5",
+          "matching_type": "any",
+          "conditions": [
+            {
+              "type": "workflow_activity",
+              "email_id": "1",
+              "action": "clicked",
+              "link_id": null,
+              "email": {
+                "id": "1",
+                "name": "Discount offer"
+              }
+            }
+          ]
+        },
+        "description": "Check some condition"
+      },
+      {
+        "id": "4",
+        "type": "action",
+        "parent_id": "3",
+        "data": {
+          "action_type": "update_custom_field"
+        },
+        "description": "Update custom field"
+      },
+      {
+        "id": "5",
+        "type": "email",
+        "parent_id": "3",
+        "data": {
+          "name": "Last chance offer",
+          "subject": "Last chance offer",
+          "track_opens": true
+        },
+        "email": {
+          "id": "2"
+        },
+        "description": "Send \"Last chance offer\" email"
+      },
+      {
+        "id": "6",
+        "type": "delay",
+        "parent_id": "5",
+        "data": {
+          "unit": "days",
+          "value": "3"
+        },
+        "description": "Wait for 3 days"
+      },
+      {
+        "id": "7",
+        "type": "condition",
+        "parent_id": "6",
+        "data": {
+          "yes_step_id": "9",
+          "no_step_id": "8",
+          "matching_type": "any",
+          "conditions": [
+            {
+              "type": "workflow_activity",
+              "email_id": "2",
+              "action": "clicked",
+              "link_id": null,
+              "email": {
+                "id": "2",
+                "name": "Last chance offer"
+              }
+            }
+          ]
+        },
+        "description": "Check some condition"
+      },
+      {
+        "id": "8",
+        "type": "action",
+        "parent_id": "7",
+        "data": {
+          "action_type": "mark_as_unsubscribed"
+        },
+        "description": "Mark as unsubscribed"
+      },
+      {
+        "id": "9",
+        "type": "action",
+        "parent_id": "7",
+        "data": {
+          "action_type": "go_to_step",
+          "go_to_step_type": "action",
+          "go_to_step_id": "4"
+        },
+        "description": "Continue to another step"
+      }
+    ]
+  },
+  {
+    "trigger_data": {
+      "valid": true
+    },
+    "triggers": [
+      {
+        "id": "1",
+        "type": "field_updated"
+      }
+    ],
+    "steps": [
+      {
+        "id": "1",
+        "type": "email",
+        "parent_id": null,
+        "data": {
+          "name": "Campaign offer 1",
+          "subject": "Campaign offer 1",
+          "track_opens": true
+        },
+        "email": {
+          "id": "1"
+        },
+        "description": "Send \"Campaign offer 1\" email"
+      },
+      {
+        "id": "2",
+        "type": "delay",
+        "parent_id": "1",
+        "data": {
+          "unit": "days",
+          "value": "3"
+        },
+        "description": "Wait for 3 days"
+      },
+      {
+        "id": "3",
+        "type": "condition",
+        "parent_id": "2",
+        "data": {
+          "yes_step_id": "4",
+          "no_step_id": null,
+          "matching_type": "any",
+          "conditions": [
+            {
+              "type": "workflow_activity",
+              "email_id": "1",
+              "action": "clicked",
+              "link_id": null,
+              "email": {
+                "id": "1",
+                "name": "Campaign offer 1"
+              }
+            }
+          ]
+        },
+        "description": "Check some condition"
+      },
+      {
+        "id": "4",
+        "type": "action",
+        "parent_id": "3",
+        "data": {
+          "action_type": "update_custom_field"
+        },
+        "description": "Update custom field to"
+      },
+      {
+        "id": "5",
+        "type": "email",
+        "parent_id": "4",
+        "data": {
+          "name": "Campaign offer 2",
+          "subject": "Campaign offer 2",
+          "track_opens": true
+        },
+        "email": {
+          "id": "2"
+        },
+        "description": "Send \"Campaign offer 2\" email"
+      },
+      {
+        "id": "6",
+        "type": "delay",
+        "parent_id": "5",
+        "data": {
+          "unit": "days",
+          "value": "3"
+        },
+        "description": "Wait for 3 days"
+      },
+      {
+        "id": "7",
+        "type": "email",
+        "parent_id": "6",
+        "data": {
+          "name": "Campaign offer 3",
+          "subject": "Campaign offer 3",
+          "track_opens": true
+        },
+        "email": {
+          "id": "3"
+        },
+        "description": "Send \"Campaign offer 3\" email"
+      }
+    ]
+  },
+  {
+    "trigger_data": {
+      "valid": true
+    },
+    "triggers": [
+      {
+        "id": "1",
+        "type": "field_updated"
+      }
+    ],
+    "steps": [
+      {
+        "id": "1",
+        "type": "email",
+        "parent_id": null,
+        "data": {
+          "name": "New promotion 1",
+          "subject": "New promotion 1",
+          "track_opens": true
+        },
+        "email": {
+          "id": "1"
+        },
+        "description": "Send \"New promotion 1\" email"
+      },
+      {
+        "id": "2",
+        "type": "delay",
+        "parent_id": "1",
+        "data": {
+          "unit": "days",
+          "value": "3"
+        },
+        "description": "Wait for 3 days"
+      },
+      {
+        "id": "3",
+        "type": "condition",
+        "parent_id": "2",
+        "data": {
+          "yes_step_id": "4",
+          "no_step_id": "5",
+          "matching_type": "any",
+          "conditions": [
+            {
+              "type": "workflow_activity",
+              "email_id": "1",
+              "action": "clicked",
+              "link_id": null,
+              "email": {
+                "id": "1",
+                "name": "New promotion 1"
+              }
+            }
+          ]
+        },
+        "description": "Check some condition"
+      },
+      {
+        "id": "4",
+        "type": "email",
+        "parent_id": "3",
+        "data": {
+          "name": "New promotion 2",
+          "subject": "New promotion 2",
+          "track_opens": true
+        },
+        "email": {
+          "id": "2"
+        },
+        "description": "Send \"New promotion 2\" email"
+      },
+      {
+        "id": "5",
+        "type": "email",
+        "parent_id": "3",
+        "data": {
+          "name": "New promotion 3",
+          "subject": "New promotion 3",
+          "track_opens": true
+        },
+        "email": {
+          "id": "3"
+        },
+        "description": "Send \"New promotion 3\" email"
+      },
+      {
+        "id": "6",
+        "type": "delay",
+        "parent_id": "4",
+        "data": {
+          "unit": "days",
+          "value": "3"
+        },
+        "description": "Wait for 3 days"
+      },
+      {
+        "id": "7",
+        "type": "condition",
+        "parent_id": "6",
+        "data": {
+          "yes_step_id": "8",
+          "no_step_id": "9",
+          "matching_type": "any",
+          "conditions": [
+            {
+              "type": "workflow_activity",
+              "email_id": "2",
+              "action": "clicked",
+              "link_id": null,
+              "email": {
+                "id": "2",
+                "name": "New promotion 2"
+              }
+            }
+          ]
+        },
+        "description": "Check some condition"
+      },
+      {
+        "id": "8",
+        "type": "action",
+        "parent_id": "7",
+        "data": {
+          "action_type": "update_custom_field"
+        },
+        "description": "Update custom field to"
+      },
+      {
+        "id": "9",
+        "type": "action",
+        "parent_id": "7",
+        "data": {
+          "action_type": "go_to_step",
+          "go_to_step_type": "action",
+          "go_to_step_id": "12"
+        },
+        "description": "Continue to another step"
+      },
+      {
+        "id": "10",
+        "type": "delay",
+        "parent_id": "5",
+        "data": {
+          "unit": "days",
+          "value": "3"
+        },
+        "description": "Wait for 3 days"
+      },
+      {
+        "id": "11",
+        "type": "condition",
+        "parent_id": "10",
+        "data": {
+          "yes_step_id": "13",
+          "no_step_id": "12",
+          "matching_type": "any",
+          "conditions": [
+            {
+              "type": "workflow_activity",
+              "email_id": "3",
+              "action": "clicked",
+              "link_id": null,
+              "email": {
+                "id": "3",
+                "name": "New promotion 3"
+              }
+            }
+          ]
+        },
+        "description": "Check some condition"
+      },
+      {
+        "id": "12",
+        "type": "action",
+        "parent_id": "11",
+        "data": {
+          "action_type": "update_custom_field"
+        },
+        "description": "Update custom field"
+      },
+      {
+        "id": "13",
+        "type": "action",
+        "parent_id": "11",
+        "data": {
+          "action_type": "go_to_step",
+          "go_to_step_type": "action",
+          "go_to_step_id": "8"
+        },
+        "description": "Continue to another step"
+      }
+    ]
+  },
+  {
+    "trigger_data": {
+      "valid": true
+    },
+    "triggers": [
+      {
+        "id": "1",
+        "type": "subscriber_joins_group"
+      }
+    ],
+    "steps": [
+      {
+        "id": "1",
+        "type": "email",
+        "parent_id": null,
+        "data": {
+          "name": "Welcome email",
+          "subject": "Welcome email",
+          "track_opens": true
+        },
+        "email": {
+          "id": "1"
+        },
+        "description": "Send \"Welcome\" email"
+      },
+      {
+        "id": "2",
+        "type": "delay",
+        "parent_id": "1",
+        "data": {
+          "unit": "next_weekday",
+          "week_days": [
+            "1"
+          ],
+          "hour": "09",
+          "minute": "00"
+        },
+        "description": "Wait until current day of week is Monday"
+      },
+      {
+        "id": "3",
+        "type": "email",
+        "parent_id": "2",
+        "data": {
+          "name": "Lesson 1",
+          "subject": "Lesson 1",
+          "track_opens": true
+        },
+        "email": {
+          "id": "2"
+        },
+        "description": "Send \"Lesson 1\" email"
+      },
+      {
+        "id": "4",
+        "type": "delay",
+        "parent_id": "3",
+        "data": {
+          "unit": "weeks",
+          "value": "1"
+        },
+        "description": "Wait for 1 week"
+      },
+      {
+        "id": "5",
+        "type": "email",
+        "parent_id": "4",
+        "data": {
+          "name": "Lesson 2",
+          "subject": "Lesson 2",
+          "track_opens": true
+        },
+        "email": {
+          "id": "3"
+        },
+        "description": "Send \"Lesson 2\" email"
+      },
+      {
+        "id": "6",
+        "type": "delay",
+        "parent_id": "5",
+        "data": {
+          "unit": "weeks",
+          "value": "1"
+        },
+        "description": "Wait for 1 week"
+      },
+      {
+        "id": "7",
+        "type": "email",
+        "parent_id": "6",
+        "data": {
+          "name": "Final lesson",
+          "subject": "Final lesson",
+          "track_opens": true
+        },
+        "email": {
+          "id": "4"
+        },
+        "description": "Send \"Final lesson\" email"
+      },
+      {
+        "id": "8",
+        "type": "action",
+        "parent_id": "7",
+        "data": {
+          "action_type": "remove_from_group"
+        }
+      }
+    ]
+  },
+  {
+    "trigger_data": {
+      "valid": true
+    },
+    "triggers": [
+      {
+        "id": "1",
+        "type": "anniversary"
+      }
+    ],
+    "steps": [
+      {
+        "id": "1",
+        "type": "email",
+        "parent_id": null,
+        "data": {
+          "name": "Your birthday is coming up",
+          "subject": "Your birthday is coming up",
+          "track_opens": true
+        },
+        "email": {
+          "id": "1"
+        },
+        "description": "Send \"Birthday coming up\" email"
+      },
+      {
+        "id": "2",
+        "type": "delay",
+        "parent_id": "1",
+        "data": {
+          "unit": "days",
+          "value": "3"
+        },
+        "description": "Wait 3 days"
+      },
+      {
+        "id": "3",
+        "type": "email",
+        "parent_id": "2",
+        "data": {
+          "name": "Happy birthday",
+          "subject": "Happy birthday",
+          "track_opens": true
+        },
+        "email": {
+          "id": "2"
+        },
+        "description": "Send \"Happy birthday\" email"
+      }
+    ]
+  },
+  {
+    "trigger_data": {
+      "valid": true
+    },
+    "triggers": [
+      {
+        "id": "1",
+        "type": "subscriber_joins_group"
+      },
+      {
+        "id": "2",
+        "type": "form_completed"
+      },
+      {
+        "id": "3",
+        "type": "form_completed"
+      }
+    ],
+    "steps": [
+      {
+        "id": "1",
+        "type": "email",
+        "parent_id": null,
+        "data": {
+          "name": "Welcome email",
+          "subject": "Welcome email",
+          "track_opens": true
+        },
+        "email": {
+          "id": "1"
+        },
+        "description": "Send \"Welcome email\" email"
+      },
+      {
+        "id": "2",
+        "type": "delay",
+        "parent_id": "1",
+        "data": {
+          "unit": "days",
+          "value": "3"
+        },
+        "description": "Wait 3 days"
+      },
+      {
+        "id": "3",
+        "type": "email",
+        "parent_id": "2",
+        "data": {
+          "name": "Preferences email",
+          "subject": "Preferences email",
+          "track_opens": true
+        },
+        "email": {
+          "id": "2"
+        },
+        "description": "Send \"Preferences email\" email"
+      },
+      {
+        "id": "4",
+        "type": "delay",
+        "parent_id": "3",
+        "data": {
+          "unit": "days",
+          "value": "3"
+        },
+        "description": "Wait 3 days"
+      },
+      {
+        "id": "5",
+        "type": "condition",
+        "parent_id": "4",
+        "data": {
+          "yes_step_id": "6",
+          "no_step_id": "8",
+          "matching_type": "any",
+          "conditions": [
+            {
+              "type": "workflow_activity",
+              "email_id": "2",
+              "action": "link_clicked",
+              "link_id": null,
+              "email": {
+                "id": "2",
+                "name": "Preferences email"
+              }
+            }
+          ]
+        },
+        "description": "Check some condition"
+      },
+      {
+        "id": "6",
+        "type": "action",
+        "parent_id": "5",
+        "data": {
+          "action_type": "update_custom_field"
+        },
+        "description": "Update custom field"
+      },
+      {
+        "id": "7",
+        "type": "email",
+        "parent_id": "6",
+        "data": {
+          "name": "Campaign offer 1",
+          "subject": "Campaign offer 1",
+          "track_opens": true
+        },
+        "email": {
+          "id": "3"
+        },
+        "description": "Send \"Campaign offer 1\" email"
+      },
+      {
+        "id": "8",
+        "type": "email",
+        "parent_id": "5",
+        "data": {
+          "name": "Campaign offer 2",
+          "subject": "Campaign offer 2",
+          "track_opens": true
+        },
+        "email": {
+          "id": "4"
+        },
+        "description": "Send \"Campaign offer 2\" email"
+      },
+      {
+        "id": "9",
+        "type": "delay",
+        "parent_id": "8",
+        "data": {
+          "unit": "days",
+          "value": "3"
+        },
+        "description": "Wait 3 days"
+      },
+      {
+        "id": "10",
+        "type": "condition",
+        "parent_id": "9",
+        "data": {
+          "yes_step_id": "11",
+          "no_step_id": "13",
+          "matching_type": "any",
+          "conditions": [
+            {
+              "type": "workflow_activity",
+              "email_id": "4",
+              "action": "link_clicked",
+              "link_id": null,
+              "email": {
+                "id": "4",
+                "name": "Campaign offer 2"
+              }
+            }
+          ]
+        },
+        "description": "Check some condition"
+      },
+      {
+        "id": "11",
+        "type": "action",
+        "parent_id": "10",
+        "data": {
+          "action_type": "update_custom_field"
+        },
+        "description": "Update custom field"
+      },
+      {
+        "id": "12",
+        "type": "email",
+        "parent_id": "11",
+        "data": {
+          "name": "Campaign offer 3",
+          "subject": "Campaign offer 3",
+          "track_opens": true
+        },
+        "email": {
+          "id": "5"
+        },
+        "description": "Send \"Campaign offer 3\" email"
+      },
+      {
+        "id": "13",
+        "type": "action",
+        "parent_id": "10",
+        "data": {
+          "action_type": "move_to_group"
+        }
+      }
+    ]
+  },
+  {
+    "trigger_data": {
+      "valid": true
+    },
+    "triggers": [
+      {
+        "id": "1",
+        "type": "subscriber_joins_group"
+      },
+      {
+        "id": "2",
+        "type": "clicks_link"
+      },
+      {
+        "id": "3",
+        "type": "field_updated"
+      }
+    ],
+    "steps": [
+      {
+        "id": "1",
+        "type": "email",
+        "parent_id": null,
+        "data": {
+          "name": "Demo call confirmation",
+          "subject": "Demo call confirmation",
+          "track_opens": true
+        },
+        "email": {
+          "id": "1"
+        },
+        "description": "Send \"Demo call confirmation\" email"
+      },
+      {
+        "id": "2",
+        "type": "delay",
+        "parent_id": "1",
+        "data": {
+          "unit": "days",
+          "value": "3"
+        },
+        "description": "Wait 3 days"
+      },
+      {
+        "id": "3",
+        "type": "condition",
+        "parent_id": "2",
+        "data": {
+          "yes_step_id": "4",
+          "no_step_id": null,
+          "matching_type": "any",
+          "conditions": [
+            {
+              "type": "workflow_activity",
+              "email_id": "2",
+              "action": "link_clicked",
+              "link_id": null,
+              "email": {
+                "id": "1",
+                "name": "Demo call confirmation"
+              }
+            }
+          ]
+        },
+        "description": "Check some condition"
+      },
+      {
+        "id": "4",
+        "type": "email",
+        "parent_id": "3",
+        "data": {
+          "name": "Demo call invitation",
+          "subject": "Invitation to demo",
+          "track_opens": true
+        },
+        "email": {
+          "id": "2"
+        },
+        "description": "Send \"Demo call invitation\" email"
+      },
+      {
+        "id": "5",
+        "type": "action",
+        "parent_id": "4",
+        "data": {
+          "action_type": "copy_to_group"
+        }
+      }
+    ]
+  },
+  {
+    "trigger_data": {
+      "valid": true
+    },
+    "triggers": [
+      {
+        "id": "1",
+        "type": "subscriber_joins_group"
+      },
+      {
+        "id": "2",
+        "type": "form_completed"
+      }
+    ],
+    "steps": [
+      {
+        "id": "1",
+        "type": "email",
+        "parent_id": null,
+        "data": {
+          "name": "RSVP email",
+          "subject": "RSVP email",
+          "track_opens": true
+        },
+        "email": {
+          "id": "1"
+        },
+        "description": "Send \"RSVP\" email"
+      },
+      {
+        "id": "2",
+        "type": "delay",
+        "parent_id": "1",
+        "data": {
+          "unit": "next_date"
+        },
+        "description": "Wait until specific date and time"
+      },
+      {
+        "id": "3",
+        "type": "email",
+        "parent_id": "2",
+        "data": {
+          "name": "Webinar invitation email",
+          "subject": "Invitation to webinar",
+          "track_opens": true
+        },
+        "email": {
+          "id": "2"
+        },
+        "description": "Send \"Webinar invitation\" email"
+      },
+      {
+        "id": "4",
+        "type": "delay",
+        "parent_id": "3",
+        "data": {
+          "unit": "hours",
+          "value": "3"
+        },
+        "description": "Wait 3 hours"
+      },
+      {
+        "id": "5",
+        "type": "email",
+        "parent_id": "4",
+        "data": {
+          "name": "Share your feedback email",
+          "subject": "Share your feedback",
+          "track_opens": true
+        },
+        "email": {
+          "id": "3"
+        },
+        "description": "Send \"Share your feedback\" email"
+      }
+    ]
+  },
+  {
+    "trigger_data": {
+      "valid": true
+    },
+    "triggers": [
+      {
+        "id": "1",
+        "type": "field_updated"
+      }
+    ],
+    "steps": [
+      {
+        "id": "1",
+        "type": "delay",
+        "parent_id": null,
+        "data": {
+          "unit": "hours",
+          "value": "1"
+        },
+        "description": "Wait for 1 hour"
+      },
+      {
+        "id": "2",
+        "type": "email",
+        "parent_id": "1",
+        "data": {
+          "name": "How can we improve your experience?",
+          "subject": "How can we improve your experience?",
+          "track_opens": true
+        },
+        "email": {
+          "id": "1"
+        },
+        "description": "Send \"How can we improve your experience?\" email"
+      }
+    ]
+  },
+  {
+    "trigger_data": {
+      "valid": true
+    },
+    "triggers": [
+      {
+        "id": "1",
+        "type": "exact_date"
+      }
+    ],
+    "steps": [
+      {
+        "id": "1",
+        "type": "email",
+        "parent_id": null,
+        "data": {
+          "name": "Renewal reminder email",
+          "subject": "Your membership is expiring soon",
+          "track_opens": true
+        },
+        "email": {
+          "id": "1"
+        },
+        "description": "Send \"Renewal reminder\" email"
+      },
+      {
+        "id": "2",
+        "type": "delay",
+        "parent_id": "1",
+        "data": {
+          "unit": "days",
+          "value": "3"
+        },
+        "description": "Wait 3 days"
+      },
+      {
+        "id": "3",
+        "type": "condition",
+        "parent_id": "2",
+        "data": {
+          "yes_step_id": "4",
+          "no_step_id": "5",
+          "matching_type": "any",
+          "conditions": [
+            {
+              "type": "workflow_activity",
+              "email_id": "1",
+              "action": "link_clicked",
+              "link_id": null,
+              "email": {
+                "id": "1",
+                "name": "Renewal reminder"
+              }
+            }
+          ]
+        },
+        "description": "Check some condition"
+      },
+      {
+        "id": "4",
+        "type": "action",
+        "parent_id": "3",
+        "data": {
+          "action_type": "update_custom_field"
+        },
+        "description": "Update custom field"
+      },
+      {
+        "id": "5",
+        "type": "action",
+        "parent_id": "3",
+        "data": {
+          "action_type": "remove_from_group"
+        }
+      }
+    ]
+  },
+  {
+    "trigger_data": {
+      "valid": true
+    },
+    "triggers": [
+      {
+        "id": "1",
+        "type": "abandoned_cart"
+      }
+    ],
+    "steps": [
+      {
+        "id": "1",
+        "type": "email",
+        "parent_id": null,
+        "data": {
+          "name": "Abandoned cart email",
+          "subject": "Abandoned cart email",
+          "track_opens": true
+        },
+        "email": {
+          "id": "1"
+        },
+        "description": "Send \"Abandoned cart\" email"
+      },
+      {
+        "id": "2",
+        "type": "delay",
+        "parent_id": "1",
+        "data": {
+          "unit": "days",
+          "value": "3"
+        },
+        "description": "Wait 3 days"
+      },
+      {
+        "id": "3",
+        "type": "condition",
+        "parent_id": "2",
+        "data": {
+          "yes_step_id": "4",
+          "no_step_id": "5",
+          "matching_type": "any",
+          "conditions": [
+            {
+              "type": "workflow_activity",
+              "email_id": "1",
+              "action": "clicked",
+              "link_id": null,
+              "email": {
+                "id": "1",
+                "name": "Abandoned cart email"
+              }
+            }
+          ]
+        },
+        "description": "Check some condition"
+      },
+      {
+        "id": "4",
+        "type": "action",
+        "parent_id": "3",
+        "data": {
+          "action_type": "move_to_group"
+        }
+      },
+      {
+        "id": "5",
+        "type": "email",
+        "parent_id": "3",
+        "data": {
+          "name": "Abandoned cart email",
+          "subject": "Abandoned cart email",
+          "track_opens": true
+        },
+        "email": {
+          "id": "3"
+        },
+        "description": "Send \"Abandoned cart\" email"
+      }
+    ]
+  },
+  {
+    "trigger_data": {
+      "valid": true
+    },
+    "triggers": [
+      {
+        "id": "1",
+        "type": "abandoned_checkout"
+      }
+    ],
+    "steps": [
+      {
+        "id": "1",
+        "type": "email",
+        "parent_id": null,
+        "data": {
+          "name": "Abandoned checkout email",
+          "subject": "Abandoned checkout email",
+          "track_opens": true
+        },
+        "email": {
+          "id": "1"
+        },
+        "description": "Send \"Abandoned checkout\" email"
+      },
+      {
+        "id": "2",
+        "type": "delay",
+        "parent_id": "1",
+        "data": {
+          "unit": "days",
+          "value": "3"
+        },
+        "description": "Wait 3 days"
+      },
+      {
+        "id": "3",
+        "type": "condition",
+        "parent_id": "2",
+        "data": {
+          "yes_step_id": "4",
+          "no_step_id": "5",
+          "matching_type": "any",
+          "conditions": [
+            {
+              "type": "workflow_activity",
+              "email_id": "1",
+              "action": "clicked",
+              "link_id": null,
+              "email": {
+                "id": "1",
+                "name": "Abandoned checkout email"
+              }
+            }
+          ]
+        },
+        "description": "Check some condition"
+      },
+      {
+        "id": "4",
+        "type": "action",
+        "parent_id": "3",
+        "data": {
+          "action_type": "move_to_group"
+        }
+      },
+      {
+        "id": "5",
+        "type": "email",
+        "parent_id": "3",
+        "data": {
+          "name": "Abandoned checkout email",
+          "subject": "Abandoned checkout email",
+          "track_opens": true
+        },
+        "email": {
+          "id": "3"
+        },
+        "description": "Send \"Abandoned checkout\" email"
+      }
+    ]
+  },
+  {
+    "trigger_data": {
+      "valid": true
+    },
+    "triggers": [
+      {
+        "id": "1",
+        "type": "purchased_any_product"
+      }
+    ],
+    "steps": [
+      {
+        "id": "1",
+        "type": "action",
+        "parent_id": null,
+        "data": {
+          "action_type": "copy_to_group"
+        }
+      },
+      {
+        "id": "2",
+        "type": "email",
+        "parent_id": "1",
+        "data": {
+          "name": "Thank you email",
+          "subject": "Thank you for your purchase",
+          "track_opens": true
+        },
+        "email": {
+          "id": "1"
+        },
+        "description": "Send \"Thank you\" email"
+      }
+    ]
+  },
+  {
+    "trigger_data": {
+      "valid": true
+    },
+    "triggers": [
+      {
+        "id": "1",
+        "type": "purchased_specific_product"
+      }
+    ],
+    "steps": [
+      {
+        "id": "1",
+        "type": "action",
+        "parent_id": null,
+        "data": {
+          "action_type": "copy_to_group"
+        }
+      },
+      {
+        "id": "2",
+        "type": "email",
+        "parent_id": "1",
+        "data": {
+          "name": "Thank you email",
+          "subject": "Thank you for your purchase",
+          "track_opens": true
+        },
+        "email": {
+          "id": "1"
+        },
+        "description": "Send \"Thank you\" email"
+      },
+      {
+        "id": "3",
+        "type": "delay",
+        "parent_id": "2",
+        "data": {
+          "unit": "days",
+          "value": "7"
+        },
+        "description": "Wait 7 days"
+      },
+      {
+        "id": "4",
+        "type": "email",
+        "parent_id": "3",
+        "data": {
+          "name": "Feedback email",
+          "subject": "We value your feedback!",
+          "track_opens": true
+        },
+        "email": {
+          "id": "2"
+        },
+        "description": "Send \"Feedback\" email"
+      },
+      {
+        "id": "5",
+        "type": "delay",
+        "parent_id": "4",
+        "data": {
+          "unit": "days",
+          "value": "2"
+        },
+        "description": "Wait 2 days"
+      },
+      {
+        "id": "6",
+        "type": "condition",
+        "parent_id": "5",
+        "data": {
+          "yes_step_id": "7",
+          "no_step_id": null,
+          "matching_type": "any",
+          "conditions": [
+            {
+              "type": "workflow_activity",
+              "email_id": "2",
+              "action": "link_clicked",
+              "link_id": null,
+              "email": {
+                "id": "2",
+                "name": "Feedback email"
+              }
+            }
+          ]
+        },
+        "description": "Check some condition"
+      },
+      {
+        "id": "7",
+        "type": "email",
+        "parent_id": "6",
+        "data": {
+          "name": "Thank you for your feedback email",
+          "subject": "Thank you for your feedback",
+          "track_opens": true
+        },
+        "email": {
+          "id": "3"
+        },
+        "description": "Send \"Thank you for your feedback\" email"
+      },
+      {
+        "id": "8",
+        "type": "action",
+        "parent_id": "7",
+        "data": {
+          "action_type": "update_custom_field"
+        },
+        "description": "Update custom field"
+      }
+    ]
+  },
+  {
+    "trigger_data": {
+      "valid": true
+    },
+    "triggers": [
+      {
+        "id": "1",
+        "type": "subscriber_joins_group"
+      }
+    ],
+    "steps": [
+      {
+        "id": "1",
+        "type": "email",
+        "parent_id": null,
+        "data": {
+          "name": "Welcome email",
+          "subject": "Welcome email",
+          "track_opens": true
+        },
+        "email": {
+          "id": "1"
+        },
+        "description": "Send \"Welcome\" email"
+      },
+      {
+        "id": "2",
+        "type": "delay",
+        "parent_id": "1",
+        "data": {
+          "unit": "days",
+          "value": "3"
+        },
+        "description": "Wait 3 days"
+      },
+      {
+        "id": "3",
+        "type": "condition",
+        "parent_id": "2",
+        "data": {
+          "yes_step_id": "4",
+          "no_step_id": null,
+          "matching_type": "any",
+          "conditions": [
+            {
+              "type": "segment_membership"
+            }
+          ]
+        },
+        "description": "Check some condition"
+      },
+      {
+        "id": "4",
+        "type": "email",
+        "parent_id": "3",
+        "data": {
+          "name": "Campaign offer 1",
+          "subject": "Campaign offer 1",
+          "track_opens": true
+        },
+        "email": {
+          "id": "2"
+        },
+        "description": "Send \"Campaign offer 1\" email"
+      },
+      {
+        "id": "5",
+        "type": "delay",
+        "parent_id": "4",
+        "data": {
+          "unit": "weeks",
+          "value": "1"
+        },
+        "description": "Wait 1 week"
+      },
+      {
+        "id": "6",
+        "type": "condition",
+        "parent_id": "5",
+        "data": {
+          "yes_step_id": "7",
+          "no_step_id": "8",
+          "matching_type": "any",
+          "conditions": [
+            {
+              "type": "workflow_activity",
+              "email_id": "2",
+              "action": "clicked",
+              "link_id": null,
+              "email": {
+                "id": "1",
+                "name": "Campaign offer 1"
+              }
+            }
+          ]
+        },
+        "description": "Check some condition"
+      },
+      {
+        "id": "7",
+        "type": "action",
+        "parent_id": "6",
+        "data": {
+          "action_type": "update_custom_field"
+        },
+        "description": "Update custom field"
+      },
+      {
+        "id": "9",
+        "type": "email",
+        "parent_id": "7",
+        "data": {
+          "name": "Campaign offer 2",
+          "subject": "Campaign offer 2",
+          "track_opens": true
+        },
+        "email": {
+          "id": "3"
+        },
+        "description": "Send \"Campaign offer 2\" email"
+      },
+      {
+        "id": "10",
+        "type": "delay",
+        "parent_id": "9",
+        "data": {
+          "unit": "weeks",
+          "value": "1"
+        },
+        "description": "Wait 1 week"
+      },
+      {
+        "id": "11",
+        "type": "condition",
+        "parent_id": "10",
+        "data": {
+          "yes_step_id": "12",
+          "no_step_id": "13",
+          "matching_type": "any",
+          "conditions": [
+            {
+              "type": "workflow_activity",
+              "email_id": "3",
+              "action": "clicked",
+              "link_id": null,
+              "email": {
+                "id": "3",
+                "name": "Campaign offer 2"
+              }
+            }
+          ]
+        },
+        "description": "Check some condition"
+      },
+      {
+        "id": "12",
+        "type": "action",
+        "parent_id": "11",
+        "data": {
+          "action_type": "update_custom_field"
+        },
+        "description": "Update custom field"
+      },
+      {
+        "id": "13",
+        "type": "action",
+        "parent_id": "11",
+        "data": {
+          "action_type": "go_to_step",
+          "go_to_step_type": "action",
+          "go_to_step_id": "17"
+        },
+        "description": "Continue to another step"
+      },
+      {
+        "id": "8",
+        "type": "email",
+        "parent_id": "6",
+        "data": {
+          "name": "Campaign offer 2",
+          "subject": "Campaign offer 2",
+          "track_opens": true
+        },
+        "email": {
+          "id": "4"
+        },
+        "description": "Send \"Campaign offer 2\" email"
+      },
+      {
+        "id": "14",
+        "type": "delay",
+        "parent_id": "8",
+        "data": {
+          "unit": "weeks",
+          "value": "1"
+        },
+        "description": "Wait 1 week"
+      },
+      {
+        "id": "15",
+        "type": "condition",
+        "parent_id": "14",
+        "data": {
+          "yes_step_id": "16",
+          "no_step_id": "17",
+          "matching_type": "any",
+          "conditions": [
+            {
+              "type": "workflow_activity",
+              "email_id": "4",
+              "action": "clicked",
+              "link_id": null,
+              "email": {
+                "id": "4",
+                "name": "Campaign offer 2"
+              }
+            }
+          ]
+        },
+        "description": "Check some condition"
+      },
+      {
+        "id": "16",
+        "type": "action",
+        "parent_id": "15",
+        "data": {
+          "action_type": "go_to_step",
+          "go_to_step_type": "action",
+          "go_to_step_id": "12"
+        },
+        "description": "Continue to another step"
+      },
+      {
+        "id": "17",
+        "type": "action",
+        "parent_id": "15",
+        "data": {
+          "action_type": "copy_to_group"
+        }
+      }
+    ]
+  },
+  {
+    "trigger_data": {
+      "valid": true
+    },
+    "triggers": [
+      {
+        "id": "1",
+        "type": "purchase_frequency"
+      }
+    ],
+    "steps": [
+      {
+        "id": "1",
+        "type": "email",
+        "parent_id": null,
+        "data": {
+          "name": "Reward email",
+          "subject": "Reward email",
+          "track_opens": true
+        },
+        "email": {
+          "id": "1"
+        },
+        "description": "Send \"Reward email\""
+      },
+      {
+        "id": "2",
+        "type": "delay",
+        "parent_id": "1",
+        "data": {
+          "unit": "days",
+          "value": "3"
+        },
+        "description": "Wait 3 days"
+      },
+      {
+        "id": "3",
+        "type": "condition",
+        "parent_id": "2",
+        "data": {
+          "yes_step_id": "4",
+          "no_step_id": "5",
+          "matching_type": "any",
+          "conditions": [
+            {
+              "type": "workflow_activity",
+              "email_id": "1",
+              "action": "opened",
+              "link_id": null,
+              "email": {
+                "id": "1",
+                "name": "Reward email"
+              }
+            }
+          ]
+        },
+        "description": "Check some condition"
+      },
+      {
+        "id": "4",
+        "type": "action",
+        "parent_id": "3",
+        "data": {
+          "action_type": "move_to_group"
+        }
+      },
+      {
+        "id": "5",
+        "type": "email",
+        "parent_id": "3",
+        "data": {
+          "name": "Reward email",
+          "subject": "Reward email",
+          "track_opens": true
+        },
+        "email": {
+          "id": "3"
+        },
+        "description": "Send \"Reward email\""
+      }
+    ]
+  },
+  {
+    "trigger_data": {
+      "valid": true
+    },
+    "triggers": [
+      {
+        "id": "1",
+        "type": "purchased_any_product"
+      }
+    ],
+    "steps": [
+      {
+        "id": "1",
+        "type": "action",
+        "parent_id": null,
+        "data": {
+          "action_type": "copy_to_group",
+          "from_group_ids": [],
+          "to_group_ids": []
+        },
+        "description": "Copy to group"
+      },
+      {
+        "id": "2",
+        "type": "email",
+        "parent_id": "1",
+        "data": {
+          "name": "You may also like",
+          "subject": "You may also like!",
+          "track_opens": true,
+          "newsletter_template_id": 310
+        },
+        "email": {
+          "id": "1"
+        },
+        "description": "Send \"You may also like\" email"
+      }
+    ]
+  }
+]

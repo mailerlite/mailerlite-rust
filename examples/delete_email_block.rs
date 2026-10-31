@@ -1,26 +1,24 @@
-use mailerlite_rs::{
-    api_response::{ApiResponse, EtagOnly},
-    MailerLite,
-};
+//! Delete email block. Requires MAILERLITE_API_KEY.
+use mailerlite_rs::{MailerLite, Response, models::emails::EtagOnly};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let api_key: String = String::from("Your MailerLite API Key");
+    let api_key: String = std::env::var("MAILERLITE_API_KEY")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let mailerlite: MailerLite = MailerLite::new(api_key)?;
 
-    let email_id: String = String::from("Your Email ID");
+    let email_id: String = std::env::var("MAILERLITE_EMAIL_ID")?;
 
-    let block_id: String = String::from("Your Block ID");
+    let block_id: String = std::env::var("MAILERLITE_BLOCK_ID")?;
 
-    let etag: String = String::from("The etag from the last response");
+    let etag: String = std::env::var("MAILERLITE_EMAIL_ETAG")?;
 
-    let response: ApiResponse<EtagOnly> = mailerlite
-        .email()
+    let response: Response<EtagOnly> = mailerlite
+        .emails()
         .delete_block(email_id, block_id, etag)
         .await?;
 
-    println!("New etag: {}", response.etag);
+    println!("New etag: {}", response.data.etag);
 
     Ok(())
 }

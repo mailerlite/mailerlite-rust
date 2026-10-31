@@ -1,12 +1,18 @@
-use mailerlite_rs::{response::Response, MailerLite};
+//! Read e-commerce tracking and attribution settings.
+//!
+//! Required environment: `MAILERLITE_API_TOKEN`.
+use mailerlite_rs::MailerLite;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let response = mailerlite.ecommerce().settings().await?;
 
-    let response: Response = mailerlite.ecommerce_setting().find().await;
+    println!(
+        "Attribution window: {} days",
+        response.data.ecommerce_attribution_window
+    );
 
-    println!("{:#?}", response);
+    Ok(())
 }

@@ -1,19 +1,21 @@
+//! Create email block. Requires MAILERLITE_API_KEY.
 use mailerlite_rs::{
-    api_response::{ApiResponse, WithEtag},
-    email::{BlockType, EmailBlock, EmailDocument, NewBlock, Placement},
-    MailerLite,
+    MailerLite, Response,
+    models::emails::WithEtag,
+    models::emails::{BlockType, EmailBlock, EmailDocument},
+    resources::emails::{NewBlock, Placement},
 };
-use serde_json::{json, Map, Value};
+use serde_json::{Map, Value, json};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let api_key: String = String::from("Your MailerLite API Key");
+    let api_key: String = std::env::var("MAILERLITE_API_KEY")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let mailerlite: MailerLite = MailerLite::new(api_key)?;
 
-    let email_id: String = String::from("Your Email ID");
+    let email_id: String = std::env::var("MAILERLITE_EMAIL_ID")?;
 
-    let email: ApiResponse<WithEtag<EmailDocument>> = mailerlite.email().find(&email_id).await?;
+    let email: Response<WithEtag<EmailDocument>> = mailerlite.emails().get(&email_id).await?;
 
     let editor_content: Map<String, Value> = json!({
         "attrs": {"textAlign": "left"},
@@ -29,13 +31,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         placement: Some(Placement::start()),
     };
 
-    let response: ApiResponse<WithEtag<EmailBlock>> = mailerlite
-        .email()
-        .create_block(&email_id, &email.etag, &block)
+    let response: Response<WithEtag<EmailBlock>> = mailerlite
+        .emails()
+        .create_block(&email_id, &email.data.etag, &block)
         .await?;
 
-    println!("Block ID: {}", response.data.id);
-    println!("New etag: {}", response.etag);
+    println!("Block ID: {}", response.data.data.id);
+    println!("New etag: {}", response.data.etag);
 
     Ok(())
 }

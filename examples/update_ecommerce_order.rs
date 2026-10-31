@@ -1,21 +1,31 @@
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
+//! Update an existing e-commerce order.
+//!
+//! Required environment: `MAILERLITE_API_TOKEN`, `MAILERLITE_SHOP_ID`, `MAILERLITE_ORDER_ID`.
+//! Also required: `MAILERLITE_ORDER_STATUS` (`pending` or `complete`), which replaces the order status.
+use mailerlite_rs::MailerLite;
+use mailerlite_rs::resources::ecommerce::params::{OrderStatus, UpdateOrder};
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let shop_id = std::env::var("MAILERLITE_SHOP_ID")?;
+    let order_id = std::env::var("MAILERLITE_ORDER_ID")?;
+    let status = match std::env::var("MAILERLITE_ORDER_STATUS")?.as_str() {
+        "pending" => OrderStatus::Pending,
+        "complete" => OrderStatus::Complete,
+        _ => return Err("MAILERLITE_ORDER_STATUS must be pending or complete".into()),
+    };
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let params = UpdateOrder::new().status(status);
 
-    let shop_id: String = String::from("Your Shop ID");
+    let response = mailerlite
+        .ecommerce()
+        .shop(shop_id)
+        .orders()
+        .update(order_id, params)
+        .await?;
 
-    let order_id: String = String::from("Your Order ID");
+    println!("{}", response.data.id);
 
-    let data: Data = Data::new().add("status", "complete");
-
-    let response: Response = mailerlite
-        .ecommerce_order()
-        .update(shop_id, order_id, data.clone())
-        .await;
-
-    println!("{:#?}", response);
+    Ok(())
 }

@@ -1,16 +1,27 @@
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+//! Fetch the first page of active subscribers.
+//!
+//! Requires `MAILERLITE_API_TOKEN`.
+
+use mailerlite_rs::MailerLite;
+use mailerlite_rs::models::subscribers::SubscriberStatus;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let page = mailerlite
+        .subscribers()
+        .list()
+        .status(SubscriberStatus::Active)
+        .limit(25)
+        .send()
+        .await?;
 
-    let parameter: Parameter = Parameter::new()
-        .add("filter[status]", "active")
-        .add("limit", "10");
+    for subscriber in &page.data.data {
+        println!("{}: {}", subscriber.id, subscriber.email);
+    }
 
-    let response: Response = mailerlite.subscriber().get(parameter.clone()).await;
+    println!("Next cursor: {:?}", page.data.next_cursor());
 
-    println!("{:#?}", response);
+    Ok(())
 }

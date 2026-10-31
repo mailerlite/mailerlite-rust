@@ -1,16 +1,22 @@
-use mailerlite_rs::{response::Response, MailerLite};
+//! Fetch an e-commerce order by ID.
+//!
+//! Required environment: `MAILERLITE_API_TOKEN`, `MAILERLITE_SHOP_ID`, `MAILERLITE_ORDER_ID`.
+use mailerlite_rs::MailerLite;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let shop_id = std::env::var("MAILERLITE_SHOP_ID")?;
+    let order_id = std::env::var("MAILERLITE_ORDER_ID")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let response = mailerlite
+        .ecommerce()
+        .shop(shop_id)
+        .orders()
+        .get(order_id)
+        .await?;
 
-    let shop_id: String = String::from("Your Shop ID");
+    println!("{}", response.data.id);
 
-    let order_id: String = String::from("Your Order ID");
-
-    let response: Response = mailerlite.ecommerce_order().find(shop_id, order_id).await;
-
-    println!("{:#?}", response);
+    Ok(())
 }

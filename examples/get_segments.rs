@@ -1,14 +1,26 @@
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+//! Fetch the first page of subscriber segments.
+//!
+//! Requires `MAILERLITE_API_TOKEN`.
+
+use mailerlite_rs::MailerLite;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let page = mailerlite
+        .segments()
+        .list()
+        .page(1)
+        .limit(25)
+        .send()
+        .await?;
 
-    let parameter: Parameter = Parameter::new().add("limit", "5");
+    for segment in &page.data.data {
+        println!("{}: {}", segment.id, segment.name);
+    }
 
-    let response: Response = mailerlite.segment().get(parameter.clone()).await;
+    println!("Next page: {:?}", page.data.next_page());
 
-    println!("{:#?}", response);
+    Ok(())
 }

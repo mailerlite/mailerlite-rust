@@ -1,14 +1,20 @@
-use mailerlite_rs::{response::Response, MailerLite};
+//! Fetch a subscriber by ID or email.
+//!
+//! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_SUBSCRIBER_ID_OR_EMAIL`.
+
+use mailerlite_rs::MailerLite;
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let id_or_email = std::env::var("MAILERLITE_SUBSCRIBER_ID_OR_EMAIL")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let subscriber = mailerlite.subscribers().get(id_or_email).await?;
 
-    let id: String = String::from("Your Subscriber ID");
+    println!(
+        "Subscriber: {} ({})",
+        subscriber.data.id, subscriber.data.email
+    );
 
-    let response: Response = mailerlite.subscriber().find(id).await;
-
-    println!("{:#?}", response);
+    Ok(())
 }

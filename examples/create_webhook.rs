@@ -1,17 +1,21 @@
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
+//! Subscribe to subscriber creation events.
+//! Requires MAILERLITE_API_TOKEN and MAILERLITE_WEBHOOK_URL.
+use mailerlite_rs::{
+    MailerLite, models::webhooks::WebhookEvent, resources::webhooks::CreateWebhook,
+};
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let url = std::env::var("MAILERLITE_WEBHOOK_URL")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let params =
+        CreateWebhook::new(url, [WebhookEvent::SubscriberCreated]).name("Subscriber notifications");
 
-    let data: Data = Data::new()
-        .add("name", "Dummy Webhook")
-        .add("events[]", "subscriber.created")
-        .add("url", "https://example.com/webhook");
+    let response = mailerlite.webhooks().create(params).await?;
 
-    let response: Response = mailerlite.webhook().create(data.clone()).await;
+    println!("Webhook ID: {}", response.data.id);
 
-    println!("{:#?}", response);
+    // Store the signing secret securely through its explicit accessor when needed.
+    Ok(())
 }

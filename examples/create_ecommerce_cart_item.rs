@@ -1,24 +1,29 @@
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
+//! Create an e-commerce cart item.
+//!
+//! Required environment: `MAILERLITE_API_TOKEN`, `MAILERLITE_SHOP_ID`, `MAILERLITE_CART_ID`, `MAILERLITE_PRODUCT_ID`.
+use mailerlite_rs::resources::ecommerce::params::SaveCartItem;
+use mailerlite_rs::{Decimal, MailerLite};
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let shop_id = std::env::var("MAILERLITE_SHOP_ID")?;
+    let cart_id = std::env::var("MAILERLITE_CART_ID")?;
+    let product_id = std::env::var("MAILERLITE_PRODUCT_ID")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let params = SaveCartItem::new(product_id)
+        .quantity(1)
+        .price(Decimal::new(1999, 2));
 
-    let shop_id: String = String::from("Your Shop ID");
+    let response = mailerlite
+        .ecommerce()
+        .shop(shop_id)
+        .carts()
+        .items(cart_id)
+        .create(params)
+        .await?;
 
-    let cart_id: String = String::from("Your Cart ID");
+    println!("{}", response.data.id);
 
-    let data: Data = Data::new()
-        .add("ecommerce_product_id", "Your Product ID")
-        .add("quantity", "1")
-        .add("price", "19.99");
-
-    let response: Response = mailerlite
-        .ecommerce_cart_item()
-        .create(shop_id, cart_id, data.clone())
-        .await;
-
-    println!("{:#?}", response);
+    Ok(())
 }

@@ -1,20 +1,19 @@
-use mailerlite_rs::{campaign::EDITOR_SIMPLE, data::Data, response::Response, MailerLite};
-
+//! Create a simple-editor draft using explicit campaign and sender values.
+use mailerlite_rs::{
+    MailerLite,
+    resources::campaigns::{CreateCampaign, Email},
+};
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
-
-    let mailerlite: MailerLite = MailerLite::new(api_key);
-
-    let data: Data = Data::new()
-        .add("name", "Simple Editor Campaign")
-        .add("type", "regular")
-        .add("emails[0][subject]", "Test Subject")
-        .add("emails[0][from_name]", "John Doe")
-        .add("emails[0][from]", "john@gmail.com")
-        .add("emails[0][editor]", EDITOR_SIMPLE);
-
-    let response: Response = mailerlite.campaign().create(data.clone()).await;
-
-    println!("Email ID: {}", response.content["data"]["emails"][0]["id"]);
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = MailerLite::new(std::env::var("MAILERLITE_API_KEY")?)?;
+    let email = Email::new(
+        std::env::var("MAILERLITE_SUBJECT")?,
+        std::env::var("MAILERLITE_FROM_NAME")?,
+        std::env::var("MAILERLITE_FROM_EMAIL")?,
+    );
+    let draft =
+        CreateCampaign::new(std::env::var("MAILERLITE_CAMPAIGN_NAME")?, email).simple_editor();
+    let response = client.campaigns().create(draft).await?;
+    println!("Default email ID: {:?}", response.data.default_email_id);
+    Ok(())
 }

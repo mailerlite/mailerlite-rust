@@ -1,19 +1,24 @@
-use mailerlite_rs::{parameter::Parameter, response::Response, MailerLite};
+//! List click activity for a sent campaign.
+//!
+//! Required environment variables: `MAILERLITE_API_TOKEN`, `MAILERLITE_CAMPAIGN_ID`.
+use mailerlite_rs::{MailerLite, resources::campaigns::ActivityType};
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let id = std::env::var("MAILERLITE_CAMPAIGN_ID")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let response = mailerlite
+        .campaigns()
+        .activity(id)
+        .kind(ActivityType::Clicked)
+        .limit(25)
+        .send()
+        .await?;
 
-    let id: String = String::from("Your Campaign ID");
+    for activity in response.data.data {
+        println!("{}: {:?} clicks", activity.id, activity.clicks_count);
+    }
 
-    let parameter: Parameter = Parameter::new().add("filter[type]", "opened");
-
-    let response: Response = mailerlite
-        .campaign()
-        .subscribers_activity(id, parameter.clone())
-        .await;
-
-    println!("{:#?}", response);
+    Ok(())
 }

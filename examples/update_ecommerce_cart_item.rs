@@ -1,23 +1,34 @@
-use mailerlite_rs::{data::Data, response::Response, MailerLite};
+//! Update an existing e-commerce cart item.
+//!
+//! Required environment: `MAILERLITE_API_TOKEN`, `MAILERLITE_SHOP_ID`, `MAILERLITE_CART_ID`, `MAILERLITE_CART_ITEM_ID`, `MAILERLITE_PRODUCT_ID`.
+//! Also required: `MAILERLITE_CART_ITEM_QUANTITY` (unsigned integer), `MAILERLITE_CART_ITEM_PRICE` (decimal text).
+//! Replaces the item's product, quantity, and price with the supplied values.
+use mailerlite_rs::resources::ecommerce::params::SaveCartItem;
+use mailerlite_rs::{Decimal, MailerLite};
 
 #[tokio::main]
-async fn main() {
-    let api_key: String = String::from("Your MailerLite API Key");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mailerlite = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
+    let shop_id = std::env::var("MAILERLITE_SHOP_ID")?;
+    let cart_id = std::env::var("MAILERLITE_CART_ID")?;
+    let cart_item_id = std::env::var("MAILERLITE_CART_ITEM_ID")?;
+    let product_id = std::env::var("MAILERLITE_PRODUCT_ID")?;
+    let quantity: u64 = std::env::var("MAILERLITE_CART_ITEM_QUANTITY")?.parse()?;
+    let price: Decimal = std::env::var("MAILERLITE_CART_ITEM_PRICE")?.parse()?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let params = SaveCartItem::new(product_id)
+        .quantity(quantity)
+        .price(price);
 
-    let shop_id: String = String::from("Your Shop ID");
+    let response = mailerlite
+        .ecommerce()
+        .shop(shop_id)
+        .carts()
+        .items(cart_id)
+        .update(cart_item_id, params)
+        .await?;
 
-    let cart_id: String = String::from("Your Cart ID");
+    println!("{}", response.data.id);
 
-    let item_id: String = String::from("Your Item ID");
-
-    let data: Data = Data::new().add("quantity", "2");
-
-    let response: Response = mailerlite
-        .ecommerce_cart_item()
-        .update(shop_id, cart_id, item_id, data.clone())
-        .await;
-
-    println!("{:#?}", response);
+    Ok(())
 }

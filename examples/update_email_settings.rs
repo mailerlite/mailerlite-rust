@@ -1,32 +1,32 @@
+//! Update email settings. Requires MAILERLITE_API_KEY.
 use mailerlite_rs::{
-    api_response::ApiResponse,
-    email::{
-        BrandMode, BrandUpdate, EmailSettingsUpdate, ParagraphStyleUpdate, SettingsResult,
-        TextStyleUpdate, TypographyUpdate,
+    MailerLite, Response,
+    models::emails::{BrandMode, SettingsResult},
+    resources::emails::{
+        BrandUpdate, EmailSettingsUpdate, ParagraphStyleUpdate, TextStyleUpdate, TypographyUpdate,
     },
-    MailerLite,
 };
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let api_key: String = String::from("Your MailerLite API Key");
+    let api_key: String = std::env::var("MAILERLITE_API_KEY")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let mailerlite: MailerLite = MailerLite::new(api_key)?;
 
-    let email_id: String = String::from("Your Email ID");
+    let email_id: String = std::env::var("MAILERLITE_EMAIL_ID")?;
 
-    let etag: String = String::from("The etag from the last response");
+    let etag: String = std::env::var("MAILERLITE_EMAIL_ETAG")?;
 
     let settings: EmailSettingsUpdate = EmailSettingsUpdate {
         brand: Some(BrandUpdate {
             mode: Some(BrandMode::Custom.into()),
-            background_color: Some(String::from("#f4f4f4")),
+            background_color: Some(std::env::var("MAILERLITE_BACKGROUND_COLOR")?),
             ..Default::default()
         }),
         typography: Some(TypographyUpdate {
             paragraph: Some(ParagraphStyleUpdate {
                 p1: Some(TextStyleUpdate {
-                    size: Some(String::from("18")),
+                    size: Some(std::env::var("MAILERLITE_PARAGRAPH_SIZE")?),
                     ..Default::default()
                 }),
                 ..Default::default()
@@ -36,14 +36,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ..Default::default()
     };
 
-    let response: ApiResponse<SettingsResult> = mailerlite
-        .email()
+    let response: Response<SettingsResult> = mailerlite
+        .emails()
         .update_settings(email_id, etag, &settings)
         .await?;
 
-    println!("New etag: {}", response.etag);
+    println!("New etag: {}", response.data.etag);
 
-    if let Some(rejected) = &response.rejected {
+    if let Some(rejected) = &response.data.rejected {
         println!("Removed values: {:?}", rejected.keys);
     }
 

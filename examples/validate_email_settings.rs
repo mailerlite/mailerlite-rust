@@ -1,16 +1,17 @@
+//! Validate email settings. Requires MAILERLITE_API_KEY.
 use mailerlite_rs::{
-    api_response::ApiResponse,
-    email::{ButtonUpdate, EmailSettingsUpdate, Validation},
-    MailerLite,
+    MailerLite, Response,
+    models::emails::Validation,
+    resources::emails::{ButtonUpdate, EmailSettingsUpdate},
 };
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let api_key: String = String::from("Your MailerLite API Key");
+    let api_key: String = std::env::var("MAILERLITE_API_KEY")?;
 
-    let mailerlite: MailerLite = MailerLite::new(api_key);
+    let mailerlite: MailerLite = MailerLite::new(api_key)?;
 
-    let email_id: String = String::from("Your Email ID");
+    let email_id: String = std::env::var("MAILERLITE_EMAIL_ID")?;
 
     let settings: EmailSettingsUpdate = EmailSettingsUpdate {
         button: Some(ButtonUpdate {
@@ -20,13 +21,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ..Default::default()
     };
 
-    let response: ApiResponse<Validation> = mailerlite
-        .email()
+    let response: Response<Validation> = mailerlite
+        .emails()
         .validate_settings(email_id, &settings)
         .await?;
 
-    if !response.valid {
-        println!("{:#?}", response.errors);
+    if !response.data.valid {
+        println!("{:#?}", response.data.errors);
     }
 
     Ok(())

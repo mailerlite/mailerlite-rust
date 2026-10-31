@@ -1,284 +1,383 @@
-//! The error type of the email, brand style and file methods.
-//!
-//! The older methods do not use this type. They return a `Response` as before.
+//! Errors retain HTTP diagnostics without printing response bodies or credentials.
+use crate::ResponseMetadata;
+use reqwest::StatusCode;
+use std::{collections::BTreeMap, fmt, sync::Arc};
 
-use reqwest::{header::HeaderMap, StatusCode};
-use serde_json::Value;
-use std::{collections::BTreeMap, error::Error as StdError, fmt};
+const DIAGNOSTIC_LIMIT: usize = 8192;
 
-/// An error from a method that returns `Result`.
-///
-/// The variants up to `DuplicateSettingsKey` are client-side errors. For them, the SDK sends no request.
-///
-/// Only the SDK makes these errors. Match a struct variant with `..`, for example
-/// `Error::InvalidId { name, .. }`. Code outside the SDK cannot make a struct variant:
-///
-/// ```compile_fail
-/// let error = mailerlite_rs::error::Error::EmptyId { name: "email_id" };
-/// ```
-///
-/// ```compile_fail
-/// let error = mailerlite_rs::error::Error::InvalidId {
-///     name: "email_id",
-///     value: String::from("1/2"),
-/// };
-/// ```
-///
-/// ```compile_fail
-/// let error = mailerlite_rs::error::Error::Decode {
-///     status_code: reqwest::StatusCode::OK,
-///     body: String::new(),
-///     source: serde_json::from_str::<u8>("x").unwrap_err(),
-/// };
-/// ```
-#[derive(Debug)]
+/// The result of an SDK operation.
+pub type Result<T> = std::result::Result<T, Error>;
+
+/// A recoverable configuration, transport, API, or decoding failure.
+#[derive(thiserror::Error)]
 #[non_exhaustive]
 pub enum Error {
-    /// An ID is empty.
-    #[non_exhaustive]
-    EmptyId { name: &'static str },
-    /// An ID contains a character that is not an ASCII digit.
-    #[non_exhaustive]
-    InvalidId { name: &'static str, value: String },
-    /// The idempotency key has a character that an HTTP header cannot carry, for example a new line.
-    InvalidIdempotencyKey,
-    /// The `extra` map of the settings has an `etag` key. Give the etag as an argument.
-    EtagInSettings,
-    /// A key of an `extra` map in the settings is also the name of a typed field at the same level.
-    /// `key` is the path of the key, for example `"typography.link"`. Set the typed field instead.
-    #[non_exhaustive]
-    DuplicateSettingsKey { key: String },
-    /// The API returned a 4xx or 5xx status. The error is boxed to keep `Error` small. You can read its
-    /// fields directly, for example `error.code`.
-    Api(Box<ApiError>),
-    /// The request did not complete, for example because of a network error.
-    Transport(TransportError),
-    /// The API returned a 2xx status, but the SDK cannot decode the body.
-    #[non_exhaustive]
-    Decode {
-        status_code: StatusCode,
-        body: String,
-        source: serde_json::Error,
-    },
+    /// Invalid local configuration or request parameters.
+    #[error("invalid SDK configuration or parameters: {0}")]
+    Config(String),
+    /// A booking weekday name could not be converted to a typed request value.
+    #[error(transparent)]
+    BookingWeekday(#[from] crate::resources::ecommerce::params::ParseBookingWeekdayError),
+    /// A request could not be serialized.
+    #[error("request serialization failed")]
+    Serialize(#[from] serde_json::Error),
+    /// HTTP transport failed. URLs are stripped before retaining the source.
+    #[error("HTTP transport failed")]
+    Transport(#[source] reqwest::Error),
+    /// MailerLite returned a non-success HTTP status.
+    #[error(transparent)]
+    Api(ApiError),
+    /// A response was incomplete or did not match its documented representation.
+    #[error(transparent)]
+    Decode(DecodeError),
+    /// Pagination metadata was invalid or failed to make progress.
+    #[error("invalid pagination: {0}")]
+    Pagination(String),
+    /// The complete operation exceeded its configured deadline.
+    #[error("operation deadline exceeded")]
+    Timeout,
 }
 
-impl fmt::Display for Error {
+impl From<reqwest::Error> for Error {
+    fn from(error: reqwest::Error) -> Self {
+        Self::Transport(error.without_url())
+    }
+}
+
+impl fmt::Debug for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Error::EmptyId { name } => write!(f, "{name} must not be empty"),
-            Error::InvalidId { name, value } => {
-                write!(f, "{name} must contain only the digits 0-9, got {value:?}")
-            }
-            Error::InvalidIdempotencyKey => write!(
-                f,
-                "the idempotency key has a character that an HTTP header cannot carry"
-            ),
-            Error::EtagInSettings => write!(
-                f,
-                "the settings must not contain an \"etag\" key; give the etag as an argument"
-            ),
-            Error::DuplicateSettingsKey { key } => write!(
-                f,
-                "the settings key {key:?} is both a typed field and a key of an extra map; set only the typed field"
-            ),
-            Error::Api(error) => error.fmt(f),
-            Error::Transport(error) => write!(f, "the request failed: {error}"),
-            Error::Decode {
-                status_code,
-                source,
-                ..
-            } => write!(f, "cannot decode the response body ({status_code}): {source}"),
+            Self::Config(_) => f.write_str("Config(<details omitted>)"),
+            Self::BookingWeekday(error) => fmt::Debug::fmt(error, f),
+            Self::Serialize(_) => f.write_str("Serialize(<details omitted>)"),
+            Self::Transport(_) => f.write_str("Transport(<details omitted>)"),
+            Self::Api(error) => fmt::Debug::fmt(error, f),
+            Self::Decode(error) => fmt::Debug::fmt(error, f),
+            Self::Pagination(_) => f.write_str("Pagination(<details omitted>)"),
+            Self::Timeout => f.write_str("Timeout"),
         }
     }
 }
 
-impl StdError for Error {
-    fn source(&self) -> Option<&(dyn StdError + 'static)> {
-        match self {
-            Error::Transport(error) => Some(&error.0),
-            Error::Decode { source, .. } => Some(source),
-            _ => None,
-        }
-    }
-}
-
-impl From<ApiError> for Error {
-    fn from(error: ApiError) -> Self {
-        Error::Api(Box::new(error))
-    }
-}
-
-/// An error response of the API (a 4xx or 5xx status).
-#[derive(Debug, Clone)]
-#[non_exhaustive]
+/// A server error with structured validation details and bounded raw diagnostics.
+///
+/// Messages and bodies are available through explicit accessors, but omitted from
+/// `Debug` and `Display` because servers can echo submitted sensitive data.
+#[derive(Clone)]
 pub struct ApiError {
-    pub status_code: StatusCode,
-    /// The `message` of the body, if the body is JSON and has one.
-    pub message: Option<String>,
-    /// The `code` of the body, for example `"version_conflict"`.
-    pub code: Option<String>,
-    /// The current etag of the email. A `409` with the code `"version_conflict"` has it.
-    pub etag: Option<String>,
-    /// The errors for each field of a `422` response.
-    pub errors: Option<BTreeMap<String, Vec<String>>>,
-    pub headers: HeaderMap,
-    /// The raw body. It can be other than JSON, for example for a `503`.
-    pub body: String,
+    metadata: Box<ResponseMetadata>,
+    message: Option<String>,
+    context: Box<ApiErrorContext>,
+    validation_errors: BTreeMap<String, Vec<String>>,
+    body: Vec<u8>,
+    truncated: bool,
+}
+
+#[derive(Clone)]
+struct ApiErrorContext {
+    code: Option<String>,
+    etag: Option<String>,
 }
 
 impl ApiError {
-    pub(crate) fn from_response(status_code: StatusCode, headers: HeaderMap, body: String) -> Self {
-        let json: Value = serde_json::from_str(&body).unwrap_or(Value::Null);
-        let text = |key: &str| json.get(key).and_then(Value::as_str).map(str::to_string);
-        let errors: Option<BTreeMap<String, Vec<String>>> = json
-            .get("errors")
-            .and_then(|errors| serde_json::from_value(errors.clone()).ok());
-
+    pub(crate) fn new(metadata: ResponseMetadata, body: &[u8]) -> Self {
+        let parsed = serde_json::from_slice::<serde_json::Value>(body).ok();
+        let message = parsed
+            .as_ref()
+            .and_then(|value| {
+                value
+                    .as_str()
+                    .or_else(|| value.get("message").and_then(|v| v.as_str()))
+            })
+            .map(str::to_owned);
+        let validation_errors = parsed
+            .as_ref()
+            .and_then(|value| value.get("errors"))
+            .and_then(|value| serde_json::from_value(value.clone()).ok())
+            .unwrap_or_default();
         Self {
-            status_code,
-            message: text("message"),
-            code: text("code"),
-            etag: text("etag"),
-            errors,
-            headers,
-            body,
+            metadata: Box::new(metadata),
+            message,
+            context: Box::new(ApiErrorContext {
+                code: parsed
+                    .as_ref()
+                    .and_then(|v| v.get("code"))
+                    .and_then(|v| v.as_str())
+                    .map(str::to_owned),
+                etag: parsed
+                    .as_ref()
+                    .and_then(|v| v.get("etag"))
+                    .and_then(|v| v.as_str())
+                    .map(str::to_owned),
+            }),
+            validation_errors,
+            body: body[..body.len().min(DIAGNOSTIC_LIMIT)].to_vec(),
+            truncated: body.len() > DIAGNOSTIC_LIMIT,
         }
     }
 
-    /// Returns true if the email changed after you read the etag. Then `etag` has the current etag.
+    /// Machine-readable server error code.
+    pub fn code(&self) -> Option<&str> {
+        self.context.code.as_deref()
+    }
+    /// Current email version after a version conflict.
+    pub fn etag(&self) -> Option<&str> {
+        self.context.etag.as_deref()
+    }
+    /// Whether the server rejected an outdated simple-editor email version.
     pub fn is_version_conflict(&self) -> bool {
-        self.code.as_deref() == Some(crate::email::VERSION_CONFLICT)
+        self.status() == StatusCode::CONFLICT && self.code() == Some("version_conflict")
+    }
+    /// HTTP status returned by MailerLite.
+    pub fn status(&self) -> StatusCode {
+        self.metadata.status
+    }
+    /// Server's message, when the error body contains one.
+    pub fn message(&self) -> Option<&str> {
+        self.message.as_deref()
+    }
+    /// Field names mapped to their validation messages.
+    pub fn validation_errors(&self) -> &BTreeMap<String, Vec<String>> {
+        &self.validation_errors
+    }
+    /// Selected HTTP response metadata, including rate-limit timing.
+    pub fn metadata(&self) -> &ResponseMetadata {
+        &self.metadata
+    }
+    /// Whether the server returned HTTP 422 (validation failure).
+    ///
+    /// This checks the status, even if the response has no structured field errors.
+    /// Inspect [`Self::validation_errors`] for any available validation details.
+    pub fn is_validation(&self) -> bool {
+        self.status() == StatusCode::UNPROCESSABLE_ENTITY
+    }
+    /// Whether the server returned HTTP 401 (authentication required or rejected).
+    ///
+    /// HTTP 403 (forbidden) is a separate status and returns `false`.
+    pub fn is_unauthorized(&self) -> bool {
+        self.status() == StatusCode::UNAUTHORIZED
+    }
+    /// Whether the server returned a status in the HTTP 500–599 range.
+    ///
+    /// This classification does not imply that retrying the operation is safe.
+    /// Automatic retries remain disabled unless explicitly configured.
+    pub fn is_server_error(&self) -> bool {
+        self.status().is_server_error()
+    }
+    /// Whether the server rejected this request due to a rate limit.
+    pub fn is_rate_limited(&self) -> bool {
+        self.status() == StatusCode::TOO_MANY_REQUESTS
+    }
+    /// Bounded original response bytes. These may contain sensitive information.
+    pub fn body(&self) -> &[u8] {
+        &self.body
+    }
+    /// Whether the retained response body was truncated.
+    pub fn body_truncated(&self) -> bool {
+        self.truncated
     }
 }
 
+impl fmt::Debug for ApiError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ApiError")
+            .field("status", &self.status())
+            .field("body_truncated", &self.truncated)
+            .finish_non_exhaustive()
+    }
+}
 impl fmt::Display for ApiError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "API error {}", self.status_code)?;
-        match (&self.code, &self.message) {
-            (Some(code), Some(message)) => write!(f, ": {code}: {message}"),
-            (Some(code), None) => write!(f, ": {code}"),
-            (None, Some(message)) => write!(f, ": {message}"),
-            (None, None) => Ok(()),
-        }
+        write!(f, "MailerLite returned HTTP {}", self.status())
+    }
+}
+impl std::error::Error for ApiError {}
+
+/// A JSON decoding cause whose formatting omits potentially sensitive values.
+///
+/// Available through [`std::error::Error::source`] on [`DecodeError`]. The source
+/// chain stops here to keep automatic error reporters redacted. Use [`Self::error`]
+/// explicitly to inspect the original JSON error.
+pub struct JsonDecodeError {
+    error: serde_json::Error,
+}
+
+impl JsonDecodeError {
+    /// Original JSON error, including category, line, and column.
+    ///
+    /// Its message may contain response values. Do not log it indiscriminately.
+    pub fn error(&self) -> &serde_json::Error {
+        &self.error
     }
 }
 
-impl StdError for ApiError {}
-
-/// A request that did not complete. `source()` of the `Error` gives the error of the HTTP client.
-#[derive(Debug)]
-pub struct TransportError(pub(crate) reqwest::Error);
-
-impl fmt::Display for TransportError {
+impl fmt::Debug for JsonDecodeError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.0.fmt(f)
+        f.write_str("JsonDecodeError(<details omitted>)")
+    }
+}
+impl fmt::Display for JsonDecodeError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("response JSON decoding failed")
+    }
+}
+impl std::error::Error for JsonDecodeError {}
+
+/// A response that could not be decoded into its expected model.
+#[derive(Clone)]
+pub struct DecodeError {
+    metadata: Box<ResponseMetadata>,
+    body: Vec<u8>,
+    truncated: bool,
+    detail: String,
+    source: Option<Arc<JsonDecodeError>>,
+}
+impl DecodeError {
+    pub(crate) fn new(metadata: ResponseMetadata, body: &[u8], detail: String) -> Self {
+        Self {
+            metadata: Box::new(metadata),
+            body: body[..body.len().min(DIAGNOSTIC_LIMIT)].to_vec(),
+            truncated: body.len() > DIAGNOSTIC_LIMIT,
+            detail,
+            source: None,
+        }
+    }
+    pub(crate) fn json(
+        metadata: ResponseMetadata,
+        body: &[u8],
+        detail: String,
+        error: serde_json::Error,
+    ) -> Self {
+        Self {
+            source: Some(Arc::new(JsonDecodeError { error })),
+            ..Self::new(metadata, body, detail)
+        }
+    }
+    pub(crate) fn incomplete(metadata: ResponseMetadata, body: &[u8], detail: String) -> Self {
+        let mut error = Self::new(metadata, body, detail);
+        error.truncated = true;
+        error
+    }
+    /// HTTP status accompanying the malformed or unexpected response.
+    pub fn status(&self) -> StatusCode {
+        self.metadata.status
+    }
+    /// Selected HTTP response metadata.
+    pub fn metadata(&self) -> &ResponseMetadata {
+        &self.metadata
+    }
+    /// Original JSON parsing cause, when decoding reached the JSON parser.
+    ///
+    /// Use `classify()`, `line()`, and `column()` for programmatic diagnostics.
+    /// Non-JSON failures, such as unexpected status or response size, return `None`.
+    /// Formatting the returned error can expose response values; SDK error
+    /// formatting and its standard source chain remain redacted.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mailerlite_rs::DecodeError;
+    ///
+    /// fn is_incomplete_json(error: &DecodeError) -> bool {
+    ///     error.json_error().is_some_and(|cause| cause.is_eof())
+    /// }
+    /// ```
+    pub fn json_error(&self) -> Option<&serde_json::Error> {
+        self.source.as_deref().map(JsonDecodeError::error)
+    }
+    /// Parsing detail, potentially containing sensitive response values.
+    pub fn detail(&self) -> &str {
+        &self.detail
+    }
+    /// Bounded original response bytes. These may contain sensitive information.
+    pub fn body(&self) -> &[u8] {
+        &self.body
+    }
+    /// Whether the retained bytes were truncated or the response body was incomplete.
+    pub fn body_truncated(&self) -> bool {
+        self.truncated
+    }
+}
+impl fmt::Debug for DecodeError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("DecodeError")
+            .field("status", &self.status())
+            .field("body_truncated", &self.truncated)
+            .finish_non_exhaustive()
+    }
+}
+impl fmt::Display for DecodeError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "unexpected response for HTTP {}", self.status())
+    }
+}
+impl std::error::Error for DecodeError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        self.source.as_deref().map(|cause| cause as _)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use reqwest::header::HeaderMap;
+    #[test]
+    fn booking_conversion_propagates_with_question_mark_and_preserves_redacted_details() {
+        use crate::resources::ecommerce::params::{ProductAction, ProductSettings};
 
-    fn api_error(status: u16, body: &str) -> ApiError {
-        ApiError::from_response(
-            StatusCode::from_u16(status).unwrap(),
-            HeaderMap::new(),
-            body.to_string(),
-        )
+        fn convert(name: &str) -> Result<ProductSettings> {
+            Ok(ProductSettings::new(ProductAction::MoveToGroup)
+                .try_replace_custom_availability_days(BTreeMap::from([(name.into(), None)]))?)
+        }
+
+        assert!(convert("monday").is_ok());
+        let Err(error) = convert("private-server-key") else {
+            panic!("unknown weekday must fail conversion");
+        };
+        assert!(!format!("{error:?} {error}").contains("private-server-key"));
+        match error {
+            Error::BookingWeekday(error) => assert_eq!(error.value(), "private-server-key"),
+            other => panic!("unexpected error: {other:?}"),
+        }
     }
 
+    fn metadata(status: StatusCode) -> ResponseMetadata {
+        ResponseMetadata {
+            idempotent_replayed: false,
+            status,
+            rate_limit: None,
+            rate_remaining: None,
+            retry_after: None,
+            request_id: None,
+        }
+    }
     #[test]
-    fn error_is_small_enough_for_a_result() {
-        // Clippy `result_large_err` warns at 128 bytes. The API error is boxed to stay below it.
-        assert!(
-            std::mem::size_of::<Error>() < 128,
-            "size_of::<Error>() is {}",
-            std::mem::size_of::<Error>()
+    fn validation_is_available_without_debug_leakage() {
+        let error = ApiError::new(
+            metadata(StatusCode::UNPROCESSABLE_ENTITY),
+            br#"{"message":"secret-token","errors":{"email":["secret-token"]}}"#,
         );
+        assert_eq!(error.message(), Some("secret-token"));
+        assert_eq!(error.validation_errors()["email"], ["secret-token"]);
+        assert!(!format!("{error:?} {error}").contains("secret-token"));
     }
-
     #[test]
-    fn api_error_reads_the_error_fields() {
-        let error: ApiError = api_error(
-            409,
-            r#"{"message": "The email changed.", "code": "version_conflict", "etag": "43"}"#,
+    fn string_error_and_malformed_body_retain_status() {
+        let error = ApiError::new(metadata(StatusCode::BAD_REQUEST), br#""Invalid campaign""#);
+        assert_eq!(error.message(), Some("Invalid campaign"));
+        let error = ApiError::new(
+            metadata(StatusCode::BAD_GATEWAY),
+            b"<html>bad gateway</html>",
         );
-
-        assert_eq!(error.status_code, 409);
-        assert_eq!(error.message.as_deref(), Some("The email changed."));
-        assert_eq!(error.code.as_deref(), Some("version_conflict"));
-        assert_eq!(error.etag.as_deref(), Some("43"));
-        assert!(error.errors.is_none());
-        assert!(error.is_version_conflict());
+        assert_eq!(error.status(), StatusCode::BAD_GATEWAY);
+        assert!(error.message().is_none());
+        assert_eq!(error.body(), b"<html>bad gateway</html>");
     }
-
     #[test]
-    fn api_error_reads_the_field_errors() {
-        let error: ApiError = api_error(
-            422,
-            r#"{"message": "The etag field is required.", "errors": {"etag": ["The etag field is required."]}}"#,
-        );
-
-        let errors: BTreeMap<String, Vec<String>> = error.errors.clone().unwrap();
-        assert_eq!(errors["etag"], vec!["The etag field is required."]);
-        assert!(error.code.is_none());
-        assert!(!error.is_version_conflict());
-    }
-
-    #[test]
-    fn api_error_keeps_a_body_that_is_not_json() {
-        let error: ApiError = api_error(503, "<html>Service Unavailable</html>");
-
-        assert_eq!(error.body, "<html>Service Unavailable</html>");
-        assert!(error.message.is_none());
-        assert!(error.code.is_none());
-    }
-
-    #[test]
-    fn a_409_without_the_code_is_not_a_version_conflict() {
-        let error: ApiError = api_error(409, r#"{"message": "The campaign is not a draft."}"#);
-
-        assert!(!error.is_version_conflict());
-    }
-
-    #[test]
-    fn display_shows_the_status_and_the_code() {
-        let error: Error = Error::from(api_error(
-            409,
-            r#"{"message": "The email changed.", "code": "version_conflict", "etag": "43"}"#,
-        ));
-
-        assert_eq!(
-            error.to_string(),
-            "API error 409 Conflict: version_conflict: The email changed."
-        );
-    }
-
-    #[test]
-    fn display_shows_the_message_without_a_code() {
-        let error: Error = Error::from(api_error(404, r#"{"message": "Not found."}"#));
-
-        assert_eq!(error.to_string(), "API error 404 Not Found: Not found.");
-    }
-
-    #[test]
-    fn display_shows_the_client_side_errors() {
-        assert_eq!(
-            Error::EmptyId { name: "email_id" }.to_string(),
-            "email_id must not be empty"
-        );
-        assert_eq!(
-            Error::InvalidId {
-                name: "block_id",
-                value: "1/html".to_string()
-            }
-            .to_string(),
-            "block_id must contain only the digits 0-9, got \"1/html\""
-        );
-        assert_eq!(
-            Error::InvalidIdempotencyKey.to_string(),
-            "the idempotency key has a character that an HTTP header cannot carry"
-        );
+    fn diagnostic_bytes_are_bounded() {
+        let body = vec![b'x'; DIAGNOSTIC_LIMIT + 1];
+        let error = DecodeError::new(metadata(StatusCode::OK), &body, "secret".into());
+        assert_eq!(error.body().len(), DIAGNOSTIC_LIMIT);
+        assert!(error.body_truncated());
+        assert!(!format!("{error:?} {error}").contains("secret"));
     }
 }
