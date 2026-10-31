@@ -40,15 +40,12 @@ Tokio. If your application names reqwest types used by the SDK, update that
 dependency from reqwest 0.11 to **0.13**. A reqwest 0.11 client cannot be injected
 into this SDK.
 
-`mailerlite_rs::Decimal` and `mailerlite_rs::StatusCode` now provide convenient
-imports for the exact decimal and HTTP status types already used by the SDK.
-They are re-exports, so existing compatible upstream imports continue to work.
-No wrapper types, conversions, dependency upgrades, or new features are needed.
+Use `mailerlite_rs::Decimal` for exact monetary values and
+`mailerlite_rs::StatusCode` for HTTP status comparisons. These re-export the
+types used by the SDK, so using them requires no additional direct dependency.
 For example, use `Decimal::new(1999, 2)` for a price of `19.99` and
 `StatusCode::UNPROCESSABLE_ENTITY` when comparing an API error's status.
 
-Public re-exports now list their names explicitly. All existing identifier,
-automation-configuration, and subscriber-activity import paths are retained.
 When naming other exposed dependency types, use the compatible versions in
 the [public dependency policy](CONTRIBUTING.md#public-exports-and-dependency-types).
 
@@ -79,7 +76,7 @@ An existing environment variable named `MAILERLITE_API_KEY` works too: pass its
 value to the same constructor. Keep one client per configuration; clones share
 connections, pacing, and server cooldowns.
 
-Use the builder for a custom endpoint, timeouts, or an injected HTTP client:
+Use the builder for timeouts, API version pinning, or an injected HTTP client:
 
 ```rust
 use mailerlite_rs::{ApiVersion, DEFAULT_API_VERSION, MailerLite};
@@ -92,7 +89,6 @@ fn configured_client(token: String) -> mailerlite_rs::Result<MailerLite> {
 
     MailerLite::builder(token)
         .http_client(http)
-        .base_url("http://localhost:8080/api")
         // Optional: pin a date instead of using the latest version.
         .api_version(ApiVersion::pinned(DEFAULT_API_VERSION)?)
         .request_timeout(Duration::from_secs(30))
@@ -101,10 +97,15 @@ fn configured_client(token: String) -> mailerlite_rs::Result<MailerLite> {
 }
 ```
 
-The base URL must include the API prefix. Omit `.base_url(...)` to use
-`https://connect.mailerlite.com/api`. Prefer `MailerLite::http_client_builder()`
-when injecting a client: it disables redirects and underlying automatic retries.
+Prefer `MailerLite::http_client_builder()` when injecting a client: it disables
+redirects and underlying automatic retries.
 The SDK cannot inspect or override those policies on an arbitrary injected client.
+
+Defaults include a 30-second request timeout, a 60-second operation deadline,
+and a 16 MiB response-body limit. Configure these with `.request_timeout(...)`,
+`.operation_timeout(...)`, and `.max_response_bytes(...)`. Local pacing is one
+global request per 500 ms and one qualifying subscriber import per 12 seconds;
+client clones share that pacing and server-directed cooldowns.
 
 The operation timeout covers request serialization, pacing, HTTP attempts, retry
 waits, and response decoding. Synchronous JSON work is checked after it finishes;
@@ -187,9 +188,8 @@ Group and field list builders take an explicit `resources::SortDirection`:
 `.sort(GroupSort::Name, SortDirection::Ascending)` or
 `.sort(FieldSort::Name, SortDirection::Descending)`. Import the shared direction
 from `mailerlite_rs::resources::SortDirection` and the field enum from its resource
-module. If you used the early v2 boolean argument, replace `false` with
-`SortDirection::Ascending` and `true` with `SortDirection::Descending`. This is a
-source-breaking change; the query values remain `name` and `-name`, respectively.
+module. Ascending and descending name sorts serialize as `name` and `-name`,
+respectively.
 
 Lazy request builders are `#[must_use]`: discarding one now warns, or fails
 compilation when `unused_must_use` is denied. Call `.send().await` to execute a
@@ -241,6 +241,7 @@ async fn list_active(mailerlite: &MailerLite) -> mailerlite_rs::Result<()> {
         for subscriber in &response.data.data {
             println!("{}", subscriber.id);
         }
+
         cursor = response.data.next_cursor().map(str::to_owned);
 
         if cursor.is_none() {
@@ -318,6 +319,7 @@ async fn find_subscriber(mailerlite: &MailerLite, id: &str) -> mailerlite_rs::Re
             let invalid_fields = error.validation_errors().keys().count();
 
             eprintln!("Validation failed for {invalid_fields} fields");
+
             return Err(Error::Api(error));
         }
 
@@ -326,6 +328,7 @@ async fn find_subscriber(mailerlite: &MailerLite, id: &str) -> mailerlite_rs::Re
                 "Rate limited; retry delay: {:?}",
                 error.metadata().retry_after()
             );
+
             return Err(Error::Api(error));
         }
 
@@ -339,8 +342,8 @@ async fn find_subscriber(mailerlite: &MailerLite, id: &str) -> mailerlite_rs::Re
 Use `ApiError::status()`, `message()`, `validation_errors()`, and `metadata()` for
 diagnostics. `is_unauthorized()` and `is_server_error()` provide additional
 classification; inspect `status()` when distinguishing 401 from 403.
-Message/body accessors may reveal submitted personal
-data; `Debug` and `Display` deliberately omit API bodies and messages.
+Message/body accessors may reveal submitted personal data; `Debug` and `Display`
+deliberately omit API bodies and messages.
 
 Transport, configuration, serialization, timeout, pagination, and decoding
 failures are recoverable error variants. `Error::Decode` retains HTTP metadata
@@ -394,14 +397,18 @@ Order imports accept `Vec<CreateOrder>` and serialize it as `{"orders": [...]}`
 to match the backend. The SDK adds this wrapper automatically. This deliberately
 differs from the bare-array example in the public API documentation.
 
-All nonduplicate v1 examples are retained and migrated to v2. Automation steps,
-triggers, templates, actions, and reports use schemas verified against the
-MailerLite backend. Use `.automation_steps()`, `.automation_triggers()`, and
+All nonduplicate v1 examples are retained and migrated to v2. The
+`update_ecommerce_shop` example requires explicit replacement name, URL, and
+currency values; `update_ecommerce_product` requires a replacement name and
+decimal price. Set the environment variables documented in each file before
+running it. These examples modify the selected resource.
+
+Use `.automation_steps()`, `.automation_triggers()`, and
 `.automation_templates()` for the additional resources; action and report methods
 are on `.automations()`. These use typed JSON requests and responses through the
 same shared transport, with no v1 compatibility helpers. Additional automation
 routes depend on the deployment; backend schema verification does not guarantee
-their availability on every account. Classic API remains outside scope.
+their availability on every account.
 
 ## Typed automation configuration
 
@@ -444,14 +451,16 @@ fallback. Generic future fields use fallible `.extension_data(...)` or
 `.extension_setting(...)`; these reject known keys so they cannot bypass the
 typed setters. Response extensions are explicit and redacted from debug output.
 
-## Typed response models and incoming webhooks
+## Typed response models
 
 Server-owned resource, report, activity, webhook-delivery, and enriched response
 configuration structs are `#[non_exhaustive]`. They can gain fields in future
-SDK releases. Read fields directly, or include `..` when destructuring. External
-struct literals (including `..Default::default()`) no longer compile for these
-types. Existing `Default` implementations still work and public fields remain
-writable. Deserialize sanitized JSON when building response fixtures:
+SDK releases. Read fields directly, or include `..` when destructuring. These
+types cannot be constructed with external struct literals, including
+`..Default::default()`. Where a type implements `Default`, that constructor
+still works; public fields remain writable. To build response fixtures,
+deserialize sanitized JSON. The following example requires `serde_json = "1"`
+as a direct dependency:
 
 ```rust
 use mailerlite_rs::models::fields::Field;
@@ -469,8 +478,8 @@ fn field_name(field: Field) -> String {
 }
 ```
 
-`SubscriberStatus` and `WebformActivity` now join the existing non-exhaustive
-response enums. Add a fallback arm to matches. `WebformActivity::Form` and
+`SubscriberStatus` and `WebformActivity` are non-exhaustive response enums.
+Add a fallback arm to matches. `WebformActivity::Form` and
 `WebformActivity::Site` also require `..` in patterns because their fields may
 grow:
 
@@ -498,10 +507,9 @@ fn form_id(activity: &WebformActivity) -> Option<&str> {
 ```
 
 This is a Rust source compatibility policy, not relaxed JSON validation.
-`SubscriberStatus::Unknown` still preserves future server strings and rejects
-them in requests. Unknown `webform_type` values still fail decoding. No new
-wire values, fallback variants, or default fields are introduced by the
-attribute.
+`SubscriberStatus::Unknown` preserves future server strings and rejects them
+in requests. Unknown `webform_type` values fail decoding. The `non_exhaustive`
+attribute does not change which wire values the deserializer accepts.
 
 Request parameters and configuration remain constructible. Finite representations
 such as `Patch`, `FieldValue`, configuration IDs/scalars, weekdays, and
@@ -534,13 +542,24 @@ Mixed batch items still carry heterogeneous bodies. Use `is_success()` and
 `decode::<T>()` per item; a batch-wide universal response schema would not match
 the API. Unknown event variants and future extension properties remain explicit.
 
-Incoming webhook types live under `mailerlite_rs::webhooks`; management stays
-under `mailerlite.webhooks()`. Enable `webhook-signatures` to use
-`verify_signature(secret, raw_body, signature)`. See [receiving webhooks](README.md#receiving-webhooks).
-
 Request and response model fields follow verified wire types. Resource
 identifiers preserve exact values; money uses decimals; timezone-free timestamp
 strings are not assigned a timezone. Unknown response fields are generally
 ignored or retained in explicit extension fields, while supported discriminator
 models retain future values where appropriate. Malformed known values remain
 decoding errors.
+
+## Receiving webhooks
+
+Manage webhook subscriptions through `mailerlite.webhooks()`. Incoming payload
+types live under `mailerlite_rs::webhooks` and require no optional feature.
+Enable `webhook-signatures` to call
+`verify_signature(secret, raw_body, signature)` before parsing the payload.
+Use the webhook signing secret, not the API token, and pass the original request
+bytes together with the `Signature` header. Parsing and reserializing JSON changes
+the bytes being verified. Add `serde_json = "1"` to your application's dependencies
+when decoding the verified body.
+
+Verification authenticates the bytes; it does not establish freshness or prevent
+duplicate processing. See [receiving webhooks](README.md#receiving-webhooks) and
+the offline [verification example](examples/verify_webhook.rs).

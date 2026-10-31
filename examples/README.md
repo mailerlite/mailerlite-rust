@@ -34,8 +34,7 @@ See the [README](../README.md) for configuration, pagination, and webhook
 verification. Resource rustdoc describes supported operations and their limitations.
 
 The `configuration` example builds an injected HTTP client with the SDK's
-redirect and retry defaults. Custom base URLs include the API prefix, such as
-`http://localhost:8080/api`.
+redirect and retry defaults.
 
 The `group_import` example polls for up to five minutes. A timeout stops waiting,
 not accepted server work; retain the receipt to inspect progress later. Likewise,
