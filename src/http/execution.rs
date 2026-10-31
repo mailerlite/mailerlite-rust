@@ -4,6 +4,7 @@ use crate::{
     ApiVersion, Error, MailerLite, ResponseMetadata, Result,
     error::{ApiError, DecodeError},
 };
+use bytes::Bytes;
 use reqwest::{
     Method, StatusCode, Url,
     header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE, HeaderMap, USER_AGENT},
@@ -68,7 +69,8 @@ async fn execute_until(
     let inner = &client.inner;
     let serialized = body.map(|body| body.serialize()).transpose();
     deadline.check()?;
-    let serialized = serialized?;
+    // Take ownership of the buffer; each attempt clones only a shared handle.
+    let serialized = serialized?.map(Bytes::from);
     let mut attempt = 0;
     loop {
         deadline.check()?;
