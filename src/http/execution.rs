@@ -89,7 +89,7 @@ async fn execute_until(
             )
             .timeout(inner.request_timeout);
         if let ApiVersion::Pinned(version) = &inner.version {
-            request = request.header("X-Version", version);
+            request = request.header("X-Version", version.as_str());
         }
         if let Some(body) = &serialized {
             request = request.body(body.clone());

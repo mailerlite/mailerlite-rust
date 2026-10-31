@@ -768,7 +768,7 @@ impl SaveVariant {
 ///         ("Mon".to_owned(), ["09:00".to_owned(), "17:00".to_owned()]),
 ///     ]));
 /// ```
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[serde(rename_all = "lowercase")]
 pub enum BookingWeekday {
     /// Monday.
@@ -849,6 +849,26 @@ impl std::str::FromStr for BookingWeekday {
                 value: value.to_owned(),
             }),
         }
+    }
+}
+
+impl<'de> Deserialize<'de> for BookingWeekday {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct WeekdayVisitor;
+
+        impl serde::de::Visitor<'_> for WeekdayVisitor {
+            type Value = BookingWeekday;
+
+            fn expecting(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.write_str("a full lowercase booking weekday name")
+            }
+
+            fn visit_str<E: serde::de::Error>(self, value: &str) -> Result<Self::Value, E> {
+                value.parse().map_err(E::custom)
+            }
+        }
+
+        deserializer.deserialize_str(WeekdayVisitor)
     }
 }
 
@@ -1169,6 +1189,8 @@ impl ProductSettings {
     /// Returns [`ParseBookingWeekdayError`] for the first unsupported key in the
     /// response map's sorted order. Inspect [`ParseBookingWeekdayError::value`]
     /// to identify it. Unknown keys are neither discarded nor normalized.
+    /// This error converts to [`crate::Error::BookingWeekday`], allowing `?` in
+    /// functions returning [`crate::Result`].
     ///
     /// # Examples
     ///
@@ -1189,7 +1211,7 @@ impl ProductSettings {
     /// assert_eq!(body["custom_availability_days"], serde_json::json!({
     ///     "monday": ["09:00", "17:00"], "sunday": null,
     /// }));
-    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// # Ok::<(), mailerlite_rs::Error>(())
     /// ```
     pub fn try_replace_custom_availability_days(
         self,

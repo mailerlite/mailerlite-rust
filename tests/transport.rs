@@ -5,7 +5,8 @@
 )]
 mod support;
 use mailerlite_rs::{
-    ApiVersion, Error, MailerLite, RetryPolicy, resources::subscribers::UpsertSubscriber,
+    ApiVersion, ApiVersionDate, Error, MailerLite, RetryPolicy,
+    resources::subscribers::UpsertSubscriber,
 };
 use serde_json::json;
 use std::{
@@ -29,7 +30,7 @@ async fn injected_http_client_preserves_base_prefix_auth_version_and_encoded_ids
     let http = MailerLite::http_client_builder().build().unwrap();
     let builder = MailerLite::builder("private-test-token")
         .base_url(format!("{}/proxy/api/", server.uri()))
-        .api_version(ApiVersion::pinned(format!(" \t{PINNED}\r\n")).unwrap())
+        .api_version(ApiVersion::pinned(PINNED).unwrap())
         .http_client(http)
         .rate_limit_intervals(Duration::ZERO, Duration::ZERO);
     assert!(!format!("{builder:?}").contains("private-test-token"));
@@ -66,6 +67,40 @@ async fn injected_http_client_preserves_base_prefix_auth_version_and_encoded_ids
     assert_eq!(result.metadata.rate_limit, Some(120));
     assert_eq!(result.metadata.rate_remaining, Some(119));
     assert_eq!(result.metadata.request_id.as_deref(), Some("request-1"));
+}
+
+async fn assert_version_header(version: ApiVersion, expected: &str) {
+    let server = MockServer::start().await;
+    let sdk = MailerLite::builder("private-test-token")
+        .base_url(format!("{}/api", server.uri()))
+        .api_version(version)
+        .build()
+        .unwrap();
+    Mock::given(method("GET"))
+        .and(path("/api/subscribers/123"))
+        .and(header("x-version", expected))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({"data": subscriber()})))
+        .expect(1)
+        .mount(&server)
+        .await;
+    sdk.subscribers().get("123").await.unwrap();
+}
+
+#[tokio::test]
+async fn pinned_constructor_sends_trimmed_version_header() {
+    const PINNED: &str = "2026-10-30";
+    assert_version_header(
+        ApiVersion::pinned(format!(" \t{PINNED}\r\n")).unwrap(),
+        PINNED,
+    )
+    .await;
+}
+
+#[tokio::test]
+async fn pinned_variant_sends_validated_normalized_date() {
+    const PINNED: &str = "2026-10-30";
+    let date = ApiVersionDate::new(format!(" \t{PINNED}\r\n")).unwrap();
+    assert_version_header(ApiVersion::Pinned(date), PINNED).await;
 }
 
 #[tokio::test]

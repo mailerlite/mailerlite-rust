@@ -15,6 +15,9 @@ pub enum Error {
     /// Invalid local configuration or request parameters.
     #[error("invalid SDK configuration or parameters: {0}")]
     Config(String),
+    /// A booking weekday name could not be converted to a typed request value.
+    #[error(transparent)]
+    BookingWeekday(#[from] crate::resources::ecommerce::params::ParseBookingWeekdayError),
     /// A request could not be serialized.
     #[error("request serialization failed")]
     Serialize(#[from] serde_json::Error),
@@ -45,6 +48,7 @@ impl fmt::Debug for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Config(_) => f.write_str("Config(<details omitted>)"),
+            Self::BookingWeekday(error) => fmt::Debug::fmt(error, f),
             Self::Serialize(_) => f.write_str("Serialize(<details omitted>)"),
             Self::Transport(_) => f.write_str("Transport(<details omitted>)"),
             Self::Api(error) => fmt::Debug::fmt(error, f),
@@ -219,6 +223,26 @@ impl std::error::Error for DecodeError {}
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn booking_conversion_propagates_with_question_mark_and_preserves_redacted_details() {
+        use crate::resources::ecommerce::params::{ProductAction, ProductSettings};
+
+        fn convert(name: &str) -> Result<ProductSettings> {
+            Ok(ProductSettings::new(ProductAction::MoveToGroup)
+                .try_replace_custom_availability_days(BTreeMap::from([(name.into(), None)]))?)
+        }
+
+        assert!(convert("monday").is_ok());
+        let Err(error) = convert("private-server-key") else {
+            panic!("unknown weekday must fail conversion");
+        };
+        assert!(!format!("{error:?} {error}").contains("private-server-key"));
+        match error {
+            Error::BookingWeekday(error) => assert_eq!(error.value(), "private-server-key"),
+            other => panic!("unexpected error: {other:?}"),
+        }
+    }
+
     fn metadata(status: StatusCode) -> ResponseMetadata {
         ResponseMetadata {
             status,

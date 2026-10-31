@@ -6,8 +6,10 @@ use std::{fmt, time::Duration};
 /// Whether requests use a pinned date or the server's latest version.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub enum ApiVersion {
-    /// Use a validated `YYYY-MM-DD` version date.
-    Pinned(String),
+    /// Use a validated, normalized version date.
+    ///
+    /// Construct it with [`ApiVersionDate::new`] or use [`ApiVersion::pinned`].
+    Pinned(ApiVersionDate),
     /// Omit `X-Version` and use the latest server behavior (the default).
     #[default]
     Latest,
@@ -38,17 +40,56 @@ impl ApiVersion {
     /// `YYYY-MM-DD` format with a nonzero year after trimming surrounding whitespace.
     /// Empty or whitespace-only input is an error, not a request for `Latest`.
     /// Whether the server supports that version is not checked locally.
-    pub fn pinned(date: impl Into<String>) -> Result<Self> {
-        let date = date.into();
-        let trimmed = date.trim();
-        validate_date(trimmed)?;
-        if trimmed.len() == date.len() {
-            Ok(Self::Pinned(date))
-        } else {
-            Ok(Self::Pinned(trimmed.to_owned()))
-        }
+    pub fn pinned(date: impl AsRef<str>) -> Result<Self> {
+        ApiVersionDate::new(date).map(Self::Pinned)
     }
 }
+
+/// A validated Gregorian API version date stored in canonical `YYYY-MM-DD` form.
+///
+/// The private field prevents constructing an unchecked [`ApiVersion::Pinned`].
+///
+/// # Examples
+///
+/// ```
+/// use mailerlite_rs::{ApiVersion, ApiVersionDate};
+///
+/// let date = ApiVersionDate::new(" 2026-10-30 ")?; // Illustrative date only.
+///
+/// assert_eq!(date.as_str(), "2026-10-30");
+/// let version = ApiVersion::Pinned(date);
+/// # let _ = version;
+/// # Ok::<(), mailerlite_rs::Error>(())
+/// ```
+///
+/// Raw strings cannot bypass validation:
+///
+/// ```compile_fail
+/// use mailerlite_rs::ApiVersion;
+/// let version = ApiVersion::Pinned("invalid".into());
+/// ```
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct ApiVersionDate(String);
+
+impl ApiVersionDate {
+    /// Trim surrounding whitespace and validate a Gregorian date.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Config`] for blank input, an invalid `YYYY-MM-DD` date,
+    /// or a zero year. Server support for a date is not checked locally.
+    pub fn new(date: impl AsRef<str>) -> Result<Self> {
+        let date = date.as_ref().trim();
+        validate_date(date)?;
+        Ok(Self(date.to_owned()))
+    }
+
+    /// The normalized, validated `YYYY-MM-DD` date used in `X-Version`.
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
 fn validate_date(date: &str) -> Result<()> {
     let bytes = date.as_bytes();
     let invalid = || Error::Config("API version must be a valid YYYY-MM-DD date".into());
@@ -204,8 +245,8 @@ impl MailerLiteBuilder {
     ///
     /// # Errors
     ///
-    /// Returns [`Error::Config`] for an empty or invalid token header, invalid
-    /// version date, zero timeout or response-size limit, or a duration beyond
+    /// Returns [`Error::Config`] for an empty or invalid token header,
+    /// zero timeout or response-size limit, or a duration beyond
     /// the supported clock range. The base URL must be HTTP(S), have a host, and
     /// contain no userinfo, query, or fragment; invalid URLs also return
     /// `Error::Config`. A zero pacing interval is allowed.
@@ -238,9 +279,6 @@ impl MailerLiteBuilder {
             return Err(Error::Config(
                 "configured duration exceeds the supported clock range".into(),
             ));
-        }
-        if let ApiVersion::Pinned(ref date) = self.api_version {
-            validate_date(date)?;
         }
         let mut url =
             Url::parse(&self.base_url).map_err(|_| Error::Config("invalid API base URL".into()))?;
@@ -282,10 +320,10 @@ mod tests {
 
     #[test]
     fn pinned_version_trims_surrounding_whitespace() {
-        assert_eq!(
-            ApiVersion::pinned(" \t2026-10-30\r\n").unwrap(),
-            ApiVersion::Pinned("2026-10-30".into())
-        );
+        const DATE: &str = "2026-10-30";
+        let date = ApiVersionDate::new(format!(" \t{DATE}\r\n")).unwrap();
+        assert_eq!(date.as_str(), DATE);
+        assert_eq!(ApiVersion::pinned(DATE).unwrap(), ApiVersion::Pinned(date));
     }
 
     #[test]
