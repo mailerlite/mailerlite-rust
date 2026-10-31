@@ -64,9 +64,10 @@ verification. Resource rustdoc describes supported operations and their limitati
 The `configuration` example builds an injected HTTP client with the SDK's
 redirect and retry defaults. It requires `MAILERLITE_API_TOKEN` and uses
 `ApiVersion::Latest` by default. Optionally set `MAILERLITE_API_VERSION` to your
-chosen `YYYY-MM-DD` date for explicit pinning. Empty or whitespace-only values
-also use `Latest`. Surrounding whitespace is trimmed before pinning; other
-invalid supplied values are errors.
+chosen `YYYY-MM-DD` date for explicit pinning. Only a missing variable selects
+`Latest`; present but empty, whitespace-only, or invalid values are errors.
+`ApiVersion::pinned` trims surrounding whitespace for both this example and direct
+library calls.
 Choose that date using MailerLite's [versioning guidance](https://developers.mailerlite.com/getting-started#versioning).
 
 The `group_import` example polls for up to five minutes. A timeout stops waiting,

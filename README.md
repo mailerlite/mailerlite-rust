@@ -220,7 +220,8 @@ To pin API behavior, import `mailerlite_rs::ApiVersion` and add
 `.api_version(ApiVersion::pinned(version_date)?)` to the builder, where
 `version_date` is your chosen `YYYY-MM-DD` date. MailerLite recommends the date
 when you implement the integration; see its [versioning guidance](https://developers.mailerlite.com/getting-started#versioning).
-The SDK validates the calendar date locally, not server support for that date.
+`ApiVersion::pinned` trims surrounding whitespace and rejects blank or invalid
+dates. It validates the calendar date locally, not server support for that date.
 
 ### Retries and rate limits
 

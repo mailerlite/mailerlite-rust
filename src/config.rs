@@ -13,7 +13,7 @@ pub enum ApiVersion {
     Latest,
 }
 impl ApiVersion {
-    /// Validate a Gregorian date and select it as the API version.
+    /// Trim surrounding whitespace, validate a Gregorian date, and pin the API version.
     ///
     /// MailerLite recommends the date when you implement the integration; see
     /// its [versioning guidance](https://developers.mailerlite.com/getting-started#versioning).
@@ -35,12 +35,18 @@ impl ApiVersion {
     /// # Errors
     ///
     /// Returns [`Error::Config`] unless the input is a valid Gregorian date in
-    /// `YYYY-MM-DD` format with a nonzero year. Whether the server supports that
-    /// version is not checked locally.
+    /// `YYYY-MM-DD` format with a nonzero year after trimming surrounding whitespace.
+    /// Empty or whitespace-only input is an error, not a request for `Latest`.
+    /// Whether the server supports that version is not checked locally.
     pub fn pinned(date: impl Into<String>) -> Result<Self> {
         let date = date.into();
-        validate_date(&date)?;
-        Ok(Self::Pinned(date))
+        let trimmed = date.trim();
+        validate_date(trimmed)?;
+        if trimmed.len() == date.len() {
+            Ok(Self::Pinned(date))
+        } else {
+            Ok(Self::Pinned(trimmed.to_owned()))
+        }
     }
 }
 fn validate_date(date: &str) -> Result<()> {
@@ -272,6 +278,21 @@ mod tests {
     fn client_constructor_defaults_to_latest_version() {
         let client = MailerLite::new("test-token").unwrap();
         assert!(matches!(client.inner.version, ApiVersion::Latest));
+    }
+
+    #[test]
+    fn pinned_version_trims_surrounding_whitespace() {
+        assert_eq!(
+            ApiVersion::pinned(" \t2026-10-30\r\n").unwrap(),
+            ApiVersion::Pinned("2026-10-30".into())
+        );
+    }
+
+    #[test]
+    fn pinned_version_rejects_blank_and_embedded_whitespace() {
+        for date in ["", " \t\n", "2026-10- 30", "2026-10-30\nX-Version: other"] {
+            assert!(matches!(ApiVersion::pinned(date), Err(Error::Config(_))));
+        }
     }
 
     #[test]

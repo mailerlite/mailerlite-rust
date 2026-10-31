@@ -6,11 +6,11 @@ use std::collections::BTreeMap;
 
 /// Weekday names mapped to start/end times, or null for unavailable days.
 ///
-/// Keys preserve the server's spelling. To reuse this schedule in a request,
-/// parse them as [`crate::resources::ecommerce::params::BookingWeekday`]; its
-/// example preserves both time ranges and unavailable-day nulls. Unsupported
-/// response keys remain inspectable here but fail that conversion; they are not
-/// silently discarded or normalized.
+/// Keys preserve the server's spelling. To reuse this schedule in a request, use
+/// [`crate::resources::ecommerce::params::ProductSettings::try_replace_custom_availability_days`].
+/// It preserves time ranges and null days, and reports an unsupported key through
+/// [`crate::resources::ecommerce::params::ParseBookingWeekdayError::value`].
+/// Unknown keys are neither silently discarded nor normalized.
 pub type BookingAvailability = BTreeMap<String, Option<[String; 2]>>;
 
 /// Kind of downloadable product asset.

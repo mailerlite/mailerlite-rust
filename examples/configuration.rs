@@ -1,8 +1,8 @@
 //! Configure and inject a reusable HTTP client.
 //!
 //! Requires `MAILERLITE_API_TOKEN`. Uses `ApiVersion::Latest` unless the optional
-//! `MAILERLITE_API_VERSION` is set to your chosen `YYYY-MM-DD` date. Empty or
-//! whitespace-only values also use `Latest`. Surrounding whitespace is trimmed.
+//! `MAILERLITE_API_VERSION` is set to your chosen `YYYY-MM-DD` date. Present but
+//! blank values are errors. `ApiVersion::pinned` trims surrounding whitespace.
 //! Makes no API request. MailerLite recommends the date when you implement the integration:
 //! <https://developers.mailerlite.com/getting-started#versioning>.
 use mailerlite_rs::{ApiVersion, MailerLite, RetryPolicy};
@@ -10,8 +10,7 @@ use std::time::Duration;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let api_version = match std::env::var("MAILERLITE_API_VERSION") {
-        Ok(date) if date.trim().is_empty() => ApiVersion::Latest,
-        Ok(date) => ApiVersion::pinned(date.trim())?,
+        Ok(date) => ApiVersion::pinned(date)?,
         Err(std::env::VarError::NotPresent) => ApiVersion::Latest,
         Err(error) => return Err(error.into()),
     };

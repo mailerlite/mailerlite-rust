@@ -739,32 +739,23 @@ impl SaveVariant {
 ///
 /// # Examples
 ///
-/// Parse response day names before passing them to a request builder. Parsing
-/// accepts only the seven full lowercase names; unknown names return
+/// Parsing accepts only the seven full lowercase names; unknown names return
 /// [`ParseBookingWeekdayError`]. `Deserialize` accepts the same names.
 ///
 /// ```
-/// use mailerlite_rs::models::ecommerce::BookingAvailability;
-/// use mailerlite_rs::resources::ecommerce::params::{BookingWeekday, ProductAction, ProductSettings};
-/// use std::collections::BTreeMap;
+/// use mailerlite_rs::resources::ecommerce::params::BookingWeekday;
 ///
-/// let availability: BookingAvailability = BTreeMap::from([
-///     ("monday".into(), Some(["09:00".into(), "17:00".into()])),
-///     ("sunday".into(), None),
-/// ]);
-/// let days = availability.into_iter()
-///     .map(|(name, times)| name.parse().map(|day| (day, times)))
-///     .collect::<Result<BTreeMap<BookingWeekday, _>, _>>()?;
+/// let day: BookingWeekday = "monday".parse()?;
 ///
-/// let settings = ProductSettings::new(ProductAction::MoveToGroup)
-///     .replace_custom_availability_days(days);
+/// assert_eq!(day, BookingWeekday::Monday);
 /// # Ok::<(), mailerlite_rs::resources::ecommerce::params::ParseBookingWeekdayError>(())
 /// ```
 ///
-/// Response keys are preserved even when unsupported. Conversion intentionally
-/// fails for names such as `Monday` or future keys, so the application can decide
-/// how to handle them. The SDK does not silently discard or normalize them:
-/// doing so could change the meaning of a stored schedule or merge distinct keys.
+/// Use [`ProductSettings::try_replace_custom_availability_days`] to import a
+/// complete response schedule. Unsupported response keys remain visible but fail
+/// conversion; inspect [`ParseBookingWeekdayError::value`] to identify the key.
+/// The SDK does not silently discard or normalize names: doing so could change
+/// the meaning of a stored schedule or merge distinct keys.
 ///
 /// Request setters require typed weekday keys:
 ///
@@ -814,24 +805,50 @@ impl BookingWeekday {
 
 /// A value is not a full lowercase booking weekday name.
 ///
-/// This parsing error does not classify the value's source as client configuration
-/// or a server response. The rejected input is not retained or printed.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+/// The rejected value is available explicitly but omitted from `Debug` and
+/// `Display`, since response keys can contain untrusted data.
+#[derive(Clone, PartialEq, Eq, thiserror::Error)]
 #[error("expected a full lowercase booking weekday name")]
-pub struct ParseBookingWeekdayError;
+pub struct ParseBookingWeekdayError {
+    value: String,
+}
+
+impl ParseBookingWeekdayError {
+    /// Rejected weekday name, or the offending key in a response schedule.
+    pub fn value(&self) -> &str {
+        &self.value
+    }
+}
+
+impl std::fmt::Debug for ParseBookingWeekdayError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ParseBookingWeekdayError")
+            .finish_non_exhaustive()
+    }
+}
 
 impl std::str::FromStr for BookingWeekday {
     type Err = ParseBookingWeekdayError;
 
-    /// Parse a full lowercase weekday name using the same names as Serde.
+    /// Parse a full lowercase weekday name.
     ///
     /// # Errors
     ///
     /// Returns [`ParseBookingWeekdayError`] for abbreviated, capitalized, padded,
-    /// or unknown names.
+    /// or unknown names. The rejected value is retained for explicit inspection.
     fn from_str(value: &str) -> Result<Self, Self::Err> {
-        let deserializer = serde::de::value::StrDeserializer::<serde::de::value::Error>::new(value);
-        Self::deserialize(deserializer).map_err(|_| ParseBookingWeekdayError)
+        match value {
+            "monday" => Ok(Self::Monday),
+            "tuesday" => Ok(Self::Tuesday),
+            "wednesday" => Ok(Self::Wednesday),
+            "thursday" => Ok(Self::Thursday),
+            "friday" => Ok(Self::Friday),
+            "saturday" => Ok(Self::Saturday),
+            "sunday" => Ok(Self::Sunday),
+            _ => Err(ParseBookingWeekdayError {
+                value: value.to_owned(),
+            }),
+        }
     }
 }
 
@@ -1141,6 +1158,50 @@ impl ProductSettings {
         self.custom_availability_days = Some(value);
         self
     }
+    /// Convert and replace a schedule returned in product settings.
+    ///
+    /// Preserves time ranges and null days while converting response keys to
+    /// [`BookingWeekday`]. An empty response map is an explicit empty replacement,
+    /// not omission; see [`Self::replace_custom_availability_days`].
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ParseBookingWeekdayError`] for the first unsupported key in the
+    /// response map's sorted order. Inspect [`ParseBookingWeekdayError::value`]
+    /// to identify it. Unknown keys are neither discarded nor normalized.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mailerlite_rs::models::ecommerce::BookingAvailability;
+    /// use mailerlite_rs::resources::ecommerce::params::{ProductAction, ProductSettings};
+    /// use std::collections::BTreeMap;
+    ///
+    /// let availability: BookingAvailability = BTreeMap::from([
+    ///     ("monday".into(), Some(["09:00".into(), "17:00".into()])),
+    ///     ("sunday".into(), None),
+    /// ]);
+    /// let settings = ProductSettings::new(ProductAction::MoveToGroup)
+    ///     .try_replace_custom_availability_days(availability)?;
+    ///
+    /// let body = serde_json::to_value(settings)?;
+    ///
+    /// assert_eq!(body["custom_availability_days"], serde_json::json!({
+    ///     "monday": ["09:00", "17:00"], "sunday": null,
+    /// }));
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    pub fn try_replace_custom_availability_days(
+        self,
+        value: crate::models::ecommerce::BookingAvailability,
+    ) -> Result<Self, ParseBookingWeekdayError> {
+        let days = value
+            .into_iter()
+            .map(|(name, times)| name.parse().map(|day| (day, times)))
+            .collect::<Result<_, _>>()?;
+        Ok(self.replace_custom_availability_days(days))
+    }
+
     /// Mark a weekday unavailable by sending an explicit null time range.
     ///
     /// Replaces any time range previously configured for this day and preserves
@@ -1415,10 +1476,7 @@ mod tests {
     #[test]
     fn booking_weekdays_reject_noncanonical_names_and_non_strings() {
         for name in ["Mon", "Monday", " monday", "monday ", "", "funday"] {
-            assert!(matches!(
-                name.parse::<BookingWeekday>(),
-                Err(ParseBookingWeekdayError)
-            ));
+            assert_eq!(name.parse::<BookingWeekday>().unwrap_err().value(), name);
             assert!(serde_json::from_value::<BookingWeekday>(json!(name)).is_err());
         }
         for value in [json!(1), json!(null), json!(true)] {
@@ -1431,14 +1489,10 @@ mod tests {
         let body = json!({"monday":["09:00","17:00"],"sunday":null});
         let availability: crate::models::ecommerce::BookingAvailability =
             serde_json::from_value(body.clone()).unwrap();
-        let days = availability
-            .into_iter()
-            .map(|(name, times)| name.parse().map(|day| (day, times)))
-            .collect::<Result<BTreeMap<BookingWeekday, _>, ParseBookingWeekdayError>>()
-            .unwrap();
         let settings = ProductSettings::new(ProductAction::MoveToGroup)
             .unavailable_day(BookingWeekday::Friday)
-            .replace_custom_availability_days(days);
+            .try_replace_custom_availability_days(availability)
+            .unwrap();
         assert_eq!(
             serde_json::to_value(settings).unwrap()["custom_availability_days"],
             body
@@ -1455,12 +1509,41 @@ mod tests {
                 serde_json::from_value(json!({name:["09:00","17:00"],"monday":null})).unwrap();
             assert!(availability.contains_key(name));
             assert!(availability.contains_key("monday"));
-            let converted = availability
-                .into_iter()
-                .map(|(name, times)| name.parse().map(|day| (day, times)))
-                .collect::<Result<BTreeMap<BookingWeekday, _>, ParseBookingWeekdayError>>();
-            assert_eq!(converted, Err(ParseBookingWeekdayError));
+            let error = ProductSettings::new(ProductAction::MoveToGroup)
+                .try_replace_custom_availability_days(availability)
+                .unwrap_err();
+            assert_eq!(error.value(), name);
         }
+    }
+
+    #[test]
+    fn response_availability_conversion_reports_the_first_sorted_invalid_key() {
+        let error = ProductSettings::new(ProductAction::MoveToGroup)
+            .try_replace_custom_availability_days(BTreeMap::from([
+                ("unknown".into(), None),
+                ("Monday".into(), None),
+            ]))
+            .unwrap_err();
+        assert_eq!(error.value(), "Monday");
+    }
+
+    #[test]
+    fn response_availability_empty_map_is_an_explicit_replacement() {
+        let settings = ProductSettings::new(ProductAction::MoveToGroup)
+            .unavailable_day(BookingWeekday::Sunday)
+            .try_replace_custom_availability_days(BTreeMap::new())
+            .unwrap();
+        assert_eq!(
+            serde_json::to_value(settings).unwrap()["custom_availability_days"],
+            json!({})
+        );
+    }
+
+    #[test]
+    fn rejected_weekday_is_accessible_without_debug_or_display_leakage() {
+        let error = "private-server-key".parse::<BookingWeekday>().unwrap_err();
+        assert_eq!(error.value(), "private-server-key");
+        assert!(!format!("{error:?} {error}").contains("private-server-key"));
     }
 
     #[test]

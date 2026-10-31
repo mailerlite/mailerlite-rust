@@ -123,7 +123,8 @@ Like v1, v2 omits `X-Version` by default. `ApiVersion::Latest` selects the serve
 latest API behavior. To opt into a dated version, use `ApiVersion::pinned(...)`.
 MailerLite recommends using the date when you implement the integration; see
 its [versioning guidance](https://developers.mailerlite.com/getting-started#versioning).
-The SDK validates date syntax and calendar validity, not server support.
+`ApiVersion::pinned` trims surrounding whitespace and rejects blank or invalid
+dates. It validates date syntax and calendar validity, not server support.
 
 Automatic retries remain **disabled by default**. Opt in with
 `.retry_policy(RetryPolicy::safe_reads().max_retries(2))`, importing

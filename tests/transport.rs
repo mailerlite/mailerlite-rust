@@ -29,7 +29,7 @@ async fn injected_http_client_preserves_base_prefix_auth_version_and_encoded_ids
     let http = MailerLite::http_client_builder().build().unwrap();
     let builder = MailerLite::builder("private-test-token")
         .base_url(format!("{}/proxy/api/", server.uri()))
-        .api_version(ApiVersion::pinned(PINNED).unwrap())
+        .api_version(ApiVersion::pinned(format!(" \t{PINNED}\r\n")).unwrap())
         .http_client(http)
         .rate_limit_intervals(Duration::ZERO, Duration::ZERO);
     assert!(!format!("{builder:?}").contains("private-test-token"));
