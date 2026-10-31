@@ -20,17 +20,19 @@ pub(crate) async fn request<T: DeserializeOwned>(
             deadline.check()?;
             let mut deserializer = serde_json::Deserializer::from_slice(&bytes);
             let data = serde_path_to_error::deserialize(&mut deserializer).map_err(|error| {
-                Error::Decode(DecodeError::new(
+                Error::Decode(DecodeError::json(
                     metadata.clone(),
                     &bytes,
                     error.to_string(),
+                    error.into_inner(),
                 ))
             })?;
             deserializer.end().map_err(|error| {
-                Error::Decode(DecodeError::new(
+                Error::Decode(DecodeError::json(
                     metadata.clone(),
                     &bytes,
                     error.to_string(),
+                    error,
                 ))
             })?;
             Ok(Response { data, metadata })

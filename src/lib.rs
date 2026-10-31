@@ -83,7 +83,7 @@ pub mod response;
 pub mod webhooks;
 pub use client::MailerLite;
 pub use config::{ApiVersion, ApiVersionDate, MailerLiteBuilder};
-pub use error::{ApiError, DecodeError, Error, Result};
+pub use error::{ApiError, DecodeError, Error, JsonDecodeError, Result};
 pub use http::retry::RetryPolicy;
 pub use response::{Response, ResponseMetadata};
 

@@ -54,6 +54,7 @@ fn errors_and_metadata_are_send_and_sync() {
     assert_send_sync::<Error>();
     assert_send_sync::<ApiError>();
     assert_send_sync::<DecodeError>();
+    assert_send_sync::<mailerlite_rs::JsonDecodeError>();
     assert_send_sync::<ResponseMetadata>();
 }
 

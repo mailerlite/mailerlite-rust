@@ -1,7 +1,7 @@
 //! Errors retain HTTP diagnostics without printing response bodies or credentials.
 use crate::ResponseMetadata;
 use reqwest::StatusCode;
-use std::{collections::BTreeMap, fmt};
+use std::{collections::BTreeMap, fmt, sync::Arc};
 
 const DIAGNOSTIC_LIMIT: usize = 8192;
 
@@ -162,6 +162,36 @@ impl fmt::Display for ApiError {
 }
 impl std::error::Error for ApiError {}
 
+/// A JSON decoding cause whose formatting omits potentially sensitive values.
+///
+/// Available through [`std::error::Error::source`] on [`DecodeError`]. The source
+/// chain stops here to keep automatic error reporters redacted. Use [`Self::error`]
+/// explicitly to inspect the original JSON error.
+pub struct JsonDecodeError {
+    error: serde_json::Error,
+}
+
+impl JsonDecodeError {
+    /// Original JSON error, including category, line, and column.
+    ///
+    /// Its message may contain response values. Do not log it indiscriminately.
+    pub fn error(&self) -> &serde_json::Error {
+        &self.error
+    }
+}
+
+impl fmt::Debug for JsonDecodeError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("JsonDecodeError(<details omitted>)")
+    }
+}
+impl fmt::Display for JsonDecodeError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("response JSON decoding failed")
+    }
+}
+impl std::error::Error for JsonDecodeError {}
+
 /// A response that could not be decoded into its expected model.
 #[derive(Clone)]
 pub struct DecodeError {
@@ -169,6 +199,7 @@ pub struct DecodeError {
     body: Vec<u8>,
     truncated: bool,
     detail: String,
+    source: Option<Arc<JsonDecodeError>>,
 }
 impl DecodeError {
     pub(crate) fn new(metadata: ResponseMetadata, body: &[u8], detail: String) -> Self {
@@ -177,6 +208,18 @@ impl DecodeError {
             body: body[..body.len().min(DIAGNOSTIC_LIMIT)].to_vec(),
             truncated: body.len() > DIAGNOSTIC_LIMIT,
             detail,
+            source: None,
+        }
+    }
+    pub(crate) fn json(
+        metadata: ResponseMetadata,
+        body: &[u8],
+        detail: String,
+        error: serde_json::Error,
+    ) -> Self {
+        Self {
+            source: Some(Arc::new(JsonDecodeError { error })),
+            ..Self::new(metadata, body, detail)
         }
     }
     pub(crate) fn incomplete(metadata: ResponseMetadata, body: &[u8], detail: String) -> Self {
@@ -191,6 +234,25 @@ impl DecodeError {
     /// Selected HTTP response metadata.
     pub fn metadata(&self) -> &ResponseMetadata {
         &self.metadata
+    }
+    /// Original JSON parsing cause, when decoding reached the JSON parser.
+    ///
+    /// Use `classify()`, `line()`, and `column()` for programmatic diagnostics.
+    /// Non-JSON failures, such as unexpected status or response size, return `None`.
+    /// Formatting the returned error can expose response values; SDK error
+    /// formatting and its standard source chain remain redacted.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mailerlite_rs::DecodeError;
+    ///
+    /// fn is_incomplete_json(error: &DecodeError) -> bool {
+    ///     error.json_error().is_some_and(|cause| cause.is_eof())
+    /// }
+    /// ```
+    pub fn json_error(&self) -> Option<&serde_json::Error> {
+        self.source.as_deref().map(JsonDecodeError::error)
     }
     /// Parsing detail, potentially containing sensitive response values.
     pub fn detail(&self) -> &str {
@@ -218,7 +280,11 @@ impl fmt::Display for DecodeError {
         write!(f, "unexpected response for HTTP {}", self.status())
     }
 }
-impl std::error::Error for DecodeError {}
+impl std::error::Error for DecodeError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        self.source.as_deref().map(|cause| cause as _)
+    }
+}
 
 #[cfg(test)]
 mod tests {

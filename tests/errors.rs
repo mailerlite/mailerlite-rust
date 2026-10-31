@@ -7,6 +7,7 @@ mod support;
 
 use mailerlite_rs::{Error, resources::subscribers::UpsertSubscriber};
 use serde_json::json;
+use std::error::Error as _;
 use wiremock::{
     Mock, MockServer, ResponseTemplate,
     matchers::{method, path},
@@ -187,6 +188,13 @@ async fn successful_json_followed_by_another_document_is_a_decode_error() {
         Some("trailing-json")
     );
     assert!(error.detail().contains("trailing"));
+    assert!(error.json_error().unwrap().is_syntax());
+    assert!(
+        error
+            .source()
+            .unwrap()
+            .is::<mailerlite_rs::JsonDecodeError>()
+    );
 }
 
 #[tokio::test]
@@ -205,6 +213,8 @@ async fn configured_response_cap_marks_short_diagnostics_as_truncated() {
     let Error::Decode(error) = sdk.subscribers().get("1").await.unwrap_err() else {
         panic!("expected bounded decode error")
     };
+    assert!(error.json_error().is_none());
+    assert!(error.source().is_none());
     assert_eq!(error.body(), b"xxxxxxxxxxxxxxxx");
     assert!(error.body_truncated());
     assert_eq!(error.status().as_u16(), 200);
@@ -228,4 +238,68 @@ async fn response_exactly_at_configured_byte_limit_is_accepted() {
         sdk.subscribers().get("1").await.unwrap().data.id.as_str(),
         "900719925474099312345"
     );
+}
+
+async fn json_decode_failure(body: String) -> mailerlite_rs::DecodeError {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .respond_with(ResponseTemplate::new(200).set_body_string(body))
+        .expect(1)
+        .mount(&server)
+        .await;
+    let Error::Decode(error) = support::default_client(&server)
+        .subscribers()
+        .get("1")
+        .await
+        .unwrap_err()
+    else {
+        panic!("expected JSON decode error");
+    };
+    error
+}
+
+#[tokio::test]
+async fn malformed_json_retains_syntax_category_and_location() {
+    let error = json_decode_failure("!".into()).await;
+    let cause = error.json_error().unwrap();
+    assert!(cause.is_syntax());
+    assert_eq!(cause.line(), 1);
+    assert_eq!(cause.column(), 1);
+}
+
+#[tokio::test]
+async fn incomplete_json_retains_eof_category() {
+    let error = json_decode_failure(r#"{"data":"#.into()).await;
+    assert!(error.json_error().unwrap().is_eof());
+}
+
+#[tokio::test]
+async fn data_error_retains_cause_and_path_without_leaking_through_source_chain() {
+    let mut subscriber = support::subscriber();
+    subscriber["sent"] = json!("private-response-value");
+    let error = json_decode_failure(json!({"data": subscriber}).to_string()).await;
+    assert!(error.json_error().unwrap().is_data());
+    assert!(error.detail().contains("data.sent"));
+    assert!(
+        error
+            .json_error()
+            .unwrap()
+            .to_string()
+            .contains("private-response-value")
+    );
+    let cloned = error.clone();
+    assert!(cloned.json_error().unwrap().is_data());
+    let cause = cloned
+        .source()
+        .unwrap()
+        .downcast_ref::<mailerlite_rs::JsonDecodeError>()
+        .unwrap();
+    assert!(cause.error().is_data());
+
+    let failure = Error::Decode(error);
+    let mut current: Option<&dyn std::error::Error> = Some(&failure);
+    while let Some(error) = current {
+        assert!(!format!("{error:?} {error}").contains("private-response-value"));
+        current = error.source();
+    }
 }

@@ -90,6 +90,43 @@ impl ApiVersionDate {
     }
 }
 
+impl fmt::Display for ApiVersionDate {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl AsRef<str> for ApiVersionDate {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl std::str::FromStr for ApiVersionDate {
+    type Err = Error;
+
+    /// Parse and normalize a date using [`Self::new`].
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Config`] for blank input or an invalid Gregorian date.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mailerlite_rs::ApiVersionDate;
+    ///
+    /// let date: ApiVersionDate = " 2026-10-30 ".parse()?; // Illustrative date only.
+    ///
+    /// assert_eq!(date.to_string(), "2026-10-30");
+    /// assert_eq!(date.as_ref(), date.as_str());
+    /// # Ok::<(), mailerlite_rs::Error>(())
+    /// ```
+    fn from_str(date: &str) -> Result<Self> {
+        Self::new(date)
+    }
+}
+
 fn validate_date(date: &str) -> Result<()> {
     let bytes = date.as_bytes();
     let invalid = || Error::Config("API version must be a valid YYYY-MM-DD date".into());
@@ -324,6 +361,20 @@ mod tests {
         let date = ApiVersionDate::new(format!(" \t{DATE}\r\n")).unwrap();
         assert_eq!(date.as_str(), DATE);
         assert_eq!(ApiVersion::pinned(DATE).unwrap(), ApiVersion::Pinned(date));
+    }
+
+    #[test]
+    fn version_date_traits_share_validation_and_normalization() {
+        let date: ApiVersionDate = " \t2024-02-29\n".parse().unwrap();
+        assert_eq!(date.to_string(), "2024-02-29");
+        assert_eq!(date.as_ref(), date.as_str());
+        assert_eq!(ApiVersion::pinned(&date).unwrap(), ApiVersion::Pinned(date));
+        for invalid in ["", " ", "2025-02-29", "0000-01-01", "2026-13-01"] {
+            assert!(matches!(
+                invalid.parse::<ApiVersionDate>(),
+                Err(Error::Config(_))
+            ));
+        }
     }
 
     #[test]

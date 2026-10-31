@@ -283,7 +283,10 @@ async fn find_subscriber(mailerlite: &MailerLite, id: &str) -> mailerlite_rs::Re
 status independently of the response body; they do not enable retries.
 
 `Error::Decode` preserves HTTP metadata and bounded diagnostics for malformed or
-unexpected responses. Other variants cover configuration, serialization,
+unexpected responses. `DecodeError::json_error()` exposes the original JSON error
+for category and location checks; its standard source chain uses a redacted
+`JsonDecodeError`. Explicit JSON error formatting may include response values.
+Other variants cover configuration, serialization,
 transport, pagination, and operation deadlines. Keep a fallback match arm because
 `Error` is non-exhaustive.
 
