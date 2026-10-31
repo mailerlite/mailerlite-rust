@@ -15,7 +15,14 @@ async fn list_decodes_attributes_and_numeric_price() {
         200,
     )
     .await;
-    variants.list().await.unwrap();
+    let response = variants.list().await.unwrap();
+
+    assert_eq!(response.data.len(), 1);
+    let variant = &response.data[0];
+    assert_eq!(variant.id, "4");
+    assert_eq!(variant.name, "Black");
+    assert_eq!(variant.attributes["color"], "Black");
+    assert_eq!(variant.price, Some(Decimal::from(10)));
 }
 
 #[tokio::test]

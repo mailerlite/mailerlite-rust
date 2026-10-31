@@ -34,7 +34,10 @@ async fn get_decodes_resource() {
         200,
     )
     .await;
-    api.get("1").await.unwrap();
+    let response = api.get("1").await.unwrap();
+
+    assert_eq!(response.data.id.as_str(), "1");
+    assert_eq!(response.data.email, "a@example.com");
 }
 
 #[tokio::test]

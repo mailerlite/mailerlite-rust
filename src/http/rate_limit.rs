@@ -11,7 +11,9 @@ pub(crate) struct RateLimiter {
     state: Mutex<State>,
 }
 struct State {
-    // None represents a deadline beyond Instant's representable range.
+    // None represents a deadline beyond Instant's representable range. This
+    // deliberately prevents early requests; the operation deadline still bounds
+    // every wait. Clamping a server cooldown would violate Retry-After.
     next_global: Option<Instant>,
     next_import: Option<Instant>,
 }
@@ -86,5 +88,54 @@ mod tests {
         limiter.cooldown(false, Duration::from_secs(1)).await;
         limiter.wait(false).await;
         assert_eq!(start.elapsed(), Duration::from_secs(60));
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn unrepresentable_global_cooldown_remains_bounded_by_operation_deadline() {
+        let limiter = RateLimiter::new(Duration::ZERO, Duration::ZERO);
+        limiter.cooldown(false, Duration::from_secs(u64::MAX)).await;
+        // A later, shorter response must not remove the existing minimum.
+        limiter.cooldown(false, Duration::from_secs(1)).await;
+
+        for import in [false, true] {
+            let start = Instant::now();
+            let result = tokio::time::timeout(Duration::from_secs(2), limiter.wait(import)).await;
+
+            assert!(result.is_err());
+            assert_eq!(start.elapsed(), Duration::from_secs(2));
+        }
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn unrepresentable_import_cooldown_does_not_block_non_import_requests() {
+        let limiter = RateLimiter::new(Duration::ZERO, Duration::ZERO);
+        limiter.cooldown(true, Duration::from_secs(u64::MAX)).await;
+        let start = Instant::now();
+
+        assert!(
+            tokio::time::timeout(Duration::from_secs(2), limiter.wait(true))
+                .await
+                .is_err()
+        );
+        limiter.wait(false).await;
+
+        assert_eq!(start.elapsed(), Duration::from_secs(2));
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn long_representable_cooldown_expires_without_being_shortened() {
+        let limiter = RateLimiter::new(Duration::ZERO, Duration::ZERO);
+        let delay = Duration::from_secs(365 * 24 * 60 * 60);
+        let start = Instant::now();
+        limiter.cooldown(false, delay).await;
+
+        assert!(
+            tokio::time::timeout(Duration::from_secs(2), limiter.wait(false))
+                .await
+                .is_err()
+        );
+        limiter.wait(false).await;
+
+        assert_eq!(start.elapsed(), delay);
     }
 }

@@ -373,6 +373,10 @@ async fn retry_after_seconds_beyond_budget_returns_original_error_without_early_
     assert_retry_after_exceeds_budget("60".to_owned()).await;
 }
 #[tokio::test]
+async fn maximum_retry_after_returns_original_error_without_early_retry() {
+    assert_retry_after_exceeds_budget(u64::MAX.to_string()).await;
+}
+#[tokio::test]
 async fn retry_after_http_date_beyond_budget_returns_original_error_without_early_retry() {
     assert_retry_after_exceeds_budget(httpdate::fmt_http_date(
         SystemTime::now() + Duration::from_secs(3600),
@@ -382,9 +386,18 @@ async fn retry_after_http_date_beyond_budget_returns_original_error_without_earl
 
 #[tokio::test]
 async fn client_clones_share_server_cooldown_and_deadline_covers_limiter_wait() {
+    assert_clones_respect_server_cooldown("60").await;
+}
+
+#[tokio::test]
+async fn maximum_retry_after_bounds_clone_wait_without_sending_an_early_request() {
+    assert_clones_respect_server_cooldown(&u64::MAX.to_string()).await;
+}
+
+async fn assert_clones_respect_server_cooldown(retry_after: &str) {
     let server = MockServer::start().await;
     Mock::given(method("GET"))
-        .respond_with(ResponseTemplate::new(429).insert_header("retry-after", "60"))
+        .respond_with(ResponseTemplate::new(429).insert_header("retry-after", retry_after))
         .expect(1)
         .mount(&server)
         .await;

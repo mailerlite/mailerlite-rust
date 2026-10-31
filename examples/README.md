@@ -20,6 +20,12 @@ cargo run --example verify_webhook --features webhook-signatures
 
 Examples read environment variables directly; they do not automatically load a `.env` file. Set the additional variables listed in the selected file, such as `MAILERLITE_GROUP_ID` or `MAILERLITE_SHOP_ID`. Sample names and values can be edited before running.
 
+`update_ecommerce_shop` requires the replacement name, URL, and currency through
+`MAILERLITE_SHOP_NAME`, `MAILERLITE_SHOP_URL`, and `MAILERLITE_SHOP_CURRENCY`.
+`update_ecommerce_product` requires the replacement name and decimal price through
+`MAILERLITE_PRODUCT_NAME` and `MAILERLITE_PRODUCT_PRICE`. Set these deliberately;
+the supplied values overwrite the corresponding fields on the selected resource.
+
 Most examples make the operation described in the file against your account. Create, update, delete, import, assignment, and scheduling examples change account data; scheduling can send email. Normal CI only compiles examples and requires no API token. `configuration` builds a client without making an API request. `verify_webhook` verifies and decodes a signed synthetic event, then demonstrates rejection of a modified body. It needs no API token or running server.
 
 List examples demonstrate one page unless their purpose is pagination. See `pagination` for manual paging and `stream_subscribers` for lazy automatic pagination. E-commerce examples use MailerLite identifiers by default; the SDK also supports explicit external resource identifiers through `with_resource_ids()`.
