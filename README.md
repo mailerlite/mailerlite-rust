@@ -409,6 +409,15 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, tests, Convention
 Commits, and pull requests. For migration and release history, see
 [UPGRADE.md](UPGRADE.md) and [CHANGELOG.md](CHANGELOG.md).
 
+## Support and Feedback
+
+If you find a bug, [submit an issue on GitHub](https://github.com/mailerlite/mailerlite-rust/issues).
+
+You are welcome to create a MailerLite SDK for another programming language.
+
+If you have trouble using our API or SDK, feel free to contact our support team
+at [info@mailerlite.com](mailto:info@mailerlite.com).
+
 ## License
 
-[MIT](./LICENSE).
+[The MIT License (MIT)](LICENSE).
