@@ -95,6 +95,8 @@ impl ListFiles<'_> {
     }
     /// Fetch one numbered page of media-library files.
     ///
+    /// Query parameters are sent as supplied; the server validates their values.
+    ///
     /// # Examples
     /// ```no_run
     /// use mailerlite_rs::MailerLite;
@@ -106,8 +108,7 @@ impl ListFiles<'_> {
     /// ```
     ///
     /// # Errors
-    /// Returns local configuration errors before dispatch, or shared transport, API,
-    /// decoding, and operation-timeout errors.
+    /// Returns shared transport, API, decoding, and operation-timeout errors.
     pub async fn send(self) -> Result<Response<NumberedPage<MediaFile>>, Error> {
         let options = self.options;
         let query: Vec<(&str, String)> = query_pairs([
