@@ -3,10 +3,9 @@
 //! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_EMAIL_ID`, `MAILERLITE_EMAIL_ETAG`,
 //! `MAILERLITE_BACKGROUND_COLOR`, `MAILERLITE_PARAGRAPH_SIZE`.
 //! Sets custom brand mode and replaces the background color and paragraph size.
-use mailerlite_rs::models::emails::EmailResponse;
 use mailerlite_rs::{
-    MailerLite,
-    models::emails::{BrandMode, SettingsResult},
+    MailerLite, Response,
+    models::emails::{BrandMode, EmailResponseMetadata, SettingsResult},
     resources::emails::{
         BrandUpdate, EmailSettingsUpdate, ParagraphStyleUpdate, TextStyleUpdate, TypographyUpdate,
     },
@@ -41,7 +40,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ..Default::default()
     };
 
-    let response: EmailResponse<SettingsResult> = mailerlite
+    let response: Response<SettingsResult, EmailResponseMetadata> = mailerlite
         .emails()
         .update_settings(email_id, etag, &settings)
         .await?;

@@ -2,8 +2,10 @@
 //!
 //! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_EMAIL_ID`, `MAILERLITE_VERSION_ID`,
 //! `MAILERLITE_EMAIL_ETAG`.
-use mailerlite_rs::models::emails::EmailResponse;
-use mailerlite_rs::{MailerLite, models::emails::EmailDocument, models::emails::WithEtag};
+use mailerlite_rs::{
+    MailerLite, Response,
+    models::emails::{EmailDocument, EmailResponseMetadata, WithEtag},
+};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -17,7 +19,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let etag: String = std::env::var("MAILERLITE_EMAIL_ETAG")?;
 
-    let response: EmailResponse<WithEtag<EmailDocument>> = mailerlite
+    let response: Response<WithEtag<EmailDocument>, EmailResponseMetadata> = mailerlite
         .emails()
         .restore_version(email_id, version_id, etag)
         .await?;

@@ -2,11 +2,9 @@
 //!
 //! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_EMAIL_ID`, `MAILERLITE_EMAIL_ETAG`,
 //! `MAILERLITE_IDEMPOTENCY_KEY`.
-use mailerlite_rs::models::emails::EmailResponse;
 use mailerlite_rs::{
-    Error, MailerLite,
-    models::emails::WithEtag,
-    models::emails::{BlockType, EmailBlock},
+    Error, MailerLite, Response,
+    models::emails::{BlockType, EmailBlock, EmailResponseMetadata, WithEtag},
     resources::emails::{Emails, NewBlock},
 };
 use serde_json::Map;
@@ -28,7 +26,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let email: Emails = mailerlite.emails().with_idempotency_key(idempotency_key);
 
-    let response: EmailResponse<WithEtag<EmailBlock>> =
+    let response: Response<WithEtag<EmailBlock>, EmailResponseMetadata> =
         match email.create_block(&email_id, &etag, &block).await {
             // A network error: send the same write again with the same key.
             Err(Error::Transport(_)) => email.create_block(&email_id, &etag, &block).await?,

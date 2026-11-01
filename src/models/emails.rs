@@ -3,12 +3,6 @@ use crate::models::open_enum::open_enum;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{Map, Value};
 use std::collections::BTreeMap;
-/// Email response with the shared HTTP metadata and an idempotency replay flag.
-///
-/// The default [`crate::Response`] and [`crate::ResponseMetadata`] remain
-/// compatible with existing SDK callers. Only email operations use this metadata.
-pub type EmailResponse<T> = crate::Response<T, EmailResponseMetadata>;
-
 /// HTTP metadata for the simple-editor endpoints.
 #[derive(Debug, Clone)]
 pub struct EmailResponseMetadata {
@@ -75,9 +69,7 @@ open_enum! {
     }
 }
 
-// Settings choices follow the Groot settings-schema.json and the API projection
-// in app/Http/Resources/InlineEmail/InlineEmailSettingsResource.php at backend
-// revision 8be496eb0642f60cd610ef9cb8ebd22d82c2e2ec. Unknown values remain in Other.
+// Settings choices preserve unknown API values in Other.
 open_enum! {
     /// Editor width preset.
     pub enum WidthMode {
@@ -502,7 +494,7 @@ pub struct EtagOnly {
     pub etag: String,
 }
 
-/// Decodes a JSON object, and also accepts `[]` as an empty object. PHP encodes an empty array as `[]`.
+/// Decodes a JSON object, accepting the API's `[]` representation for an empty object.
 fn object_or_empty_array<'de, D, T>(deserializer: D) -> Result<T, D::Error>
 where
     D: Deserializer<'de>,
@@ -561,8 +553,7 @@ mod tests {
     }
     #[test]
     fn style_choices_preserve_known_and_unknown_wire_values() {
-        // Wire values from nebula-front/dist/contracts/settings-schema.json,
-        // mapped to API fields by InlineEmailSettingsResource (revision above).
+        // Verify the API wire strings for each supported settings choice.
         assert_eq!(
             serde_json::to_value(WidthMode::Default).unwrap(),
             json!("default")
@@ -759,8 +750,8 @@ mod tests {
         assert_eq!(BrandMode::Account.to_string(), "account");
     }
     #[test]
-    fn object_fields_accept_empty_php_arrays_but_reject_malformed_values() {
-        // InlineEmailBlockResource emits objects; PHP empty maps can also be [].
+    fn object_fields_accept_empty_arrays_but_reject_malformed_values() {
+        // Object fields also accept the API's alternate empty-array representation.
         // Neither block content nor validation-error maps have null semantics.
         for wire in [json!({}), json!([])] {
             let text: EditorText = serde_json::from_value(json!({"editor_content": wire})).unwrap();

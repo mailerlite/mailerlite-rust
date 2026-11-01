@@ -1,8 +1,10 @@
 //! Find email.
 //!
 //! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_EMAIL_ID`.
-use mailerlite_rs::models::emails::EmailResponse;
-use mailerlite_rs::{MailerLite, models::emails::EmailDocument, models::emails::WithEtag};
+use mailerlite_rs::{
+    MailerLite, Response,
+    models::emails::{EmailDocument, EmailResponseMetadata, WithEtag},
+};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -12,7 +14,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let email_id: String = std::env::var("MAILERLITE_EMAIL_ID")?;
 
-    let response: EmailResponse<WithEtag<EmailDocument>> =
+    let response: Response<WithEtag<EmailDocument>, EmailResponseMetadata> =
         mailerlite.emails().get(email_id).await?;
 
     println!("{:#?}", response.data.data);

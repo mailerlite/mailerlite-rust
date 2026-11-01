@@ -1,10 +1,9 @@
 //! Validate email block.
 //!
 //! Requires `MAILERLITE_API_TOKEN`.
-use mailerlite_rs::models::emails::EmailResponse;
 use mailerlite_rs::{
-    MailerLite,
-    models::emails::{BlockType, Validation},
+    MailerLite, Response,
+    models::emails::{BlockType, EmailResponseMetadata, Validation},
     resources::emails::NewBlock,
 };
 use serde_json::{Map, Value, json};
@@ -25,7 +24,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let block: NewBlock = NewBlock::new(BlockType::Button, editor_content);
 
-    let response: EmailResponse<Validation> = mailerlite.emails().validate_block(&block).await?;
+    let response: Response<Validation, EmailResponseMetadata> =
+        mailerlite.emails().validate_block(&block).await?;
 
     if !response.data.valid {
         println!("{:#?}", response.data.errors);

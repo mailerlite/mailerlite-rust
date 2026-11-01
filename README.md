@@ -143,9 +143,9 @@ deletion/movement, block and settings validation, settings updates, template
 creation, version listing/creation, and version restoration. Response models
 live in `models::emails`; write parameters live in `resources::emails`.
 
-Email operations return `models::emails::EmailResponse<T>`, the shared
-`Response` container with `EmailResponseMetadata`. Versioned operations return
-`EmailResponse<WithEtag<T>>`: HTTP metadata is in
+Email operations return `Response<T, EmailResponseMetadata>`, with metadata
+from `models::emails`. Versioned operations return
+`Response<WithEtag<T>, EmailResponseMetadata>`: HTTP metadata is in
 `response.metadata`, the current version is `response.data.etag`, and the
 resource is `response.data.data`. Pass the latest etag to the next write.
 For HTTP 409 conflicts, inspect `ApiError::is_version_conflict()` and `etag()`;

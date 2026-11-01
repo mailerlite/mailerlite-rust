@@ -1,8 +1,10 @@
 //! Create email version.
 //!
 //! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_EMAIL_ID`.
-use mailerlite_rs::models::emails::EmailResponse;
-use mailerlite_rs::{MailerLite, models::emails::EmailVersion};
+use mailerlite_rs::{
+    MailerLite, Response,
+    models::emails::{EmailResponseMetadata, EmailVersion},
+};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -12,7 +14,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let email_id: String = std::env::var("MAILERLITE_EMAIL_ID")?;
 
-    let response: EmailResponse<EmailVersion> =
+    let response: Response<EmailVersion, EmailResponseMetadata> =
         mailerlite.emails().create_version(email_id).await?;
 
     let is_new: bool = response.metadata.status == 201;

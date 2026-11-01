@@ -1,4 +1,4 @@
-//! Internal-shop product fields verified against the backend resources.
+//! Internal-shop product details and booking settings.
 use super::wire;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Deserializer};
@@ -193,8 +193,8 @@ fn optional_availability<'de, D: Deserializer<'de>>(
     )
 }
 
-// PHP encodes an empty settings array as [], while populated settings are an
-// object. Only that empty array is accepted; other malformed shapes stay errors.
+// Empty settings may arrive as []; populated settings arrive as an object.
+// Only the empty array is accepted; other malformed shapes remain errors.
 pub(super) fn optional_settings<'de, D: Deserializer<'de>>(
     deserializer: D,
 ) -> Result<Option<ProductSettings>, D::Error> {
@@ -223,7 +223,7 @@ mod tests {
     use serde_json::json;
 
     #[test]
-    fn settings_accept_php_empty_array_as_present_empty_settings() {
+    fn settings_accept_empty_array_as_present_empty_settings() {
         let product: Product =
             serde_json::from_value(json!({"id":"1","name":"Empty","settings":[]})).unwrap();
         assert!(product.settings.unwrap().action.is_none());
@@ -243,7 +243,7 @@ mod tests {
     }
 
     #[test]
-    fn availability_accepts_php_empty_array() {
+    fn availability_accepts_empty_array() {
         let product: Product = serde_json::from_value(
             json!({"id":"1","name":"Empty","settings":{"custom_availability_days":[]}}),
         )

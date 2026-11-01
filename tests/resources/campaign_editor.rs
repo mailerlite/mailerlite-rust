@@ -1,4 +1,4 @@
-//! HTTP contract regression tests for the migrated simple-editor API.
+//! HTTP contracts for simple-editor campaign creation.
 #![allow(clippy::unwrap_used, reason = "Tests assert fixture outcomes")]
 use crate::editor_support::{
     assert_no_request, expect_no_request, expect_request, fixture, mailerlite,

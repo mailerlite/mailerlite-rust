@@ -1,4 +1,4 @@
-//! Automation report schemas verified against the MailerLite backend resources.
+//! Automation engagement, delivery, and ecommerce reports.
 use crate::models::{
     campaigns::CampaignEmail,
     ecommerce::{ReportSubscriber, wire},

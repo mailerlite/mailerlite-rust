@@ -1,9 +1,10 @@
 //! Get email versions.
 //!
 //! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_EMAIL_ID`.
-use mailerlite_rs::models::emails::EmailResponse;
 use mailerlite_rs::{
-    MailerLite, models::emails::EmailVersion, pagination::NumberedPage,
+    MailerLite, Response,
+    models::emails::{EmailResponseMetadata, EmailVersion},
+    pagination::NumberedPage,
     resources::emails::ListVersionsOptions,
 };
 
@@ -20,7 +21,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         limit: Some(10),
     };
 
-    let response: EmailResponse<NumberedPage<EmailVersion>> =
+    let response: Response<NumberedPage<EmailVersion>, EmailResponseMetadata> =
         mailerlite.emails().versions(email_id, options).await?;
 
     for version in &response.data.data {

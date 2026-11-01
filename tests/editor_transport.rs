@@ -99,7 +99,7 @@ async fn conflict_details_are_accessible_but_redacted() {
 
 #[test]
 fn published_response_literals_and_mapping_remain_compatible() {
-    use mailerlite_rs::models::emails::{EmailResponse, EmailResponseMetadata};
+    use mailerlite_rs::models::emails::EmailResponseMetadata;
     use mailerlite_rs::{Response, ResponseMetadata, StatusCode};
 
     // Keep the complete 2.0 struct literal: adding even a private field breaks it.
@@ -117,7 +117,7 @@ fn published_response_literals_and_mapping_remain_compatible() {
     assert_eq!(response.data, 7);
     assert_eq!(response.metadata.rate_remaining, Some(119));
 
-    let email: EmailResponse<u16> = Response {
+    let email: Response<u16, EmailResponseMetadata> = Response {
         data: response.data,
         metadata: EmailResponseMetadata {
             http: response.metadata,

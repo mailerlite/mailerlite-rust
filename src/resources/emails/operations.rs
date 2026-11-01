@@ -7,11 +7,11 @@ use super::{
     validation as validate,
 };
 use crate::{
-    Error, MailerLite,
+    Error, MailerLite, Response,
     http::OperationPolicy,
     models::emails::{
-        DataOnly, EmailBlock, EmailDocument, EmailHtml, EmailResponse, EmailResponseMetadata,
-        EmailTemplate, EmailVersion, EtagOnly, SettingsResult, Validation, WithEtag,
+        DataOnly, EmailBlock, EmailDocument, EmailHtml, EmailResponseMetadata, EmailTemplate,
+        EmailVersion, EtagOnly, SettingsResult, Validation, WithEtag,
     },
     pagination::NumberedPage,
     resources::query::query_pairs,
@@ -83,7 +83,7 @@ impl<'a> Emails<'a> {
     pub async fn get(
         &self,
         email_id: impl AsRef<str>,
-    ) -> Result<EmailResponse<WithEtag<EmailDocument>>, Error> {
+    ) -> Result<Response<WithEtag<EmailDocument>, EmailResponseMetadata>, Error> {
         let email_id: &str = email_id.as_ref();
         validate::path_id("email_id", email_id)?;
 
@@ -123,7 +123,7 @@ impl<'a> Emails<'a> {
     pub async fn html(
         &self,
         email_id: impl AsRef<str>,
-    ) -> Result<EmailResponse<WithEtag<EmailHtml>>, Error> {
+    ) -> Result<Response<WithEtag<EmailHtml>, EmailResponseMetadata>, Error> {
         let email_id: &str = email_id.as_ref();
         validate::path_id("email_id", email_id)?;
 
@@ -159,7 +159,7 @@ impl<'a> Emails<'a> {
         &self,
         email_id: impl AsRef<str>,
         block_id: impl AsRef<str>,
-    ) -> Result<EmailResponse<WithEtag<EmailBlock>>, Error> {
+    ) -> Result<Response<WithEtag<EmailBlock>, EmailResponseMetadata>, Error> {
         let (email_id, block_id): (&str, &str) = (email_id.as_ref(), block_id.as_ref());
         validate::path_id("email_id", email_id)?;
         validate::path_id("block_id", block_id)?;
@@ -204,7 +204,7 @@ impl<'a> Emails<'a> {
         email_id: impl AsRef<str>,
         etag: impl AsRef<str>,
         block: &NewBlock,
-    ) -> Result<EmailResponse<WithEtag<EmailBlock>>, Error> {
+    ) -> Result<Response<WithEtag<EmailBlock>, EmailResponseMetadata>, Error> {
         let (email_id, etag): (&str, &str) = (email_id.as_ref(), etag.as_ref());
         validate::path_id("email_id", email_id)?;
 
@@ -252,7 +252,7 @@ impl<'a> Emails<'a> {
         block_id: impl AsRef<str>,
         etag: impl AsRef<str>,
         editor_content: &Map<String, Value>,
-    ) -> Result<EmailResponse<WithEtag<EmailBlock>>, Error> {
+    ) -> Result<Response<WithEtag<EmailBlock>, EmailResponseMetadata>, Error> {
         let (email_id, block_id, etag): (&str, &str, &str) =
             (email_id.as_ref(), block_id.as_ref(), etag.as_ref());
         validate::path_id("email_id", email_id)?;
@@ -300,7 +300,7 @@ impl<'a> Emails<'a> {
         email_id: impl AsRef<str>,
         block_id: impl AsRef<str>,
         etag: impl AsRef<str>,
-    ) -> Result<EmailResponse<EtagOnly>, Error> {
+    ) -> Result<Response<EtagOnly, EmailResponseMetadata>, Error> {
         let (email_id, block_id, etag): (&str, &str, &str) =
             (email_id.as_ref(), block_id.as_ref(), etag.as_ref());
         validate::path_id("email_id", email_id)?;
@@ -353,7 +353,7 @@ impl<'a> Emails<'a> {
         block_id: impl AsRef<str>,
         etag: impl AsRef<str>,
         placement: &Placement,
-    ) -> Result<EmailResponse<WithEtag<EmailBlock>>, Error> {
+    ) -> Result<Response<WithEtag<EmailBlock>, EmailResponseMetadata>, Error> {
         let (email_id, block_id, etag): (&str, &str, &str) =
             (email_id.as_ref(), block_id.as_ref(), etag.as_ref());
         validate::path_id("email_id", email_id)?;
@@ -398,7 +398,7 @@ impl<'a> Emails<'a> {
     pub async fn validate_block(
         &self,
         block: &NewBlock,
-    ) -> Result<EmailResponse<Validation>, Error> {
+    ) -> Result<Response<Validation, EmailResponseMetadata>, Error> {
         send(
             self.mailerlite,
             Method::POST,
@@ -445,7 +445,7 @@ impl<'a> Emails<'a> {
         email_id: impl AsRef<str>,
         etag: impl AsRef<str>,
         settings: &EmailSettingsUpdate,
-    ) -> Result<EmailResponse<SettingsResult>, Error> {
+    ) -> Result<Response<SettingsResult, EmailResponseMetadata>, Error> {
         let (email_id, etag): (&str, &str) = (email_id.as_ref(), etag.as_ref());
         validate::path_id("email_id", email_id)?;
         settings.check()?;
@@ -495,7 +495,7 @@ impl<'a> Emails<'a> {
         &self,
         email_id: impl AsRef<str>,
         settings: &EmailSettingsUpdate,
-    ) -> Result<EmailResponse<Validation>, Error> {
+    ) -> Result<Response<Validation, EmailResponseMetadata>, Error> {
         let email_id: &str = email_id.as_ref();
         validate::path_id("email_id", email_id)?;
         settings.check_keys("")?;
@@ -535,7 +535,7 @@ impl<'a> Emails<'a> {
         &self,
         email_id: impl AsRef<str>,
         name: impl AsRef<str>,
-    ) -> Result<EmailResponse<EmailTemplate>, Error> {
+    ) -> Result<Response<EmailTemplate, EmailResponseMetadata>, Error> {
         let email_id: &str = email_id.as_ref();
         validate::path_id("email_id", email_id)?;
 
@@ -579,7 +579,7 @@ impl<'a> Emails<'a> {
         &self,
         email_id: impl AsRef<str>,
         options: ListVersionsOptions,
-    ) -> Result<EmailResponse<NumberedPage<EmailVersion>>, Error> {
+    ) -> Result<Response<NumberedPage<EmailVersion>, EmailResponseMetadata>, Error> {
         let email_id: &str = email_id.as_ref();
         validate::path_id("email_id", email_id)?;
         let query: Vec<(&str, String)> = query_pairs([
@@ -623,7 +623,7 @@ impl<'a> Emails<'a> {
     pub async fn create_version(
         &self,
         email_id: impl AsRef<str>,
-    ) -> Result<EmailResponse<EmailVersion>, Error> {
+    ) -> Result<Response<EmailVersion, EmailResponseMetadata>, Error> {
         let email_id: &str = email_id.as_ref();
         validate::path_id("email_id", email_id)?;
 
@@ -668,7 +668,7 @@ impl<'a> Emails<'a> {
         email_id: impl AsRef<str>,
         version_id: impl AsRef<str>,
         etag: impl AsRef<str>,
-    ) -> Result<EmailResponse<WithEtag<EmailDocument>>, Error> {
+    ) -> Result<Response<WithEtag<EmailDocument>, EmailResponseMetadata>, Error> {
         let (email_id, version_id, etag): (&str, &str, &str) =
             (email_id.as_ref(), version_id.as_ref(), etag.as_ref());
         validate::path_id("email_id", email_id)?;
@@ -700,7 +700,7 @@ async fn send<T: serde::de::DeserializeOwned>(
     body: Option<&dyn crate::http::RequestBody>,
     key: Option<&str>,
     mut policy: OperationPolicy,
-) -> crate::Result<EmailResponse<T>> {
+) -> crate::Result<Response<T, EmailResponseMetadata>> {
     policy.idempotency_key = key
         .map(reqwest::header::HeaderValue::from_str)
         .transpose()

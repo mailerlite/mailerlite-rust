@@ -1,4 +1,4 @@
-//! Shared mockito helpers for the migrated editor contract scenarios.
+//! Shared mockito helpers for simple-editor HTTP contract scenarios.
 #![allow(clippy::unwrap_used, reason = "Tests assert fixture outcomes")]
 
 use mailerlite_rs::MailerLite;

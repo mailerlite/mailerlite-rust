@@ -1,17 +1,16 @@
-//! HTTP contract regression tests for the migrated simple-editor API.
+//! HTTP contracts for simple-editor email operations.
 #![allow(clippy::unwrap_used, reason = "Tests assert fixture outcomes")]
 
 use crate::editor_support::{
     BAD_IDS, assert_no_request, expect_no_request, expect_request, fixture, mailerlite,
 };
-use mailerlite_rs::models::emails::EmailResponse;
 use mailerlite_rs::{
-    Error,
+    Error, Response,
     models::emails::{
-        BlockType, BrandMode, EditorText, EmailBlock, EmailDocument, EmailHtml, EmailTemplate,
-        EmailVersion, Position, SettingsResult, VERSION_CONFLICT, Validation,
+        BlockType, BrandMode, EditorText, EmailBlock, EmailDocument, EmailHtml,
+        EmailResponseMetadata, EmailTemplate, EmailVersion, EtagOnly, Position, SettingsResult,
+        VERSION_CONFLICT, Validation, WithEtag,
     },
-    models::emails::{EtagOnly, WithEtag},
     pagination::NumberedPage,
     resources::emails::{
         BrandUpdate, EmailSettingsUpdate, Emails, FooterUpdate, LinkStyleUpdate,
@@ -35,7 +34,7 @@ async fn find_gets_the_email() {
     )
     .await;
 
-    let response: EmailResponse<WithEtag<EmailDocument>> =
+    let response: Response<WithEtag<EmailDocument>, EmailResponseMetadata> =
         mailerlite(&server).emails().get("123").await.unwrap();
 
     mock.assert_async().await;
@@ -118,7 +117,7 @@ async fn find_decodes_null_values_and_keeps_unknown_keys() {
     .to_string();
     expect_request(&mut server, "GET", "/emails/123", None, 200, &body).await;
 
-    let response: EmailResponse<WithEtag<EmailDocument>> =
+    let response: Response<WithEtag<EmailDocument>, EmailResponseMetadata> =
         mailerlite(&server).emails().get("123").await.unwrap();
 
     let settings = &response.data.data.settings;
@@ -169,7 +168,7 @@ async fn html_gets_the_html() {
     )
     .await;
 
-    let response: EmailResponse<WithEtag<EmailHtml>> =
+    let response: Response<WithEtag<EmailHtml>, EmailResponseMetadata> =
         mailerlite(&server).emails().html("123").await.unwrap();
 
     mock.assert_async().await;
@@ -240,7 +239,7 @@ async fn find_block_gets_the_block_and_its_placement() {
     )
     .await;
 
-    let response: EmailResponse<WithEtag<EmailBlock>> = mailerlite(&server)
+    let response: Response<WithEtag<EmailBlock>, EmailResponseMetadata> = mailerlite(&server)
         .emails()
         .get_block("123", "57")
         .await
@@ -317,7 +316,7 @@ async fn create_block_sends_the_block_and_the_etag() {
     )
     .await;
 
-    let response: EmailResponse<WithEtag<EmailBlock>> = mailerlite(&server)
+    let response: Response<WithEtag<EmailBlock>, EmailResponseMetadata> = mailerlite(&server)
         .emails()
         .create_block("123", "42", &new_paragraph(Some(Placement::after("57"))))
         .await
@@ -517,7 +516,7 @@ async fn update_block_patches_the_content() {
     )
     .await;
 
-    let response: EmailResponse<WithEtag<EmailBlock>> = mailerlite(&server)
+    let response: Response<WithEtag<EmailBlock>, EmailResponseMetadata> = mailerlite(&server)
         .emails()
         .update_block("123", "57", "43", &hello_again())
         .await
@@ -638,7 +637,7 @@ async fn delete_block_sends_the_etag_in_the_body() {
     )
     .await;
 
-    let response: EmailResponse<EtagOnly> = mailerlite(&server)
+    let response: Response<EtagOnly, EmailResponseMetadata> = mailerlite(&server)
         .emails()
         .delete_block("123", "57", "44")
         .await
@@ -691,7 +690,7 @@ async fn move_block_sends_the_placement_and_the_etag() {
     )
     .await;
 
-    let response: EmailResponse<WithEtag<EmailBlock>> = mailerlite(&server)
+    let response: Response<WithEtag<EmailBlock>, EmailResponseMetadata> = mailerlite(&server)
         .emails()
         .move_block("123", "57", "45", &Placement::before("1"))
         .await
@@ -873,7 +872,7 @@ async fn validate_block_sends_the_block_without_an_etag() {
         editor_content: serde_json::Map::new(),
         placement: None,
     };
-    let response: EmailResponse<Validation> = mailerlite(&server)
+    let response: Response<Validation, EmailResponseMetadata> = mailerlite(&server)
         .emails()
         .validate_block(&block)
         .await
@@ -905,7 +904,7 @@ async fn validate_block_gives_the_errors_of_an_invalid_block() {
         editor_content: serde_json::Map::new(),
         placement: None,
     };
-    let response: EmailResponse<Validation> = mailerlite(&server)
+    let response: Response<Validation, EmailResponseMetadata> = mailerlite(&server)
         .emails()
         .validate_block(&block)
         .await
@@ -937,7 +936,7 @@ async fn validate_block_accepts_an_empty_array_for_the_errors() {
         editor_content: serde_json::Map::new(),
         placement: None,
     };
-    let response: EmailResponse<Validation> = mailerlite(&server)
+    let response: Response<Validation, EmailResponseMetadata> = mailerlite(&server)
         .emails()
         .validate_block(&block)
         .await
@@ -965,7 +964,7 @@ async fn validate_block_sends_a_bad_placement_and_gives_the_errors() {
     .await;
 
     let block: NewBlock = new_paragraph(Some(Placement::after("1/2")));
-    let response: EmailResponse<Validation> = mailerlite(&server)
+    let response: Response<Validation, EmailResponseMetadata> = mailerlite(&server)
         .emails()
         .validate_block(&block)
         .await
@@ -1049,7 +1048,7 @@ async fn update_settings_sends_only_the_keys_that_are_set() {
     )
     .await;
 
-    let response: EmailResponse<SettingsResult> = mailerlite(&server)
+    let response: Response<SettingsResult, EmailResponseMetadata> = mailerlite(&server)
         .emails()
         .update_settings("123", "46", &settings_update())
         .await
@@ -1127,7 +1126,7 @@ async fn validate_settings_sends_the_settings_without_an_etag() {
     )
     .await;
 
-    let response: EmailResponse<Validation> = mailerlite(&server)
+    let response: Response<Validation, EmailResponseMetadata> = mailerlite(&server)
         .emails()
         .validate_settings("123", &settings_update())
         .await
@@ -1206,7 +1205,7 @@ async fn create_template_sends_the_name() {
     )
     .await;
 
-    let response: EmailResponse<EmailTemplate> = mailerlite(&server)
+    let response: Response<EmailTemplate, EmailResponseMetadata> = mailerlite(&server)
         .emails()
         .create_template("123", "Newsletter")
         .await
@@ -1258,7 +1257,7 @@ async fn versions_lists_the_versions_with_the_page_options() {
         page: Some(2),
         limit: Some(10),
     };
-    let response: EmailResponse<NumberedPage<EmailVersion>> = mailerlite(&server)
+    let response: Response<NumberedPage<EmailVersion>, EmailResponseMetadata> = mailerlite(&server)
         .emails()
         .versions("123", options)
         .await
@@ -1334,7 +1333,7 @@ async fn create_version_sends_no_body_and_gives_the_status_code() {
         )
         .await;
 
-        let response: EmailResponse<EmailVersion> = mailerlite(&server)
+        let response: Response<EmailVersion, EmailResponseMetadata> = mailerlite(&server)
             .emails()
             .create_version("123")
             .await
@@ -1381,7 +1380,7 @@ async fn restore_version_sends_the_etag_and_gives_the_email() {
     )
     .await;
 
-    let response: EmailResponse<WithEtag<EmailDocument>> = mailerlite(&server)
+    let response: Response<WithEtag<EmailDocument>, EmailResponseMetadata> = mailerlite(&server)
         .emails()
         .restore_version("123", "901", "41")
         .await
@@ -1709,7 +1708,7 @@ async fn a_replayed_write_has_the_replay_flag() {
         .create_async()
         .await;
 
-    let response: EmailResponse<EmailVersion> = mailerlite(&server)
+    let response: Response<EmailVersion, EmailResponseMetadata> = mailerlite(&server)
         .emails()
         .with_idempotency_key("key-1")
         .create_version("123")
@@ -1738,7 +1737,7 @@ async fn validate_block_decodes_a_null_schema() {
         editor_content: serde_json::Map::new(),
         placement: None,
     };
-    let response: EmailResponse<Validation> = mailerlite(&server)
+    let response: Response<Validation, EmailResponseMetadata> = mailerlite(&server)
         .emails()
         .validate_block(&block)
         .await

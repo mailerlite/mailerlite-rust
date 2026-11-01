@@ -1,4 +1,4 @@
-//! HTTP contract regression tests for the migrated simple-editor API.
+//! HTTP contracts for media-library listing.
 #![allow(clippy::unwrap_used, reason = "Tests assert fixture outcomes")]
 
 use crate::editor_support::{expect_request, fixture, mailerlite};

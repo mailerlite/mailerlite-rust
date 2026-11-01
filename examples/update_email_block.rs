@@ -3,8 +3,10 @@
 //! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_EMAIL_ID`, `MAILERLITE_BLOCK_ID`,
 //! `MAILERLITE_EMAIL_ETAG`, `MAILERLITE_EDITOR_CONTENT_JSON`.
 //! Replaces the complete block document; omitted content keys are removed.
-use mailerlite_rs::models::emails::EmailResponse;
-use mailerlite_rs::{MailerLite, models::emails::EmailBlock, models::emails::WithEtag};
+use mailerlite_rs::{
+    MailerLite, Response,
+    models::emails::{EmailBlock, EmailResponseMetadata, WithEtag},
+};
 use serde_json::{Map, Value};
 
 #[tokio::main]
@@ -22,7 +24,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let editor_content: Map<String, Value> =
         serde_json::from_str(&std::env::var("MAILERLITE_EDITOR_CONTENT_JSON")?)?;
 
-    let response: EmailResponse<WithEtag<EmailBlock>> = mailerlite
+    let response: Response<WithEtag<EmailBlock>, EmailResponseMetadata> = mailerlite
         .emails()
         .update_block(email_id, block_id, etag, &editor_content)
         .await?;

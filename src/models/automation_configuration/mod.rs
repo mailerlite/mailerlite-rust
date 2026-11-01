@@ -1,4 +1,4 @@
-//! Typed automation configuration verified against the backend step and trigger classes.
+//! Typed automation step and trigger configuration.
 //!
 //! Request configuration is deliberately separate from enriched response fields.
 //! Identifier values retain their original string or integer representation. Known
