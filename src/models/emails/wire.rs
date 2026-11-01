@@ -2,12 +2,13 @@
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::{Map, Value};
 
-pub(super) fn optional_value<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
-where
-    D: Deserializer<'de>,
-    T: Deserialize<'de>,
-{
-    T::deserialize(deserializer).map(Some)
+/// Keep the nested field path when a tagged document is decoded from buffered JSON.
+pub(super) fn decode<T: serde::de::DeserializeOwned>(value: Value) -> Result<T, String> {
+    serde_path_to_error::deserialize(value).map_err(|error| error.to_string())
+}
+
+pub(super) fn empty_object() -> Value {
+    Value::Object(Map::new())
 }
 
 pub(super) fn serialize_extensions<S: Serializer>(
@@ -27,17 +28,19 @@ pub(super) fn tagged_object<'de, D: Deserializer<'de>>(
     deserializer: D,
 ) -> Result<(String, Map<String, Value>), D::Error> {
     let mut object = Map::<String, Value>::deserialize(deserializer)?;
-    let kind = object
-        .remove("type")
-        .and_then(|value| value.as_str().map(str::to_owned))
-        .ok_or_else(|| serde::de::Error::custom("editor type must be a string"))?;
+    let Some(Value::String(kind)) = object.remove("type") else {
+        return Err(serde::de::Error::custom("editor type must be a string"));
+    };
     Ok((kind, object))
 }
 
 pub(super) fn object(value: Value) -> Result<Map<String, Value>, serde_json::Error> {
     match value {
+        Value::Object(fields) => Ok(fields),
         Value::Array(items) if items.is_empty() => Ok(Map::new()),
-        value => serde_json::from_value(value),
+        _ => Err(serde::de::Error::custom(
+            "editor content must be an object or an empty array",
+        )),
     }
 }
 

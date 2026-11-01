@@ -372,7 +372,11 @@ fn simple_editor_resource_futures_are_send() {
     assert_send_future(emails.get("123"));
     assert_send_future(emails.html("123"));
     assert_send_future(emails.get_block("123", "456"));
-    assert_send_future(emails.update_block("123", "456", "42", &block.content));
+    let existing = serde_json::from_value(
+        serde_json::json!({"id":"456","type":"divider","editor_content":{}}),
+    )
+    .unwrap();
+    assert_send_future(emails.update_block("123", &existing, "42", &block.content));
     assert_send_future(emails.delete_block("123", "456", "42"));
     assert_send_future(emails.move_block(
         "123",

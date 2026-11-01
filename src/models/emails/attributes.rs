@@ -1,9 +1,13 @@
 //! Typed attributes for each editor block and inline formatting mark.
+//!
+//! Optional fields decode missing values and JSON null as `None`. Fields using
+//! `Patch` retain the distinction between omission and an explicit null.
+//! Images may be empty placeholders; media dimensions can be fractional numbers.
 use super::choices::{
     BlockAlignment, ButtonSize, ButtonStyle, ButtonWidth, DividerStyle, FooterRole,
     SocialIconColor, SocialIconShape, SocialLinkType, TextAlignment, VideoPreview,
 };
-use super::wire::{optional_value, serialize_extensions};
+use super::wire::serialize_extensions;
 use crate::models::common::Patch;
 use serde::{Deserialize, Serialize, Serializer};
 use serde_json::{Map, Value};
@@ -16,11 +20,7 @@ pub struct BlockquoteAttributes {
     #[serde(default, skip_serializing_if = "Patch::is_unset")]
     /// The `borderColor` editor attribute; omission and null are preserved separately.
     pub border_color: Patch<String>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Border thickness in the editor’s numeric representation.
     pub border_width: Option<serde_json::Number>,
     #[serde(default, skip_serializing_if = "Patch::is_unset")]
@@ -48,11 +48,7 @@ impl BlockquoteAttributes {
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ButtonAttributes {
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Horizontal placement of the block.
     pub alignment: Option<BlockAlignment>,
     #[serde(default, skip_serializing_if = "Patch::is_unset")]
@@ -61,50 +57,26 @@ pub struct ButtonAttributes {
     #[serde(default, skip_serializing_if = "Patch::is_unset")]
     /// Click-tracking ID, either a server number or a temporary editor string. Missing and null remain distinct.
     pub link_id: Patch<EditorNumberOrString>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Link category supplied by the editor; the API leaves this string open.
     pub link_type: Option<String>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Whether to open the link in a new tab.
     pub open_new_tab: Option<bool>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// The `size` editor attribute.
     pub size: Option<ButtonSize>,
     #[serde(default, skip_serializing_if = "Patch::is_unset")]
     /// The `textColor` editor attribute; omission and null are preserved separately.
     pub text_color: Patch<String>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     #[serde(rename = "type")]
     /// The `type` editor attribute.
     pub kind: Option<ButtonStyle>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Destination URL of the block or social link.
     pub url: Option<String>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// The `width` editor attribute.
     pub width: Option<ButtonWidth>,
     /// Additional attributes not yet modeled by the SDK.
@@ -161,35 +133,19 @@ impl CodeAttributes {
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DividerAttributes {
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Horizontal placement of the block.
     pub alignment: Option<BlockAlignment>,
     #[serde(default, skip_serializing_if = "Patch::is_unset")]
     /// The `color` editor attribute; omission and null are preserved separately.
     pub color: Patch<String>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// The `size` editor attribute.
     pub size: Option<u64>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// The `style` editor attribute.
     pub style: Option<DividerStyle>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// The `width` editor attribute.
     pub width: Option<String>,
     /// Additional attributes not yet modeled by the SDK.
@@ -214,11 +170,7 @@ impl DividerAttributes {
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct HeadingAttributes {
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Heading level, retaining its numeric or string representation.
     pub level: Option<EditorNumberOrString>,
     #[serde(default, skip_serializing_if = "Patch::is_unset")]
@@ -239,72 +191,45 @@ impl HeadingAttributes {
 
 /// Attributes of image content.
 /// Unknown fields are preserved in `extra`; known field names cannot be inserted there.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ImageAttributes {
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Horizontal placement of the block.
     pub alignment: Option<BlockAlignment>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Alternative text for the media.
     pub alt: Option<String>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Caption displayed with the image.
     pub caption: Option<String>,
     #[serde(default, skip_serializing_if = "Patch::is_unset")]
     /// Role of this block in the footer. Missing and null remain distinct.
     pub footer_role: Patch<FooterRole>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Whether to expand the media to the full available width.
     pub full_width: Option<bool>,
     #[serde(default, skip_serializing_if = "Patch::is_unset")]
-    /// The `height` editor attribute; omission and null are preserved separately.
-    pub height: Patch<u64>,
+    /// Rendered height, including fractional resizing values; omission and null remain distinct.
+    pub height: Patch<serde_json::Number>,
     #[serde(default, skip_serializing_if = "Patch::is_unset")]
     /// Click-tracking ID, either a server number or a temporary editor string. Missing and null remain distinct.
     pub link_id: Patch<EditorNumberOrString>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Link category supplied by the editor; the API leaves this string open.
     pub link_type: Option<String>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Whether to open the link in a new tab.
     pub open_new_tab: Option<bool>,
-    /// Source URL of the image.
-    pub src: String,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    /// Source URL of the image; absent or null for an empty placeholder.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub src: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Destination URL of the block or social link.
     pub url: Option<String>,
     #[serde(default, skip_serializing_if = "Patch::is_unset")]
-    /// The `width` editor attribute; omission and null are preserved separately.
-    pub width: Patch<u64>,
+    /// Rendered width, including fractional resizing values; omission and null remain distinct.
+    pub width: Patch<serde_json::Number>,
     /// Additional attributes not yet modeled by the SDK.
     #[serde(flatten, serialize_with = "ImageAttributes::serialize_extra")]
     pub extra: Map<String, Value>,
@@ -335,22 +260,11 @@ impl ImageAttributes {
     }
 }
 impl ImageAttributes {
-    /// Construct attributes with their required values.
+    /// Construct an image with a source URL. Use `default()` for a placeholder.
     pub fn new(src: impl Into<String>) -> Self {
         Self {
-            alignment: None,
-            alt: None,
-            caption: None,
-            footer_role: Patch::Unset,
-            full_width: None,
-            height: Patch::Unset,
-            link_id: Patch::Unset,
-            link_type: None,
-            open_new_tab: None,
-            src: src.into(),
-            url: None,
-            width: Patch::Unset,
-            extra: Map::new(),
+            src: Some(src.into()),
+            ..Self::default()
         }
     }
 }
@@ -360,11 +274,7 @@ impl ImageAttributes {
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ParagraphAttributes {
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// CSS class supplied by the editor.
     pub class: Option<String>,
     #[serde(default, skip_serializing_if = "Patch::is_unset")]
@@ -391,49 +301,25 @@ impl ParagraphAttributes {
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SocialIconAttributes {
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Horizontal placement of the block.
     pub alignment: Option<BlockAlignment>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// The `color` editor attribute.
     pub color: Option<SocialIconColor>,
     #[serde(default, skip_serializing_if = "Patch::is_unset")]
     /// Role of this block in the footer. Missing and null remain distinct.
     pub footer_role: Patch<FooterRole>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Social icon links in display order.
     pub items: Option<Vec<SocialIconItem>>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Shape of the social icons.
     pub shape: Option<SocialIconShape>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// The `size` editor attribute.
     pub size: Option<u64>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Whether social links open in a new tab.
     pub target_blank: Option<bool>,
     /// Additional attributes not yet modeled by the SDK.
@@ -466,89 +352,45 @@ impl SocialIconAttributes {
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VideoAttributes {
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Horizontal placement of the block.
     pub alignment: Option<BlockAlignment>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Alternative text for the media.
     pub alt: Option<String>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// URL of the animated thumbnail.
     pub animated_thumbnail: Option<String>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Embeddable video URL.
     pub embed_url: Option<String>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Whether to expand the media to the full available width.
     pub full_width: Option<bool>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Whether a thumbnail is already available.
     pub has_immediate_thumbnail: Option<bool>,
     #[serde(default, skip_serializing_if = "Patch::is_unset")]
-    /// The `height` editor attribute; omission and null are preserved separately.
-    pub height: Patch<u64>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    /// Rendered height, including fractional resizing values; omission and null remain distinct.
+    pub height: Patch<serde_json::Number>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// URL of the static thumbnail.
     pub static_thumbnail: Option<String>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Video identifier supplied by the provider.
     pub video_code: Option<String>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Thumbnail rendering mode.
     pub video_preview: Option<VideoPreview>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Video provider name; the API leaves this string open.
     pub video_source: Option<String>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Original video URL.
     pub video_url: Option<String>,
     #[serde(default, skip_serializing_if = "Patch::is_unset")]
-    /// The `width` editor attribute; omission and null are preserved separately.
-    pub width: Patch<u64>,
+    /// Rendered width, including fractional resizing values; omission and null remain distinct.
+    pub width: Patch<serde_json::Number>,
     /// Additional attributes not yet modeled by the SDK.
     #[serde(flatten, serialize_with = "VideoAttributes::serialize_extra")]
     pub extra: Map<String, Value>,
@@ -698,11 +540,7 @@ impl VariableAttributes {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SocialIconItem {
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Accessible or displayed label of the social icon.
     pub label: Option<String>,
     #[serde(default, skip_serializing_if = "Patch::is_unset")]

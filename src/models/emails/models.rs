@@ -36,24 +36,6 @@ impl std::ops::Deref for EmailResponseMetadata {
 pub const VERSION_CONFLICT: &str = "version_conflict";
 
 open_enum! {
-    pub enum BlockType {
-        Blockquote => "blockquote",
-        BulletedList => "bulleted_list",
-        Button => "button",
-        Code => "code",
-        Divider => "divider",
-        Heading => "heading",
-        Image => "image",
-        NumberedList => "numbered_list",
-        Paragraph => "paragraph",
-        SocialIcon => "social_icon",
-        /// The title of the email. You cannot insert a title block.
-        Title => "title",
-        Video => "video",
-    }
-}
-
-open_enum! {
     pub enum Position {
         Start => "start",
         End => "end",
@@ -143,21 +125,50 @@ pub struct EmailDocument {
     pub blocks: Vec<EmailBlock>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone)]
 #[non_exhaustive]
 /// One editor block with its content and nested children.
 pub struct EmailBlock {
     /// Opaque identifier, preserved as returned by the server.
     pub id: String,
     /// Typed block document, selected by its wire discriminator.
-    #[serde(flatten)]
     pub content: BlockContent,
     /// The blocks in this block, for example the items of a list.
-    #[serde(default)]
     pub children: Vec<EmailBlock>,
     /// The neighbors of the block. Only the responses for one block have it.
-    #[serde(default)]
     pub placement: Option<BlockPlacement>,
+}
+
+impl<'de> Deserialize<'de> for EmailBlock {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        // Buffer only the editor document; keep children on the outer decoder's path.
+        #[derive(Deserialize)]
+        struct Fields {
+            id: String,
+            #[serde(rename = "type")]
+            kind: String,
+            #[serde(default = "super::wire::empty_object")]
+            editor_content: Value,
+            #[serde(default)]
+            children: Vec<EmailBlock>,
+            #[serde(default)]
+            placement: Option<BlockPlacement>,
+        }
+        let fields = Fields::deserialize(deserializer)?;
+        let content =
+            BlockContent::from_document(&fields.kind, fields.editor_content).map_err(|error| {
+                serde::de::Error::custom(format!(
+                    "block {:?} ({:?}): {error}",
+                    fields.id, fields.kind
+                ))
+            })?;
+        Ok(Self {
+            id: fields.id,
+            content,
+            children: fields.children,
+            placement: fields.placement,
+        })
+    }
 }
 
 /// The IDs of the blocks after which and before which a block is. `None` when there is no such block.
@@ -511,6 +522,7 @@ where
 #[allow(clippy::unwrap_used, reason = "Tests assert synthetic model decoding")]
 mod tests {
     use super::*;
+    use crate::models::emails::BlockType;
     use serde_json::json;
 
     #[test]

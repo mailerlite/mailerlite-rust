@@ -5,47 +5,31 @@ use super::attributes::{
     TextStyleMarkAttributes, VariableAttributes, VideoAttributes,
 };
 use super::choices::BlockVisibility;
-use super::models::BlockType;
-use super::wire::{self, Tagged, TaggedBlock, optional_value, serialize_extensions};
+use super::wire::{self, Tagged, TaggedBlock, serialize_extensions};
 use crate::models::common::Patch;
+use crate::models::open_enum::open_enum;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::{Map, Value};
 
 /// An editor document with attributes selected by its block type.
 ///
-/// Missing fields stay omitted; `Some(Vec::new())` sends an explicit empty content
+/// Missing and null optional fields decode as `None` and serialize as omitted; `Some(Vec::new())` sends an explicit empty content
 /// array. Block updates replace the whole document, so omission does not retain
 /// the previous value. Use `Patch::Null` for nullable attributes when needed.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(bound(deserialize = "A: serde::de::DeserializeOwned"))]
 pub struct BlockData<A> {
     /// Attributes belonging to this block kind.
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub attrs: Option<A>,
     /// Ordered inline content; `Some(vec![])` explicitly clears it.
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub content: Option<Vec<InlineNode>>,
     /// Mobile overrides; the API leaves these properties unrestricted for text blocks.
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub mobile: Option<Map<String, Value>>,
     /// Devices on which this block is visible.
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub visibility: Option<BlockVisibility>,
     /// Future editor fields, preserved independently of the typed fields.
     #[serde(flatten, serialize_with = "BlockData::<A>::serialize_extra")]
@@ -90,26 +74,14 @@ impl<A> BlockData<A> {
 #[serde(bound(deserialize = "A: serde::de::DeserializeOwned, M: serde::de::DeserializeOwned"))]
 pub struct MediaBlockData<A, M = MobileOverrides> {
     /// Attributes belonging to this block kind.
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub attrs: Option<A>,
     /// Mobile overrides. Images and videos use [`MobileOverrides`]; divider and
     /// social-icon documents retain the API’s open JSON object.
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub mobile: Option<M>,
     /// Devices on which the block is visible.
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub visibility: Option<BlockVisibility>,
     /// Unrecognized document properties, retained without changing their values.
     #[serde(flatten, serialize_with = "MediaBlockData::<A, M>::serialize_extra")]
@@ -139,18 +111,10 @@ impl<A, M> MediaBlockData<A, M> {
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct ListBlockData {
     /// Attributes belonging to this block kind.
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub attrs: Option<OpenAttributes>,
     /// Ordered editor nodes; an empty array explicitly clears the content.
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub content: Option<Vec<ListItem>>,
     /// Unrecognized document properties, retained without changing their values.
     #[serde(flatten, serialize_with = "ListBlockData::serialize_extra")]
@@ -170,18 +134,10 @@ impl ListBlockData {
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct TitleBlockData {
     /// Attributes belonging to this block kind.
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub attrs: Option<OpenAttributes>,
     /// Ordered editor nodes; an empty array explicitly clears the content.
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub content: Option<Vec<InlineNode>>,
     /// Unrecognized document properties, retained without changing their values.
     #[serde(flatten, serialize_with = "TitleBlockData::serialize_extra")]
@@ -200,11 +156,7 @@ impl TitleBlockData {
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct MobileOverrides {
     /// Whether the block is hidden on mobile.
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub hidden: Option<bool>,
     /// Other mobile properties permitted by the API.
     #[serde(flatten, serialize_with = "MobileOverrides::serialize_extra")]
@@ -241,11 +193,7 @@ pub struct InlineText {
     #[serde(default, skip_serializing_if = "Patch::is_unset")]
     pub text: Patch<String>,
     /// Formatting marks in editor order.
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub marks: Option<Vec<TextMark>>,
     /// Unknown node properties, preserved for future editor versions.
     #[serde(flatten, serialize_with = "InlineText::serialize_extra")]
@@ -364,18 +312,10 @@ pub struct ListItem {
     #[serde(rename = "type")]
     pub node_type: ListItemType,
     /// Typed attributes of this node.
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub attrs: Option<Map<String, Value>>,
     /// Nested list content; the API accepts arbitrary JSON values here.
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "optional_value"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub content: Option<Vec<Value>>,
     /// Unknown node properties, preserved for future editor versions.
     #[serde(flatten, serialize_with = "ListItem::serialize_extra")]
@@ -423,13 +363,13 @@ impl<'de> Deserialize<'de> for InlineNode {
         let (kind, fields) = wire::tagged_object(deserializer)?;
         let data = fields;
         match kind.as_str() {
-            "text" => serde_json::from_value(Value::Object(data))
+            "text" => wire::decode(Value::Object(data))
                 .map(Self::Text)
                 .map_err(serde::de::Error::custom),
-            "variable" => serde_json::from_value(Value::Object(data))
+            "variable" => wire::decode(Value::Object(data))
                 .map(Self::Variable)
                 .map_err(serde::de::Error::custom),
-            "hardBreak" => serde_json::from_value(Value::Object(data))
+            "hardBreak" => wire::decode(Value::Object(data))
                 .map(Self::HardBreak)
                 .map_err(serde::de::Error::custom),
             _ => Ok(Self::Other { kind, fields: data }),
@@ -498,22 +438,22 @@ impl<'de> Deserialize<'de> for TextMark {
         let (kind, fields) = wire::tagged_object(deserializer)?;
         let data = fields;
         match kind.as_str() {
-            "bold" => serde_json::from_value(Value::Object(data))
+            "bold" => wire::decode(Value::Object(data))
                 .map(Self::Bold)
                 .map_err(serde::de::Error::custom),
-            "italic" => serde_json::from_value(Value::Object(data))
+            "italic" => wire::decode(Value::Object(data))
                 .map(Self::Italic)
                 .map_err(serde::de::Error::custom),
-            "underline" => serde_json::from_value(Value::Object(data))
+            "underline" => wire::decode(Value::Object(data))
                 .map(Self::Underline)
                 .map_err(serde::de::Error::custom),
-            "strike" => serde_json::from_value(Value::Object(data))
+            "strike" => wire::decode(Value::Object(data))
                 .map(Self::Strike)
                 .map_err(serde::de::Error::custom),
-            "link" => serde_json::from_value(Value::Object(data))
+            "link" => wire::decode(Value::Object(data))
                 .map(Self::Link)
                 .map_err(serde::de::Error::custom),
-            "textStyle" => serde_json::from_value(Value::Object(data))
+            "textStyle" => wire::decode(Value::Object(data))
                 .map(Self::TextStyle)
                 .map_err(serde::de::Error::custom),
             _ => Ok(Self::Other { kind, fields: data }),
@@ -569,201 +509,142 @@ impl Serialize for TextMark {
     }
 }
 
-/// Block content selected by the API block discriminator.
-/// Known variants reject malformed fields; unknown variants retain their JSON object.
-///
-/// # Examples
-/// ```
-/// use mailerlite_rs::{
-///     models::{common::Patch, emails::{BlockContent, BlockData, ParagraphAttributes, TextAlignment}},
-///     resources::emails::NewBlock,
-/// };
-///
-/// let content = BlockContent::Paragraph(BlockData {
-///     attrs: Some(ParagraphAttributes {
-///         text_align: Patch::Value(TextAlignment::Center),
-///         ..Default::default()
-///     }),
-///     ..BlockData::text("Hello")
-/// });
-/// let block = NewBlock::new(content);
-/// assert_eq!(serde_json::to_value(block)?["type"], "paragraph");
-/// # Ok::<(), serde_json::Error>(())
-/// ```
-#[derive(Debug, Clone, PartialEq)]
-#[non_exhaustive]
-pub enum BlockContent {
-    /// The `blockquote` editor variant.
-    Blockquote(BlockData<BlockquoteAttributes>),
-    /// The `bulleted_list` editor variant.
-    BulletedList(ListBlockData),
-    /// The `button` editor variant.
-    Button(BlockData<ButtonAttributes>),
-    /// The `code` editor variant.
-    Code(BlockData<CodeAttributes>),
-    /// The `divider` editor variant.
-    Divider(MediaBlockData<DividerAttributes, Map<String, Value>>),
-    /// The `heading` editor variant.
-    Heading(BlockData<HeadingAttributes>),
-    /// The `image` editor variant.
-    Image(MediaBlockData<ImageAttributes>),
-    /// The `numbered_list` editor variant.
-    NumberedList(ListBlockData),
-    /// The `paragraph` editor variant.
-    Paragraph(BlockData<ParagraphAttributes>),
-    /// The `social_icon` editor variant.
-    SocialIcon(MediaBlockData<SocialIconAttributes, Map<String, Value>>),
-    /// The `title` editor variant.
-    Title(TitleBlockData),
-    /// The `video` editor variant.
-    Video(MediaBlockData<VideoAttributes>),
-    /// A future editor variant. Its type must not name a known variant.
-    Other {
-        /// Unrecognized wire discriminator.
-        kind: String,
-        /// Unrecognized editor document.
-        fields: Map<String, Value>,
-    },
-}
-impl<'de> Deserialize<'de> for BlockContent {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let (kind, fields) = wire::tagged_object(deserializer)?;
-        let mut fields = fields;
-        let data = fields
-            .remove("editor_content")
-            .unwrap_or_else(|| Value::Object(Map::new()));
-        let data = wire::object(data).map_err(serde::de::Error::custom)?;
-        match kind.as_str() {
-            "blockquote" => serde_json::from_value(Value::Object(data))
-                .map(Self::Blockquote)
-                .map_err(serde::de::Error::custom),
-            "bulleted_list" => serde_json::from_value(Value::Object(data))
-                .map(Self::BulletedList)
-                .map_err(serde::de::Error::custom),
-            "button" => serde_json::from_value(Value::Object(data))
-                .map(Self::Button)
-                .map_err(serde::de::Error::custom),
-            "code" => serde_json::from_value(Value::Object(data))
-                .map(Self::Code)
-                .map_err(serde::de::Error::custom),
-            "divider" => serde_json::from_value(Value::Object(data))
-                .map(Self::Divider)
-                .map_err(serde::de::Error::custom),
-            "heading" => serde_json::from_value(Value::Object(data))
-                .map(Self::Heading)
-                .map_err(serde::de::Error::custom),
-            "image" => serde_json::from_value(Value::Object(data))
-                .map(Self::Image)
-                .map_err(serde::de::Error::custom),
-            "numbered_list" => serde_json::from_value(Value::Object(data))
-                .map(Self::NumberedList)
-                .map_err(serde::de::Error::custom),
-            "paragraph" => serde_json::from_value(Value::Object(data))
-                .map(Self::Paragraph)
-                .map_err(serde::de::Error::custom),
-            "social_icon" => serde_json::from_value(Value::Object(data))
-                .map(Self::SocialIcon)
-                .map_err(serde::de::Error::custom),
-            "title" => serde_json::from_value(Value::Object(data))
-                .map(Self::Title)
-                .map_err(serde::de::Error::custom),
-            "video" => serde_json::from_value(Value::Object(data))
-                .map(Self::Video)
-                .map_err(serde::de::Error::custom),
-            _ => Ok(Self::Other { kind, fields: data }),
-        }
-    }
-}
-impl Serialize for BlockContent {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        match self {
-            Self::Blockquote(data) => TaggedBlock {
-                kind: "blockquote",
-                editor_content: data,
-            }
-            .serialize(serializer),
-            Self::BulletedList(data) => TaggedBlock {
-                kind: "bulleted_list",
-                editor_content: data,
-            }
-            .serialize(serializer),
-            Self::Button(data) => TaggedBlock {
-                kind: "button",
-                editor_content: data,
-            }
-            .serialize(serializer),
-            Self::Code(data) => TaggedBlock {
-                kind: "code",
-                editor_content: data,
-            }
-            .serialize(serializer),
-            Self::Divider(data) => TaggedBlock {
-                kind: "divider",
-                editor_content: data,
-            }
-            .serialize(serializer),
-            Self::Heading(data) => TaggedBlock {
-                kind: "heading",
-                editor_content: data,
-            }
-            .serialize(serializer),
-            Self::Image(data) => TaggedBlock {
-                kind: "image",
-                editor_content: data,
-            }
-            .serialize(serializer),
-            Self::NumberedList(data) => TaggedBlock {
-                kind: "numbered_list",
-                editor_content: data,
-            }
-            .serialize(serializer),
-            Self::Paragraph(data) => TaggedBlock {
-                kind: "paragraph",
-                editor_content: data,
-            }
-            .serialize(serializer),
-            Self::SocialIcon(data) => TaggedBlock {
-                kind: "social_icon",
-                editor_content: data,
-            }
-            .serialize(serializer),
-            Self::Title(data) => TaggedBlock {
-                kind: "title",
-                editor_content: data,
-            }
-            .serialize(serializer),
-            Self::Video(data) => TaggedBlock {
-                kind: "video",
-                editor_content: data,
-            }
-            .serialize(serializer),
-            Self::Other { kind, fields } => {
-                if matches!(
-                    kind.as_str(),
-                    "blockquote"
-                        | "bulleted_list"
-                        | "button"
-                        | "code"
-                        | "divider"
-                        | "heading"
-                        | "image"
-                        | "numbered_list"
-                        | "paragraph"
-                        | "social_icon"
-                        | "title"
-                        | "video"
-                ) {
-                    return Err(serde::ser::Error::custom(
-                        "known editor variants must use their typed representation",
-                    ));
-                }
-                TaggedBlock {
-                    kind,
-                    editor_content: fields,
-                }
-                .serialize(serializer)
+// Keep block discriminators, payload dispatch, and unknown-kind checks in one table.
+macro_rules! block_content {
+    ($(#[$meta:meta])* pub enum BlockContent {
+        $($(#[$variant_meta:meta])* $variant:ident => $wire:literal : $payload:ty,)+
+    }) => {
+        open_enum! {
+            /// Editor block discriminator.
+            pub enum BlockType {
+                $($(#[$variant_meta])* $variant => $wire,)+
             }
         }
+
+        $(#[$meta])*
+        #[derive(Debug, Clone, PartialEq)]
+        #[non_exhaustive]
+        pub enum BlockContent {
+            $(
+                $(#[$variant_meta])*
+                #[doc = concat!("The `", $wire, "` editor document.")]
+                $variant($payload),
+            )+
+            /// A future editor variant. Its type must not name a known variant.
+            Other {
+                /// Unrecognized wire discriminator.
+                kind: String,
+                /// Unrecognized editor document.
+                fields: Map<String, Value>,
+            },
+        }
+
+        impl BlockContent {
+            fn is_known_kind(kind: &str) -> bool {
+                matches!(kind, $($wire)|+)
+            }
+
+            pub(super) fn from_document(kind: &str, value: Value) -> Result<Self, String> {
+                let data = wire::object(value).map_err(|error| format!("editor_content: {error}"))?;
+                match kind {
+                    $($wire => wire::decode(Value::Object(data)).map(Self::$variant)
+                        .map_err(|error| format!("editor_content.{error}")),)+
+                    _ => Ok(Self::Other { kind: kind.to_owned(), fields: data }),
+                }
+            }
+
+            /// Return the API discriminator associated with this typed document.
+            pub fn block_type(&self) -> BlockType {
+                match self {
+                    $(Self::$variant(_) => BlockType::$variant,)+
+                    Self::Other {kind, ..} => BlockType::from(kind.clone()),
+                }
+            }
+        }
+
+        impl<'de> Deserialize<'de> for BlockContent {
+            fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+                #[derive(Deserialize)]
+                struct Document {
+                    #[serde(rename = "type")]
+                    kind: String,
+                    #[serde(default = "wire::empty_object")]
+                    editor_content: Value,
+                }
+                let document = Document::deserialize(deserializer)?;
+                Self::from_document(&document.kind, document.editor_content)
+                    .map_err(|error| serde::de::Error::custom(format!("block type {:?}: {error}", document.kind)))
+            }
+        }
+
+        impl Serialize for BlockContent {
+            fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+                match self {
+                    $(Self::$variant(data) => TaggedBlock {kind: $wire, editor_content: data}.serialize(serializer),)+
+                    Self::Other {kind, fields} => {
+                        if Self::is_known_kind(kind) {
+                            return Err(serde::ser::Error::custom("known blocks must use typed content"));
+                        }
+                        TaggedBlock {kind, editor_content: fields}.serialize(serializer)
+                    }
+                }
+            }
+        }
+
+        /// Serialize only the checked document when updating an existing block.
+        pub(crate) struct ContentRef<'a>(pub(crate) &'a BlockContent);
+        impl Serialize for ContentRef<'_> {
+            fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+                match self.0 {
+                    $(BlockContent::$variant(data) => data.serialize(serializer),)+
+                    BlockContent::Other {kind, fields} => {
+                        if BlockContent::is_known_kind(kind) {
+                            return Err(serde::ser::Error::custom("known blocks must use typed content"));
+                        }
+                        fields.serialize(serializer)
+                    }
+                }
+            }
+        }
+    };
+}
+
+block_content! {
+    /// Block content selected by the API block discriminator.
+    /// Known variants reject malformed fields; unknown variants retain their JSON object.
+    ///
+    /// # Examples
+    /// ```
+    /// use mailerlite_rs::{
+    ///     models::{common::Patch, emails::{BlockContent, BlockData, ParagraphAttributes, TextAlignment}},
+    ///     resources::emails::NewBlock,
+    /// };
+    ///
+    /// let content = BlockContent::Paragraph(BlockData {
+    ///     attrs: Some(ParagraphAttributes {
+    ///         text_align: Patch::Value(TextAlignment::Center),
+    ///         ..Default::default()
+    ///     }),
+    ///     ..BlockData::text("Hello")
+    /// });
+    /// let block = NewBlock::new(content);
+    /// assert_eq!(serde_json::to_value(block)?["type"], "paragraph");
+    /// # Ok::<(), serde_json::Error>(())
+    /// ```
+    pub enum BlockContent {
+        Blockquote => "blockquote": BlockData<BlockquoteAttributes>,
+        BulletedList => "bulleted_list": ListBlockData,
+        Button => "button": BlockData<ButtonAttributes>,
+        Code => "code": BlockData<CodeAttributes>,
+        Divider => "divider": MediaBlockData<DividerAttributes, Map<String, Value>>,
+        Heading => "heading": BlockData<HeadingAttributes>,
+        Image => "image": MediaBlockData<ImageAttributes>,
+        NumberedList => "numbered_list": ListBlockData,
+        Paragraph => "paragraph": BlockData<ParagraphAttributes>,
+        SocialIcon => "social_icon": MediaBlockData<SocialIconAttributes, Map<String, Value>>,
+        /// The title of the email. You cannot insert a title block.
+        Title => "title": TitleBlockData,
+        Video => "video": MediaBlockData<VideoAttributes>,
     }
 }
 
@@ -781,53 +662,6 @@ impl BlockContent {
     pub fn paragraph(text: impl Into<String>) -> Self {
         Self::Paragraph(BlockData::text(text))
     }
-    /// Return the API discriminator associated with this typed document.
-    pub fn block_type(&self) -> BlockType {
-        match self {
-            Self::Blockquote(_) => BlockType::Blockquote,
-            Self::BulletedList(_) => BlockType::BulletedList,
-            Self::Button(_) => BlockType::Button,
-            Self::Code(_) => BlockType::Code,
-            Self::Divider(_) => BlockType::Divider,
-            Self::Heading(_) => BlockType::Heading,
-            Self::Image(_) => BlockType::Image,
-            Self::NumberedList(_) => BlockType::NumberedList,
-            Self::Paragraph(_) => BlockType::Paragraph,
-            Self::SocialIcon(_) => BlockType::SocialIcon,
-            Self::Title(_) => BlockType::Title,
-            Self::Video(_) => BlockType::Video,
-            Self::Other { kind, .. } => BlockType::from(kind.clone()),
-        }
-    }
-}
-
-/// Serialize only the document when updating an existing block.
-pub(crate) struct ContentRef<'a>(pub(crate) &'a BlockContent);
-impl Serialize for ContentRef<'_> {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        match self.0 {
-            BlockContent::Blockquote(data) => data.serialize(serializer),
-            BlockContent::BulletedList(data) => data.serialize(serializer),
-            BlockContent::Button(data) => data.serialize(serializer),
-            BlockContent::Code(data) => data.serialize(serializer),
-            BlockContent::Divider(data) => data.serialize(serializer),
-            BlockContent::Heading(data) => data.serialize(serializer),
-            BlockContent::Image(data) => data.serialize(serializer),
-            BlockContent::NumberedList(data) => data.serialize(serializer),
-            BlockContent::Paragraph(data) => data.serialize(serializer),
-            BlockContent::SocialIcon(data) => data.serialize(serializer),
-            BlockContent::Title(data) => data.serialize(serializer),
-            BlockContent::Video(data) => data.serialize(serializer),
-            BlockContent::Other { kind, fields } => {
-                if !matches!(BlockType::from(kind.clone()), BlockType::Other(_)) {
-                    return Err(serde::ser::Error::custom(
-                        "known blocks must use typed content",
-                    ));
-                }
-                fields.serialize(serializer)
-            }
-        }
-    }
 }
 
 #[cfg(test)]
@@ -839,6 +673,66 @@ mod tests {
     use super::*;
     use crate::models::emails::{EmailBlock, EmailDocument, TextAlignment, WithEtag};
     use serde_json::json;
+
+    #[test]
+    fn nullable_attributes_decode() {
+        for (kind, attrs) in [
+            (
+                "image",
+                json!({"src":"https://example.test/image.png","url":null,"alt":null,"caption":null,"linkType":null}),
+            ),
+            ("button", json!({"url":null,"linkType":null})),
+            ("paragraph", json!({"class":null})),
+            ("video", json!({"alt":null,"videoCode":null})),
+            (
+                "social_icon",
+                json!({"items":[{"uuid":"one","type":"website","url":"https://example.test","label":null}]}),
+            ),
+        ] {
+            let result = serde_json::from_value::<EmailBlock>(
+                json!({"id":"57","type":kind,"editor_content":{"attrs":attrs}}),
+            );
+            assert!(result.is_ok(), "{kind}: {result:?}");
+        }
+    }
+
+    #[test]
+    fn placeholder_and_fractional_images_decode() {
+        for attrs in [
+            json!({}),
+            json!({"src":null}),
+            json!({"src":"https://example.test/image.png","width":300.5,"height":150.25}),
+        ] {
+            let result = serde_json::from_value::<EmailBlock>(
+                json!({"id":"57","type":"image","editor_content":{"attrs":attrs}}),
+            );
+            assert!(result.is_ok(), "{result:?}");
+            if attrs.get("width").is_some() {
+                assert_eq!(
+                    serde_json::to_value(result.unwrap().content).unwrap()["editor_content"]["attrs"]
+                        ["width"],
+                    json!(300.5)
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn nullable_document_fields_decode_consistently() {
+        for kind in [
+            "paragraph",
+            "heading",
+            "button",
+            "image",
+            "bulleted_list",
+            "title",
+        ] {
+            let result = serde_json::from_value::<EmailBlock>(
+                json!({"id":"57","type":kind,"editor_content":{"attrs":null,"content":null,"mobile":null,"visibility":null}}),
+            );
+            assert!(result.is_ok(), "{kind}: {result:?}");
+        }
+    }
 
     #[test]
     fn every_block_kind_decodes_and_round_trips_its_attributes() {
@@ -881,7 +775,20 @@ mod tests {
             let wire = json!({"type":kind,"editor_content":{"attrs":attrs}});
             let parsed: BlockContent = serde_json::from_value(wire.clone()).unwrap();
             assert_eq!(parsed.block_type().as_str(), kind);
+            assert_eq!(
+                serde_json::to_value(ContentRef(&parsed)).unwrap(),
+                wire["editor_content"]
+            );
             assert_eq!(serde_json::to_value(parsed).unwrap(), wire, "{kind}");
+            let raw_known = BlockContent::Other {
+                kind: kind.into(),
+                fields: Map::new(),
+            };
+            assert!(serde_json::to_value(&raw_known).is_err(), "create {kind}");
+            assert!(
+                serde_json::to_value(ContentRef(&raw_known)).is_err(),
+                "update {kind}"
+            );
         }
     }
 
@@ -929,8 +836,6 @@ mod tests {
         for content in [
             json!({"attrs":{"textAlign":3}}),
             json!({"attrs":[]}),
-            json!({"attrs":null}),
-            json!({"content":null}),
             json!({"content":[{"type":"text","text":42}]}),
             json!({"content":[{"type":"variable","attrs":{}}]}),
             json!({"content":[{"type":"text","marks":[{"type":"link","attrs":{}}]}]}),
@@ -968,6 +873,10 @@ mod tests {
         }
         let wire = json!({"type":"future_block","editor_content":{"opaque":[null,{"x":42}]}});
         let parsed: BlockContent = serde_json::from_value(wire.clone()).unwrap();
+        assert_eq!(
+            serde_json::to_value(ContentRef(&parsed)).unwrap(),
+            wire["editor_content"]
+        );
         assert_eq!(serde_json::to_value(parsed).unwrap(), wire);
     }
 

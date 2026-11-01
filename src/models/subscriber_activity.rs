@@ -2,7 +2,7 @@
 //!
 //! Unknown event kinds retain their original JSON explicitly. Malformed known
 //! properties remain decoding errors instead of falling back to unknown data.
-use crate::models::subscribers::FieldValue;
+use crate::models::{emails::EmailOwnerType, subscribers::FieldValue};
 use serde::{Deserialize, Deserializer, de::Error as _};
 use serde_json::Value;
 use std::{collections::BTreeMap, fmt};
@@ -345,6 +345,7 @@ pub struct DeliveryIssueActivity {
     /// Email subject.
     pub subject: Option<String>,
     /// Related resource type, such as campaigns or automations.
+    /// Use [`Self::email_owner_type`] for typed access.
     pub emailable_type: String,
     /// Related resource identifier.
     pub emailable_id: String,
@@ -352,6 +353,14 @@ pub struct DeliveryIssueActivity {
     #[serde(flatten)]
     pub extensions: BTreeMap<String, Value>,
 }
+impl DeliveryIssueActivity {
+    /// Return the typed owner while retaining the original string field for existing callers.
+    /// Unknown resource kinds are preserved in [`EmailOwnerType::Other`].
+    pub fn email_owner_type(&self) -> EmailOwnerType {
+        EmailOwnerType::from(self.emailable_type.clone())
+    }
+}
+
 impl fmt::Debug for DeliveryIssueActivity {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("DeliveryIssueActivity")
@@ -480,7 +489,8 @@ pub enum WebformActivity {
     reason = "Tests assert fixture and operation outcomes"
 )]
 mod tests {
-    use crate::models::subscribers::FieldValue;
+    use super::DeliveryIssueActivity;
+    use crate::models::{emails::EmailOwnerType, subscribers::FieldValue};
     use serde_json::{Value, json};
 
     fn activity_schema(
@@ -488,6 +498,22 @@ mod tests {
         properties: Value,
     ) -> serde_json::Result<crate::models::subscribers::SubscriberActivity> {
         serde_json::from_value(json!({"id":"00001","log_name":kind,"properties":properties}))
+    }
+
+    #[test]
+    fn delivery_issue_owner_has_typed_access_without_changing_the_string_field() {
+        for (wire, expected) in [
+            ("campaigns", EmailOwnerType::Campaign),
+            ("automations", EmailOwnerType::Automation),
+            ("future_owner", EmailOwnerType::Other("future_owner".into())),
+        ] {
+            let issue: DeliveryIssueActivity = serde_json::from_value(
+                serde_json::json!({"emailable_type":wire,"emailable_id":"001"}),
+            )
+            .unwrap();
+            assert_eq!(issue.emailable_type.as_str(), wire);
+            assert_eq!(issue.email_owner_type(), expected);
+        }
     }
 
     #[test]

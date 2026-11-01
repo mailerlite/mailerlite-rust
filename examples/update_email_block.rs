@@ -4,7 +4,8 @@
 //! `MAILERLITE_EMAIL_ETAG`, `MAILERLITE_EDITOR_CONTENT_JSON`.
 //! Content JSON includes its type, for example
 //! `{"type":"paragraph","editor_content":{"content":[{"type":"text","text":"Hello"}]}}`.
-//! The type selects the SDK model; it must match the existing block.
+//! Reads the existing block and checks that the replacement has the same type.
+//! The supplied etag still controls optimistic concurrency.
 //! Replaces the complete block document; omitted content keys are removed.
 use mailerlite_rs::{
     MailerLite, Response,
@@ -26,9 +27,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let editor_content: BlockContent =
         serde_json::from_str(&std::env::var("MAILERLITE_EDITOR_CONTENT_JSON")?)?;
 
+    let existing = mailerlite.emails().get_block(&email_id, &block_id).await?;
+
     let response: Response<WithEtag<EmailBlock>, EmailResponseMetadata> = mailerlite
         .emails()
-        .update_block(email_id, block_id, etag, &editor_content)
+        .update_block(email_id, &existing.data.data, etag, &editor_content)
         .await?;
 
     println!("New etag: {}", response.data.etag);

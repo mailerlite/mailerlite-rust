@@ -17,15 +17,15 @@ pub use choices::{
 };
 pub(crate) use content::ContentRef;
 pub use content::{
-    BlockContent, BlockData, EmptyNode, InlineNode, InlineText, LinkMark, ListBlockData, ListItem,
-    ListItemType, MediaBlockData, MobileOverrides, OpenAttributes, TextMark, TextStyleMark,
-    TitleBlockData, VariableNode,
+    BlockContent, BlockData, BlockType, EmptyNode, InlineNode, InlineText, LinkMark, ListBlockData,
+    ListItem, ListItemType, MediaBlockData, MobileOverrides, OpenAttributes, TextMark,
+    TextStyleMark, TitleBlockData, VariableNode,
 };
 pub(crate) use models::DataOnly;
 pub use models::{
-    BlockPlacement, BlockType, Brand, BrandMode, Button, EditorText, EmailBlock, EmailDocument,
-    EmailHtml, EmailResponseMetadata, EmailSettings, EmailTemplate, EmailVersion, EtagOnly,
-    FontWeight, Footer, HeadingStyle, Layout, LayoutAlignment, LetterSpacing, LineHeight,
-    LinkStyle, ParagraphStyle, Position, Rejected, SettingsResult, SocialLink, TextStyle,
-    Typography, VERSION_CONFLICT, Validation, ValidationSchema, WidthMode, WithEtag,
+    BlockPlacement, Brand, BrandMode, Button, EditorText, EmailBlock, EmailDocument, EmailHtml,
+    EmailResponseMetadata, EmailSettings, EmailTemplate, EmailVersion, EtagOnly, FontWeight,
+    Footer, HeadingStyle, Layout, LayoutAlignment, LetterSpacing, LineHeight, LinkStyle,
+    ParagraphStyle, Position, Rejected, SettingsResult, SocialLink, TextStyle, Typography,
+    VERSION_CONFLICT, Validation, ValidationSchema, WidthMode, WithEtag,
 };
