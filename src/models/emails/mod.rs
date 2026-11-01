@@ -21,7 +21,6 @@ pub use content::{
     ListItem, ListItemType, MediaBlockData, MobileOverrides, OpenAttributes, TextMark,
     TextStyleMark, TitleBlockData, VariableNode,
 };
-pub(crate) use models::DataOnly;
 pub use models::{
     BlockPlacement, Brand, BrandMode, Button, EditorText, EmailBlock, EmailDocument, EmailHtml,
     EmailResponseMetadata, EmailSettings, EmailTemplate, EmailVersion, EtagOnly, FontWeight,

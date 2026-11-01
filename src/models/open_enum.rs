@@ -38,6 +38,15 @@ macro_rules! open_enum {
             }
         }
 
+        impl From<&str> for $name {
+            fn from(value: &str) -> Self {
+                match value {
+                    $( $value => $name::$variant, )*
+                    _ => $name::Other(value.to_owned()),
+                }
+            }
+        }
+
         impl From<$name> for String {
             fn from(value: $name) -> Self {
                 match value {

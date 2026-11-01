@@ -1,5 +1,5 @@
 //! Execute requests with authentication, deadlines, pacing, and retry policy.
-use super::{OperationPolicy, RequestBody, deadline::Deadline, endpoint::endpoint};
+use super::{RequestBody, RequestOptions, deadline::Deadline, endpoint::endpoint};
 use crate::{
     ApiVersion, Error, MailerLite, ResponseMetadata, Result,
     error::{ApiError, DecodeError},
@@ -50,11 +50,11 @@ pub(super) async fn execute(
     path: &[&str],
     query: &[(String, String)],
     body: Option<&dyn RequestBody>,
-    policy: OperationPolicy,
+    options: RequestOptions,
     deadline: Deadline,
 ) -> Result<(ResponseMetadata, Vec<u8>, bool)> {
     let url = endpoint(&client.inner.base_url, path)?;
-    execute_until(client, method, url, query, body, policy, deadline).await
+    execute_until(client, method, url, query, body, options, deadline).await
 }
 
 async fn execute_until(
@@ -63,10 +63,11 @@ async fn execute_until(
     url: Url,
     query: &[(String, String)],
     body: Option<&dyn RequestBody>,
-    policy: OperationPolicy,
+    options: RequestOptions,
     deadline: Deadline,
 ) -> Result<(ResponseMetadata, Vec<u8>, bool)> {
     let inner = &client.inner;
+    let policy = options.policy;
     let serialized = body.map(|body| body.serialize()).transpose();
     deadline.check()?;
     // Take ownership of the buffer; each attempt clones only a shared handle.
@@ -88,7 +89,7 @@ async fn execute_until(
                 concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION")),
             )
             .timeout(inner.request_timeout);
-        if let Some(key) = &policy.idempotency_key {
+        if let Some(key) = &options.idempotency_key {
             request = request.header("Idempotency-Key", key.clone());
         }
         if let ApiVersion::Pinned(version) = &inner.version {

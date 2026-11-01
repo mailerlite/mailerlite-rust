@@ -1,11 +1,11 @@
 //! Internal operation classification and request serialization.
 use crate::{Error, Result};
+use reqwest::header::HeaderValue;
 
 /// Retry and local rate-limit policy attached to an operation.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub(crate) struct OperationPolicy {
     pub read_only: bool,
-    pub idempotency_key: Option<reqwest::header::HeaderValue>,
     pub import: bool,
     pub success_statuses: &'static [u16],
 }
@@ -18,24 +18,37 @@ impl OperationPolicy {
     /// Explicitly reviewed read operation.
     pub const READ: Self = Self {
         read_only: true,
-        idempotency_key: None,
         import: false,
         success_statuses: &[200],
     };
     /// Write operation that must never be replayed automatically.
     pub const WRITE: Self = Self {
         read_only: false,
-        idempotency_key: None,
         import: false,
         success_statuses: &[200, 201, 204],
     };
     /// Subscriber import operation, subject to both local pacing buckets.
     pub const IMPORT: Self = Self {
         read_only: false,
-        idempotency_key: None,
         import: true,
         success_statuses: &[200, 202],
     };
+}
+
+/// Per-request state kept separate from reusable operation classification.
+#[derive(Debug)]
+pub(crate) struct RequestOptions {
+    pub policy: OperationPolicy,
+    pub idempotency_key: Option<HeaderValue>,
+}
+
+impl From<OperationPolicy> for RequestOptions {
+    fn from(policy: OperationPolicy) -> Self {
+        Self {
+            policy,
+            idempotency_key: None,
+        }
+    }
 }
 
 /// Borrow a typed payload until serialization inside the operation deadline.

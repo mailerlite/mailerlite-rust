@@ -8,14 +8,14 @@ use super::{
 };
 use crate::{
     Error, MailerLite, Response,
-    http::OperationPolicy,
+    http::{OperationPolicy, RequestOptions},
     models::emails::{
-        BlockContent, ContentRef, DataOnly, EmailBlock, EmailDocument, EmailHtml,
-        EmailResponseMetadata, EmailTemplate, EmailVersion, EtagOnly, SettingsResult, Validation,
-        WithEtag,
+        BlockContent, ContentRef, EmailBlock, EmailDocument, EmailHtml, EmailResponseMetadata,
+        EmailTemplate, EmailVersion, EtagOnly, SettingsResult, Validation, WithEtag,
     },
     pagination::NumberedPage,
     resources::query::query_pairs,
+    response::DataEnvelope,
 };
 use reqwest::Method;
 use serde_json::{Map, Value};
@@ -43,8 +43,10 @@ impl<'a> Emails<'a> {
     }
 
     /// Sends the `Idempotency-Key` header with the writes of this value. If a write fails with a network
-    /// error, send the same write again with the same key. If the first request was a success, the API
-    /// returns the stored response, and `response.metadata.is_idempotent_replay()` is `true`.
+    /// error, timeout, or unreadable response, send the same write again with the same key, body,
+    /// and etag. Writes are never retried automatically, even with [`crate::RetryPolicy::safe_reads`].
+    /// If the first request was a success, the API returns the stored response, and
+    /// `response.metadata.is_idempotent_replay()` is `true`.
     ///
     /// - Only these methods send the key: `create_block`, `update_block`, `delete_block`, `move_block`,
     ///   `update_settings`, `create_template`, `create_version` and `restore_version`. The read methods and
@@ -54,8 +56,9 @@ impl<'a> Emails<'a> {
     /// - If HTTP cannot carry the key, for example because of a new line, the write gives
     ///   `Error::Config` and sends no request.
     ///
-    /// Warning: use a new key for each write. Do not use an `Emails` value that has a key for a different
-    /// write. The API keeps a key for 24 hours, and it rejects the same key with a different request.
+    /// Use a new key for each logical write; retain it until the outcome is known. Do not reuse
+    /// a keyed `Emails` value for a different write. The API keeps a key for 24 hours and rejects
+    /// the same key with a different request. After expiry, reconcile the outcome before retrying.
     ///
     /// # Examples
     /// Retain the returned handle and use it for the write:
@@ -117,7 +120,7 @@ impl<'a> Emails<'a> {
             &[],
             None,
             None,
-            OperationPolicy::READ.with_success_statuses(&[200]),
+            OperationPolicy::READ,
         )
         .await
     }
@@ -157,7 +160,7 @@ impl<'a> Emails<'a> {
             &[],
             None,
             None,
-            OperationPolicy::READ.with_success_statuses(&[200]),
+            OperationPolicy::READ,
         )
         .await
     }
@@ -194,7 +197,7 @@ impl<'a> Emails<'a> {
             &[],
             None,
             None,
-            OperationPolicy::READ.with_success_statuses(&[200]),
+            OperationPolicy::READ,
         )
         .await
     }
@@ -429,7 +432,7 @@ impl<'a> Emails<'a> {
             &[],
             Some(block),
             None,
-            OperationPolicy::READ.with_success_statuses(&[200]),
+            OperationPolicy::READ,
         )
         .await
     }
@@ -530,7 +533,7 @@ impl<'a> Emails<'a> {
             &[],
             Some(settings),
             None,
-            OperationPolicy::READ.with_success_statuses(&[200]),
+            OperationPolicy::READ,
         )
         .await
     }
@@ -564,7 +567,7 @@ impl<'a> Emails<'a> {
 
         let idempotency_key: Option<&str> = self.idempotency_key.as_deref();
 
-        send::<DataOnly<EmailTemplate>>(
+        send::<DataEnvelope<EmailTemplate>>(
             self.mailerlite,
             Method::POST,
             &["emails", email_id, "templates"],
@@ -605,7 +608,7 @@ impl<'a> Emails<'a> {
     ) -> Result<Response<NumberedPage<EmailVersion>, EmailResponseMetadata>, Error> {
         let email_id: &str = email_id.as_ref();
         validate::path_id("email_id", email_id)?;
-        let query: Vec<(&str, String)> = query_pairs([
+        let query: Vec<(String, String)> = query_pairs([
             ("page", options.page.map(|page| page.to_string())),
             ("limit", options.limit.map(|limit| limit.to_string())),
         ]);
@@ -617,7 +620,7 @@ impl<'a> Emails<'a> {
             &query,
             None,
             None,
-            OperationPolicy::READ.with_success_statuses(&[200]),
+            OperationPolicy::READ,
         )
         .await
     }
@@ -652,7 +655,7 @@ impl<'a> Emails<'a> {
 
         let idempotency_key: Option<&str> = self.idempotency_key.as_deref();
 
-        send::<DataOnly<EmailVersion>>(
+        send::<DataEnvelope<EmailVersion>>(
             self.mailerlite,
             Method::POST,
             &["emails", email_id, "versions"],
@@ -719,29 +722,29 @@ async fn send<T: serde::de::DeserializeOwned>(
     client: &MailerLite,
     method: Method,
     path: &[&str],
-    query: &[(&str, String)],
+    query: &[(String, String)],
     body: Option<&dyn crate::http::RequestBody>,
     key: Option<&str>,
-    mut policy: OperationPolicy,
+    policy: OperationPolicy,
 ) -> crate::Result<Response<T, EmailResponseMetadata>> {
-    policy.idempotency_key = key
+    let mut idempotency_key = key
         .map(reqwest::header::HeaderValue::from_str)
         .transpose()
         .map_err(|_| Error::Config("idempotency key cannot be encoded as an HTTP header".into()))?;
-    if let Some(value) = policy.idempotency_key.as_mut() {
+    if let Some(value) = idempotency_key.as_mut() {
         value.set_sensitive(true);
     }
-    let query: Vec<_> = query
-        .iter()
-        .map(|(k, v)| (k.to_string(), v.clone()))
-        .collect();
+    let options = RequestOptions {
+        policy,
+        idempotency_key,
+    };
     crate::http::request_with_metadata(
         client,
         method,
         path,
-        &query,
+        query,
         body,
-        policy,
+        options,
         |http, idempotent_replayed| EmailResponseMetadata {
             http,
             idempotent_replayed,

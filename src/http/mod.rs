@@ -8,4 +8,4 @@ mod request;
 pub mod retry;
 
 pub(crate) use decoding::{empty, request, request_with_metadata};
-pub(crate) use request::{OperationPolicy, RequestBody};
+pub(crate) use request::{OperationPolicy, RequestBody, RequestOptions};

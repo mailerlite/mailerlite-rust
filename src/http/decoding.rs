@@ -1,5 +1,5 @@
 //! Typed JSON and empty-response decoding.
-use super::{OperationPolicy, RequestBody, deadline::Deadline, execution::execute};
+use super::{OperationPolicy, RequestBody, RequestOptions, deadline::Deadline, execution::execute};
 use crate::{Error, MailerLite, Response, Result, error::DecodeError};
 use reqwest::Method;
 use serde::de::DeserializeOwned;
@@ -12,9 +12,15 @@ pub(crate) async fn request<T: DeserializeOwned>(
     body: Option<&dyn RequestBody>,
     policy: OperationPolicy,
 ) -> Result<Response<T>> {
-    request_with_metadata(client, method, path, query, body, policy, |metadata, _| {
-        metadata
-    })
+    request_with_metadata(
+        client,
+        method,
+        path,
+        query,
+        body,
+        policy.into(),
+        |metadata, _| metadata,
+    )
     .await
 }
 
@@ -24,14 +30,14 @@ pub(crate) async fn request_with_metadata<T: DeserializeOwned, M>(
     path: &[&str],
     query: &[(String, String)],
     body: Option<&dyn RequestBody>,
-    policy: OperationPolicy,
+    options: RequestOptions,
     map_metadata: impl FnOnce(crate::ResponseMetadata, bool) -> M,
 ) -> Result<Response<T, M>> {
     let deadline = Deadline::new(client.inner.operation_timeout)?;
     deadline
         .run(async {
             let (metadata, bytes, replayed) =
-                execute(client, method, path, query, body, policy, deadline).await?;
+                execute(client, method, path, query, body, options, deadline).await?;
             deadline.check()?;
             let mut deserializer = serde_json::Deserializer::from_slice(&bytes);
             let data = serde_path_to_error::deserialize(&mut deserializer).map_err(|error| {
@@ -75,7 +81,7 @@ pub(crate) async fn empty(
                 path,
                 query,
                 body,
-                policy.with_success_statuses(&[204]),
+                policy.with_success_statuses(&[204]).into(),
                 deadline,
             )
             .await?;

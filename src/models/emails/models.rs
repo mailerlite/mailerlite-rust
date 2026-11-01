@@ -471,14 +471,6 @@ pub struct WithEtag<T> {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-#[non_exhaustive]
-/// Typed response payload without version metadata.
-pub(crate) struct DataOnly<T> {
-    /// Typed payload returned inside the API envelope.
-    pub data: T,
-}
-
-#[derive(Debug, Clone, Deserialize)]
 /// New optimistic-concurrency version returned after a write.
 pub struct EtagOnly {
     /// Send this etag with the next write to the email.

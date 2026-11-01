@@ -111,7 +111,7 @@ impl ListFiles<'_> {
     /// Returns shared transport, API, decoding, and operation-timeout errors.
     pub async fn send(self) -> Result<Response<NumberedPage<MediaFile>>, Error> {
         let options = self.options;
-        let query: Vec<(&str, String)> = query_pairs([
+        let query: Vec<(String, String)> = query_pairs([
             ("filter[name]", options.name),
             ("filter[type]", options.file_type.map(String::from)),
             ("sort", options.sort.map(String::from)),
@@ -120,16 +120,7 @@ impl ListFiles<'_> {
         ]);
 
         self.mailerlite
-            .request(
-                Method::GET,
-                &["files"],
-                &query
-                    .into_iter()
-                    .map(|(k, v)| (k.to_owned(), v))
-                    .collect::<Vec<_>>(),
-                None,
-                OperationPolicy::READ,
-            )
+            .request(Method::GET, &["files"], &query, None, OperationPolicy::READ)
             .await
     }
 }
