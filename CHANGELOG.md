@@ -1,11 +1,5 @@
 # Changelog
 
-## Unreleased
-
-- Add simple-editor emails, brand styles, and media files through typed resources and the shared transport.
-- Preserve explicit idempotency keys, replay metadata, and redacted version-conflict diagnostics.
-- Add typed simple-editor campaign creation, endpoint examples, and regression tests.
-
 ## [2.0.0](https://github.com/mailerlite/mailerlite-rust/compare/v1.1.0...v2.0.0) (2026-10-31)
 
 
