@@ -37,7 +37,8 @@
 //! Defaults are [`ApiVersion::Latest`] (no `X-Version` header), a 30-second
 //! request timeout, and a 60-second operation deadline. Automatic retries are
 //! disabled. [`RetryPolicy::safe_reads`] enables bounded retries for reviewed
-//! reads; writes and batches are never automatically replayed.
+//! reads. [`RetryPolicy::with_idempotent_writes`] additionally enables retries for
+//! keyed email writes; unkeyed writes and batches are never automatically replayed.
 //!
 //! # API navigation
 //!

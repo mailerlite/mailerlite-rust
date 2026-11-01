@@ -239,9 +239,10 @@ impl MailerLiteBuilder {
         self.operation_timeout = timeout;
         self
     }
-    /// Configure bounded retries of explicitly classified read operations.
+    /// Configure bounded retries of operations explicitly classified as safe to replay.
     ///
     /// Defaults to [`RetryPolicy::none`]. Use [`RetryPolicy::safe_reads`] to opt in.
+    /// Keyed email writes also require [`RetryPolicy::with_idempotent_writes`].
     pub fn retry_policy(mut self, policy: RetryPolicy) -> Self {
         self.retry_policy = policy;
         self

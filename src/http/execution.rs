@@ -68,6 +68,9 @@ async fn execute_until(
 ) -> Result<(ResponseMetadata, Vec<u8>, bool)> {
     let inner = &client.inner;
     let policy = options.policy;
+    let retry_keyed_write =
+        !policy.read_only && options.idempotency_key.is_some() && inner.retry.idempotent_writes;
+    let retry_safe = policy.read_only || retry_keyed_write;
     let serialized = body.map(|body| body.serialize()).transpose();
     deadline.check()?;
     // Take ownership of the buffer; each attempt clones only a shared handle.
@@ -104,7 +107,7 @@ async fn execute_until(
             Ok(response) => response,
             Err(error) => {
                 let transient = error.is_connect() || error.is_timeout() || error.is_body();
-                if policy.read_only
+                if retry_safe
                     && transient
                     && let Some(delay) = inner.retry.delay_for(attempt, None)
                     && delay < deadline.remaining()
@@ -162,8 +165,11 @@ async fn execute_until(
             bytes.extend_from_slice(&chunk);
         }
         if let Some(error) = body_failure {
-            if policy.read_only
-                && (meta.status.is_success() || inner.retry.permits_status(meta.status))
+            if retry_safe
+                && ((meta.status.is_success()
+                    && (policy.read_only
+                        || policy.success_statuses.contains(&meta.status.as_u16())))
+                    || inner.retry.permits_status(meta.status))
                 && let Some(delay) = inner.retry.delay_for(attempt, meta.retry_after)
                 && delay < deadline.remaining()
             {
@@ -185,17 +191,48 @@ async fn execute_until(
             )));
         }
         if meta.status.is_success() {
+            // A clean HTTP transfer can still contain truncated JSON. Check syntax
+            // without allocating a second document; typed decoding keeps its usual
+            // diagnostics and schema failures never trigger another write.
+            if retry_keyed_write {
+                let incomplete = serde_json::from_slice::<serde::de::IgnoredAny>(&bytes)
+                    .is_err_and(|error| error.is_eof());
+                deadline.check()?;
+                if incomplete
+                    && let Some(delay) = inner.retry.delay_for(attempt, meta.retry_after)
+                    && delay < deadline.remaining()
+                {
+                    tokio::time::sleep(delay).await;
+                    attempt += 1;
+                    continue;
+                }
+            }
             return Ok((meta, bytes, replayed));
         }
-        if policy.read_only
-            && inner.retry.permits_status(meta.status)
-            && let Some(delay) = inner.retry.delay_for(attempt, meta.retry_after)
+        let error = ApiError::new(meta, &bytes);
+        let in_progress = retry_keyed_write && error.is_idempotency_in_progress();
+        // The API supplies no Retry-After for pending keys. Avoid polling the
+        // still-running write immediately even when jitter selects zero delay.
+        let retry_after = if in_progress {
+            Some(
+                error
+                    .metadata()
+                    .retry_after
+                    .unwrap_or_default()
+                    .max(Duration::from_secs(1)),
+            )
+        } else {
+            error.metadata().retry_after
+        };
+        if retry_safe
+            && (inner.retry.permits_status(error.status()) || in_progress)
+            && let Some(delay) = inner.retry.delay_for(attempt, retry_after)
             && delay < deadline.remaining()
         {
             tokio::time::sleep(delay).await;
             attempt += 1;
             continue;
         }
-        return Err(Error::Api(ApiError::new(meta, &bytes)));
+        return Err(Error::Api(error));
     }
 }

@@ -337,7 +337,9 @@ its required values. Write examples modify the selected email.
 - [validate email settings](validate_email_settings.rs)
 
 `retry_email_write` requires a caller-generated `MAILERLITE_IDEMPOTENCY_KEY`;
-reuse it only for the same logical write. `move_email_block` also requires
+reuse it only for the same logical write. It enables bounded keyed-write retries
+in the client and distinguishes an in-progress write from a version conflict.
+`move_email_block` also requires
 `MAILERLITE_ADJACENT_BLOCK_ID`. Campaign creation reads its name, subject, and sender
 from `MAILERLITE_CAMPAIGN_NAME`, `MAILERLITE_SUBJECT`, `MAILERLITE_FROM_NAME`, and
 `MAILERLITE_FROM_EMAIL`.

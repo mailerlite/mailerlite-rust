@@ -159,7 +159,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn retryable_read_preserves_body_without_serializing_again() {
+    async fn retryable_operations_preserve_body_without_serializing_again() {
         use std::sync::{
             Arc,
             atomic::{AtomicUsize, Ordering},
@@ -177,39 +177,59 @@ mod tests {
             }
         }
 
-        // Exercise the shared executor's body handling on a synthetic safe read.
-        let server = MockServer::start().await;
-        let attempts = Arc::new(AtomicUsize::new(0));
-        let received = Arc::clone(&attempts);
-        Mock::given(method("GET"))
-            .and(body_string(r#""same payload on every attempt""#))
-            .respond_with(move |_: &wiremock::Request| {
-                let status = if received.fetch_add(1, Ordering::SeqCst) < 2 {
-                    503
-                } else {
-                    200
-                };
-                ResponseTemplate::new(status).set_body_json(true)
-            })
-            .expect(3)
-            .mount(&server)
-            .await;
-        let client = client(&server, Duration::from_secs(5));
-        let payload = CountedPayload(AtomicUsize::new(0));
-        let response = request::<bool>(
-            &client,
-            Method::GET,
-            &["test"],
-            &[],
-            Some(&payload),
-            OperationPolicy::READ,
-        )
-        .await
-        .unwrap();
+        for (verb, options) in [
+            (Method::GET, OperationPolicy::READ.into()),
+            (
+                Method::POST,
+                RequestOptions {
+                    policy: OperationPolicy::WRITE,
+                    idempotency_key: Some(reqwest::header::HeaderValue::from_static("same-write")),
+                },
+            ),
+        ] {
+            let server = MockServer::start().await;
+            let attempts = Arc::new(AtomicUsize::new(0));
+            let received = Arc::clone(&attempts);
+            Mock::given(method(verb.as_str()))
+                .and(body_string(r#""same payload on every attempt""#))
+                .respond_with(move |_: &wiremock::Request| {
+                    let status = if received.fetch_add(1, Ordering::SeqCst) < 2 {
+                        503
+                    } else {
+                        200
+                    };
+                    ResponseTemplate::new(status).set_body_json(true)
+                })
+                .expect(3)
+                .mount(&server)
+                .await;
+            let client = MailerLite::builder("test-token")
+                .base_url(server.uri())
+                .rate_limit_intervals(Duration::ZERO, Duration::ZERO)
+                .retry_policy(
+                    RetryPolicy::safe_reads()
+                        .with_idempotent_writes()
+                        .initial_delay(Duration::ZERO),
+                )
+                .build()
+                .unwrap();
+            let payload = CountedPayload(AtomicUsize::new(0));
+            let response = request_with_metadata::<bool, _>(
+                &client,
+                verb,
+                &["test"],
+                &[],
+                Some(&payload),
+                options,
+                |metadata, _| metadata,
+            )
+            .await
+            .unwrap();
 
-        assert!(response.data);
-        assert_eq!(payload.0.load(Ordering::SeqCst), 1);
-        assert_eq!(attempts.load(Ordering::SeqCst), 3);
+            assert!(response.data);
+            assert_eq!(payload.0.load(Ordering::SeqCst), 1);
+            assert_eq!(attempts.load(Ordering::SeqCst), 3);
+        }
     }
 
     async fn serialization_result(delay: Duration, fail: bool) -> Result<Response<bool>> {

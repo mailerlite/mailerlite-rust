@@ -282,8 +282,10 @@ consumer's import paths. Update this table when the public boundary changes.
    cursor page, batch result, import receipt, or empty response. A DELETE can
    return a resource; a successful HTTP response can represent pending work.
 4. Classify retry safety explicitly. Retries are disabled by default. Opt-in
-   retries apply only to reviewed reads; writes and batches are never replayed
-   automatically. Automatic retries must honor the full `Retry-After` within
+   `safe_reads()` retries apply only to reviewed reads. Keyed email writes require
+   the additional `with_idempotent_writes()` opt-in and must preserve the key,
+   serialized body, and etag across attempts. Unkeyed writes and batches are never
+   replayed automatically. Automatic retries must honor the full `Retry-After` within
    the operation deadline. Shared server cooldowns are capped at five minutes
    per response so excessive values cannot permanently block later operations;
    preserve the original delay in response metadata. Do not assume every GET

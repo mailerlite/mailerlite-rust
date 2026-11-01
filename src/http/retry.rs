@@ -2,10 +2,10 @@
 use reqwest::StatusCode;
 use std::time::Duration;
 
-/// Retry timing for operations explicitly classified as safe reads.
+/// Bounded retry timing for operations explicitly classified as safe to replay.
 ///
 /// Automatic retries are disabled by default. Opt in with [`Self::safe_reads`].
-/// Writes are never automatically replayed, irrespective of this configuration.
+/// Keyed email writes require the additional [`Self::with_idempotent_writes`] opt-in.
 /// For automatic retries, a server's `Retry-After` is a minimum delay and is not
 /// shortened by the backoff cap or the five-minute shared server cooldown cap.
 #[derive(Debug, Clone)]
@@ -13,6 +13,7 @@ pub struct RetryPolicy {
     max_retries: u32,
     initial_delay: Duration,
     max_delay: Duration,
+    pub(crate) idempotent_writes: bool,
 }
 impl Default for RetryPolicy {
     fn default() -> Self {
@@ -26,11 +27,32 @@ impl RetryPolicy {
             max_retries: 2,
             initial_delay: Duration::from_millis(500),
             max_delay: Duration::from_secs(8),
+            idempotent_writes: false,
         }
     }
     /// Disable automatic retries.
     pub fn none() -> Self {
         Self::safe_reads().max_retries(0)
+    }
+    /// Also retry email writes carrying a caller-supplied idempotency key.
+    ///
+    /// Each attempt preserves the key, serialized body, and etag. Retries share
+    /// one operation deadline and the configured retry limit and backoff. This
+    /// does not enable retries for unkeyed writes or batches, or increase the limit.
+    ///
+    /// Retries cover transient transport failures, incomplete response bodies,
+    /// HTTP 408/429/500/502/503/504, and the API's recognized idempotency-in-progress
+    /// 409. An in-progress response waits at least one second before retrying.
+    /// Version conflicts, response size limits, unexpected success statuses, and
+    /// complete responses with invalid JSON or incompatible schemas are not retried.
+    /// Exhausting the operation deadline returns [`crate::Error::Timeout`].
+    ///
+    /// Retain the key and original request until the outcome is known. The API
+    /// retains keys for 24 hours; reconcile an uncertain write before retrying
+    /// after expiry. An error does not establish that the write failed on the server.
+    pub fn with_idempotent_writes(mut self) -> Self {
+        self.idempotent_writes = true;
+        self
     }
     /// Set the number of retries after the original request.
     pub fn max_retries(mut self, retries: u32) -> Self {

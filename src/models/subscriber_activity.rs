@@ -357,7 +357,7 @@ impl DeliveryIssueActivity {
     /// Return the typed owner while retaining the original string field for existing callers.
     /// Unknown resource kinds are preserved in [`EmailOwnerType::Other`].
     pub fn email_owner_type(&self) -> EmailOwnerType {
-        EmailOwnerType::from(self.emailable_type.as_str())
+        EmailOwnerType::from(self.emailable_type.clone())
     }
 }
 
