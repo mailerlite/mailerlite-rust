@@ -5,7 +5,7 @@ use mailerlite_rs::{
 };
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let client = MailerLite::new(std::env::var("MAILERLITE_API_KEY")?)?;
+    let client = MailerLite::new(std::env::var("MAILERLITE_API_TOKEN")?)?;
     let email = Email::new(
         std::env::var("MAILERLITE_SUBJECT")?,
         std::env::var("MAILERLITE_FROM_NAME")?,

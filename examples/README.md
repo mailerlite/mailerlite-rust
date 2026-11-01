@@ -311,7 +311,7 @@ bodies, which may contain personal data.
 
 ## Simple-editor emails
 
-These examples use `MAILERLITE_API_KEY`. Operations on an existing email also
+These examples use `MAILERLITE_API_TOKEN`. Operations on an existing email also
 require `MAILERLITE_EMAIL_ID`; writes with optimistic concurrency require
 `MAILERLITE_EMAIL_ETAG`. Block and version operations additionally use
 `MAILERLITE_BLOCK_ID` or `MAILERLITE_VERSION_ID`. Read the file header and body for

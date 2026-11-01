@@ -1,4 +1,4 @@
-//! Validate email block. Requires MAILERLITE_API_KEY.
+//! Validate email block. Requires MAILERLITE_API_TOKEN.
 use mailerlite_rs::{
     MailerLite, Response,
     models::emails::{BlockType, Validation},
@@ -8,7 +8,7 @@ use serde_json::{Map, Value, json};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let api_key: String = std::env::var("MAILERLITE_API_KEY")?;
+    let api_key: String = std::env::var("MAILERLITE_API_TOKEN")?;
 
     let mailerlite: MailerLite = MailerLite::new(api_key)?;
 

@@ -14,6 +14,7 @@ use crate::{
         SettingsResult, Validation, WithEtag,
     },
     pagination::NumberedPage,
+    resources::query::query_pairs,
 };
 use reqwest::Method;
 use serde_json::{Map, Value};
@@ -60,7 +61,20 @@ impl<'a> Emails<'a> {
         self
     }
 
-    /// Retrieve the current resource using the shared client transport.
+    /// Retrieve an email with its blocks, settings, and current etag (`GET /emails/{email}`).
+    ///
+    /// # Examples
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(client: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let email = client.emails().get("123").await?;
+    ///
+    /// println!("Current email version: {}", email.data.etag);
+    /// println!("{:#?}", email.data.data);
+    /// # Ok(())
+    /// # }
+    /// ```
     ///
     /// # Errors
     /// Returns local configuration errors before dispatch, or shared transport, API,
@@ -84,7 +98,22 @@ impl<'a> Emails<'a> {
         .await
     }
 
+    /// Retrieve the rendered HTML of an email and its current etag.
+    ///
     /// The API can give a temporary `503` error. Its body can be other than JSON.
+    ///
+    /// # Examples
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(client: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let email = client.emails().html("123").await?;
+    ///
+    /// println!("{}", email.data.data.html);
+    /// println!("Current email version: {}", email.data.etag);
+    /// # Ok(())
+    /// # }
+    /// ```
     ///
     /// # Errors
     /// Returns local configuration errors before dispatch, or shared transport, API,
@@ -383,7 +412,7 @@ impl<'a> Emails<'a> {
     ) -> Result<Response<NumberedPage<EmailVersion>>, Error> {
         let email_id: &str = email_id.as_ref();
         validate::path_id("email_id", email_id)?;
-        let query: Vec<(&str, String)> = validate::query_pairs([
+        let query: Vec<(&str, String)> = query_pairs([
             ("page", options.page.map(|page| page.to_string())),
             ("limit", options.limit.map(|limit| limit.to_string())),
         ]);

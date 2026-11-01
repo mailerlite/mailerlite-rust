@@ -49,13 +49,3 @@ pub(crate) fn settings_path(path: &str, key: &str) -> String {
         format!("{path}.{key}")
     }
 }
-
-/// An empty string stays, and the SDK sends it as `key=`.
-pub(crate) fn query_pairs<'a>(
-    pairs: impl IntoIterator<Item = (&'a str, Option<String>)>,
-) -> Vec<(&'a str, String)> {
-    pairs
-        .into_iter()
-        .filter_map(|(key, value)| value.map(|value| (key, value)))
-        .collect()
-}
