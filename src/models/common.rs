@@ -22,7 +22,7 @@ pub struct Rate {
     pub string: String,
 }
 
-/// An optional update that distinguishes omission from an explicit JSON null.
+/// An optional field that distinguishes omission from an explicit JSON null.
 ///
 /// Only use this type for fields whose endpoint documents null semantics. Fields
 /// in a containing request must use `#[serde(default, skip_serializing_if =
@@ -30,7 +30,7 @@ pub struct Rate {
 /// omission is only meaningful for a containing field.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub enum Patch<T> {
-    /// Omit the field, leaving the existing value unchanged.
+    /// Omit the field. The endpoint determines whether omission keeps or removes an existing value.
     #[default]
     Unset,
     /// Send an explicit JSON null.

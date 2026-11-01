@@ -3,6 +3,7 @@
 //! Requires `MAILERLITE_API_TOKEN`.
 use mailerlite_rs::{
     MailerLite, Response,
+    models::common::Patch,
     models::emails::{
         BlockContent, BlockData, ButtonAttributes, EmailResponseMetadata, Validation,
     },
@@ -16,8 +17,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mailerlite: MailerLite = MailerLite::new(api_key)?;
 
     let content = BlockData {
-        attrs: Some(ButtonAttributes {
-            url: Some("https://example.com".into()),
+        attrs: Patch::Value(ButtonAttributes {
+            url: Patch::Value("https://example.com".into()),
             ..Default::default()
         }),
         ..BlockData::text("Buy now")

@@ -146,10 +146,11 @@ live in `models::emails`; write parameters live in `resources::emails`.
 Create a typed paragraph with `NewBlock::new(BlockContent::paragraph("Hello"))`.
 `BlockContent` selects the attributes for each block kind, and `InlineNode` and
 `TextMark` describe text, personalization, and formatting. Returned blocks expose
-the same types through `block.content`. Pass that existing `EmailBlock` to
-`update_block`; the SDK rejects replacements of a different kind before sending them. Unknown variants and extension fields
-preserve their JSON; list-item content and open editor attributes retain the
-flexibility of the API schema.
+the same types through `block.content`. Call `update_block` with a block ID and
+etag; the server validates the replacement document against the stored block kind.
+Optional editor fields use `Patch` to preserve omitted values and explicit nulls.
+Unknown variants and extension fields preserve their JSON; list-item content and
+open editor attributes retain the flexibility of the API schema.
 
 Email operations return `Response<T, EmailResponseMetadata>`, with metadata
 from `models::emails`. Versioned operations return

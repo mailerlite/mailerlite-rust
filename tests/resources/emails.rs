@@ -6,6 +6,7 @@ use crate::editor_support::{
 };
 use mailerlite_rs::{
     Error, Response,
+    models::common::Patch,
     models::emails::{
         BlockContent, BlockType, BrandMode, EditorText, EmailBlock, EmailDocument, EmailHtml,
         EmailOwnerType, EmailResponseMetadata, EmailTemplate, EmailTemplateType, EmailType,
@@ -509,10 +510,6 @@ async fn create_block_sends_the_placement_block_id_as_given() {
     }
 }
 
-fn existing_block(id: &str) -> EmailBlock {
-    serde_json::from_value(json!({"id":id,"type":"paragraph","editor_content":{}})).unwrap()
-}
-
 fn hello_again() -> BlockContent {
     BlockContent::paragraph("Hello again")
 }
@@ -535,7 +532,7 @@ async fn update_block_patches_the_content() {
 
     let response: Response<WithEtag<EmailBlock>, EmailResponseMetadata> = mailerlite(&server)
         .emails()
-        .update_block("123", &existing_block("57"), "43", &hello_again())
+        .update_block("123", "57", "43", &hello_again())
         .await
         .unwrap();
 
@@ -564,7 +561,7 @@ async fn update_block_gives_the_version_conflict() {
 
     let error: Error = mailerlite(&server)
         .emails()
-        .update_block("123", &existing_block("57"), "43", &hello_again())
+        .update_block("123", "57", "43", &hello_again())
         .await
         .unwrap_err();
 
@@ -596,7 +593,7 @@ async fn update_block_gives_the_field_errors() {
 
     let error: Error = mailerlite(&server)
         .emails()
-        .update_block("123", &existing_block("57"), "43", &hello_again())
+        .update_block("123", "57", "43", &hello_again())
         .await
         .unwrap_err();
 
@@ -621,28 +618,20 @@ async fn update_block_rejects_bad_ids_without_a_request() {
     let email = client.emails();
 
     assert!(matches!(
-        email
-            .update_block("", &existing_block("57"), "43", &hello_again())
-            .await,
+        email.update_block("", "57", "43", &hello_again()).await,
         Err(Error::Config(_))
     ));
     assert!(matches!(
-        email
-            .update_block("123", &existing_block(""), "43", &hello_again())
-            .await,
+        email.update_block("123", "", "43", &hello_again()).await,
         Err(Error::Config(_))
     ));
     for id in BAD_IDS {
         assert!(matches!(
-            email
-                .update_block(id, &existing_block("57"), "43", &hello_again())
-                .await,
+            email.update_block(id, "57", "43", &hello_again()).await,
             Err(Error::Config(_))
         ));
         assert!(matches!(
-            email
-                .update_block("123", &existing_block(id), "43", &hello_again())
-                .await,
+            email.update_block("123", id, "43", &hello_again()).await,
             Err(Error::Config(_))
         ));
     }
@@ -1481,7 +1470,7 @@ async fn the_6_writes_with_an_etag_send_an_empty_etag_and_give_the_api_error() {
             .await
             .map(|_| ()),
         email
-            .update_block("123", &existing_block("57"), "", &hello_again())
+            .update_block("123", "57", "", &hello_again())
             .await
             .map(|_| ()),
         email.delete_block("123", "57", "").await.map(|_| ()),
@@ -1516,7 +1505,7 @@ async fn send_all_writes(email: &Emails<'_>) -> Vec<Result<(), Error>> {
     vec![
         email.create_block("123", "42", &block).await.map(|_| ()),
         email
-            .update_block("123", &existing_block("57"), "43", &hello_again())
+            .update_block("123", "57", "43", &hello_again())
             .await
             .map(|_| ()),
         email.delete_block("123", "57", "44").await.map(|_| ()),
@@ -1839,22 +1828,27 @@ async fn settings_with_an_extra_key_that_is_also_a_field_send_no_request() {
 }
 
 #[tokio::test]
-async fn update_block_rejects_a_different_kind_without_a_request() {
+async fn update_block_by_id_leaves_stored_kind_validation_to_the_server() {
     let mut server = Server::new_async().await;
-    let mocks = expect_no_request(&mut server).await;
-    let block: EmailBlock = serde_json::from_value(
-        json!({"id":"57","type":"image","editor_content":{"attrs":{"src":null}}}),
-    )
-    .unwrap();
+    let get = server
+        .mock("GET", "/emails/123/blocks/57")
+        .expect(0)
+        .create_async()
+        .await;
+    let patch = expect_request(
+        &mut server, "PATCH", "/emails/123/blocks/57",
+        Some(json!({"editor_content":{"content":[{"type":"text","text":"Wrong kind"}]},"etag":"43"})),
+        422,
+        r#"{"message":"Invalid content for the stored block type.","errors":{"editor_content":["Invalid content for the stored block type."]}}"#,
+    ).await;
     let error = mailerlite(&server)
         .emails()
-        .update_block("123", &block, "43", &BlockContent::paragraph("Wrong kind"))
+        .update_block("123", "57", "43", &BlockContent::paragraph("Wrong kind"))
         .await
         .unwrap_err();
-    assert!(
-        matches!(&error, Error::Config(detail) if detail.contains("paragraph") && detail.contains("image"))
-    );
-    assert_no_request(&mocks).await;
+    assert!(matches!(&error, Error::Api(error) if error.status().as_u16() == 422));
+    get.assert_async().await;
+    patch.assert_async().await;
 }
 
 #[tokio::test]
@@ -1887,7 +1881,7 @@ async fn placeholder_images_decode_on_reads_and_writes() {
         &mut server,
         "PATCH",
         "/emails/123/blocks/57",
-        Some(json!({"editor_content":{},"etag":"43"})),
+        Some(json!({"editor_content":image["editor_content"],"etag":"43"})),
         200,
         &body,
     )
@@ -1902,15 +1896,24 @@ async fn placeholder_images_decode_on_reads_and_writes() {
         .unwrap();
     let updated = client
         .emails()
-        .update_block("123", &fetched.data.data, "43", &block.content)
+        .update_block(
+            "123",
+            &fetched.data.data.id,
+            &fetched.data.etag,
+            &fetched.data.data.content,
+        )
         .await
         .unwrap();
     for response in [fetched, created, updated] {
         let BlockContent::Image(data) = response.data.data.content else {
             panic!("expected an image")
         };
-        let attrs = data.attrs.unwrap();
-        assert!(attrs.src.is_none() && attrs.url.is_none() && attrs.alt.is_none());
+        let Patch::Value(attrs) = data.attrs else {
+            panic!("expected image attributes")
+        };
+        assert_eq!(attrs.src, Patch::Null);
+        assert_eq!(attrs.url, Patch::Null);
+        assert_eq!(attrs.alt, Patch::Null);
         assert_eq!(serde_json::to_value(attrs.width).unwrap(), json!(300.5));
         assert_eq!(serde_json::to_value(attrs.height).unwrap(), json!(150.25));
     }
@@ -1921,7 +1924,8 @@ async fn placeholder_images_decode_on_reads_and_writes() {
     let mut document: serde_json::Value = serde_json::from_str(&fixture("email")).unwrap();
     document["data"]["blocks"] = json!([
         {"id":"1","type":"paragraph","editor_content":{"attrs":null,"content":null,"mobile":null,"visibility":null}},
-        {"id":"2","type":"bulleted_list","editor_content":{},"children":[image]}
+        {"id":"2","type":"bulleted_list","editor_content":{},"children":[image]},
+        {"id":"3","type":"paragraph","editor_content":null,"children":null}
     ]);
     let get = expect_request(
         &mut server,
@@ -1934,6 +1938,11 @@ async fn placeholder_images_decode_on_reads_and_writes() {
     .await;
     let response = client.emails().get("123").await.unwrap();
     assert_eq!(response.data.data.blocks[1].children[0].id, "57");
+    assert_eq!(
+        response.data.data.blocks[2].content,
+        BlockContent::Null(BlockType::Paragraph)
+    );
+    assert!(response.data.data.blocks[2].children.is_empty());
     get.assert_async().await;
 }
 
@@ -2023,12 +2032,8 @@ async fn decoding_errors_keep_inline_node_and_mark_paths() {
 }
 
 #[tokio::test]
-async fn update_block_accepts_the_same_unknown_kind() {
+async fn update_block_accepts_unknown_content_by_id() {
     let mut server = Server::new_async().await;
-    let block: EmailBlock = serde_json::from_value(
-        json!({"id":"57","type":"future_block","editor_content":{"value":1}}),
-    )
-    .unwrap();
     let content = BlockContent::Other {
         kind: "future_block".into(),
         fields: serde_json::from_value(json!({"value":2})).unwrap(),
@@ -2045,7 +2050,7 @@ async fn update_block_accepts_the_same_unknown_kind() {
     .await;
     let response = mailerlite(&server)
         .emails()
-        .update_block("123", &block, "43", &content)
+        .update_block("123", "57", "43", &content)
         .await
         .unwrap();
     assert_eq!(response.data.data.content, content);

@@ -13,24 +13,24 @@ use serde_json::{Map, Value};
 
 /// An editor document with attributes selected by its block type.
 ///
-/// Missing and null optional fields decode as `None` and serialize as omitted; `Some(Vec::new())` sends an explicit empty content
-/// array. Block updates replace the whole document, so omission does not retain
-/// the previous value. Use `Patch::Null` for nullable attributes when needed.
+/// Optional fields preserve omission (`Patch::Unset`), explicit null (`Patch::Null`),
+/// and values (`Patch::Value`). Block updates replace the whole document, so
+/// omission does not retain the previous value.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(bound(deserialize = "A: serde::de::DeserializeOwned"))]
 pub struct BlockData<A> {
     /// Attributes belonging to this block kind.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub attrs: Option<A>,
-    /// Ordered inline content; `Some(vec![])` explicitly clears it.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub content: Option<Vec<InlineNode>>,
+    #[serde(default, skip_serializing_if = "Patch::is_unset")]
+    pub attrs: Patch<A>,
+    /// Ordered inline content; `Patch::Value(vec![])` explicitly clears it.
+    #[serde(default, skip_serializing_if = "Patch::is_unset")]
+    pub content: Patch<Vec<InlineNode>>,
     /// Mobile overrides; the API leaves these properties unrestricted for text blocks.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub mobile: Option<Map<String, Value>>,
+    #[serde(default, skip_serializing_if = "Patch::is_unset")]
+    pub mobile: Patch<Map<String, Value>>,
     /// Devices on which this block is visible.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub visibility: Option<BlockVisibility>,
+    #[serde(default, skip_serializing_if = "Patch::is_unset")]
+    pub visibility: Patch<BlockVisibility>,
     /// Future editor fields, preserved independently of the typed fields.
     #[serde(flatten, serialize_with = "BlockData::<A>::serialize_extra")]
     pub extra: Map<String, Value>,
@@ -38,10 +38,10 @@ pub struct BlockData<A> {
 impl<A> Default for BlockData<A> {
     fn default() -> Self {
         Self {
-            attrs: None,
-            content: None,
-            mobile: None,
-            visibility: None,
+            attrs: Patch::Unset,
+            content: Patch::Unset,
+            mobile: Patch::Unset,
+            visibility: Patch::Unset,
             extra: Map::new(),
         }
     }
@@ -62,7 +62,7 @@ impl<A> BlockData<A> {
     /// Create a document containing one plain text node.
     pub fn text(text: impl Into<String>) -> Self {
         Self {
-            content: Some(vec![InlineNode::text(text)]),
+            content: Patch::Value(vec![InlineNode::text(text)]),
             ..Self::default()
         }
     }
@@ -74,15 +74,15 @@ impl<A> BlockData<A> {
 #[serde(bound(deserialize = "A: serde::de::DeserializeOwned, M: serde::de::DeserializeOwned"))]
 pub struct MediaBlockData<A, M = MobileOverrides> {
     /// Attributes belonging to this block kind.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub attrs: Option<A>,
+    #[serde(default, skip_serializing_if = "Patch::is_unset")]
+    pub attrs: Patch<A>,
     /// Mobile overrides. Images and videos use [`MobileOverrides`]; divider and
     /// social-icon documents retain the API’s open JSON object.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub mobile: Option<M>,
+    #[serde(default, skip_serializing_if = "Patch::is_unset")]
+    pub mobile: Patch<M>,
     /// Devices on which the block is visible.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub visibility: Option<BlockVisibility>,
+    #[serde(default, skip_serializing_if = "Patch::is_unset")]
+    pub visibility: Patch<BlockVisibility>,
     /// Unrecognized document properties, retained without changing their values.
     #[serde(flatten, serialize_with = "MediaBlockData::<A, M>::serialize_extra")]
     pub extra: Map<String, Value>,
@@ -90,9 +90,9 @@ pub struct MediaBlockData<A, M = MobileOverrides> {
 impl<A, M> Default for MediaBlockData<A, M> {
     fn default() -> Self {
         Self {
-            attrs: None,
-            mobile: None,
-            visibility: None,
+            attrs: Patch::Unset,
+            mobile: Patch::Unset,
+            visibility: Patch::Unset,
             extra: Map::new(),
         }
     }
@@ -111,11 +111,11 @@ impl<A, M> MediaBlockData<A, M> {
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct ListBlockData {
     /// Attributes belonging to this block kind.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub attrs: Option<OpenAttributes>,
+    #[serde(default, skip_serializing_if = "Patch::is_unset")]
+    pub attrs: Patch<OpenAttributes>,
     /// Ordered editor nodes; an empty array explicitly clears the content.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub content: Option<Vec<ListItem>>,
+    #[serde(default, skip_serializing_if = "Patch::is_unset")]
+    pub content: Patch<Vec<ListItem>>,
     /// Unrecognized document properties, retained without changing their values.
     #[serde(flatten, serialize_with = "ListBlockData::serialize_extra")]
     pub extra: Map<String, Value>,
@@ -134,11 +134,11 @@ impl ListBlockData {
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct TitleBlockData {
     /// Attributes belonging to this block kind.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub attrs: Option<OpenAttributes>,
+    #[serde(default, skip_serializing_if = "Patch::is_unset")]
+    pub attrs: Patch<OpenAttributes>,
     /// Ordered editor nodes; an empty array explicitly clears the content.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub content: Option<Vec<InlineNode>>,
+    #[serde(default, skip_serializing_if = "Patch::is_unset")]
+    pub content: Patch<Vec<InlineNode>>,
     /// Unrecognized document properties, retained without changing their values.
     #[serde(flatten, serialize_with = "TitleBlockData::serialize_extra")]
     pub extra: Map<String, Value>,
@@ -156,8 +156,8 @@ impl TitleBlockData {
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct MobileOverrides {
     /// Whether the block is hidden on mobile.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub hidden: Option<bool>,
+    #[serde(default, skip_serializing_if = "Patch::is_unset")]
+    pub hidden: Patch<bool>,
     /// Other mobile properties permitted by the API.
     #[serde(flatten, serialize_with = "MobileOverrides::serialize_extra")]
     pub extra: Map<String, Value>,
@@ -193,8 +193,8 @@ pub struct InlineText {
     #[serde(default, skip_serializing_if = "Patch::is_unset")]
     pub text: Patch<String>,
     /// Formatting marks in editor order.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub marks: Option<Vec<TextMark>>,
+    #[serde(default, skip_serializing_if = "Patch::is_unset")]
+    pub marks: Patch<Vec<TextMark>>,
     /// Unknown node properties, preserved for future editor versions.
     #[serde(flatten, serialize_with = "InlineText::serialize_extra")]
     pub extra: Map<String, Value>,
@@ -312,11 +312,11 @@ pub struct ListItem {
     #[serde(rename = "type")]
     pub node_type: ListItemType,
     /// Typed attributes of this node.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub attrs: Option<Map<String, Value>>,
+    #[serde(default, skip_serializing_if = "Patch::is_unset")]
+    pub attrs: Patch<Map<String, Value>>,
     /// Nested list content; the API accepts arbitrary JSON values here.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub content: Option<Vec<Value>>,
+    #[serde(default, skip_serializing_if = "Patch::is_unset")]
+    pub content: Patch<Vec<Value>>,
     /// Unknown node properties, preserved for future editor versions.
     #[serde(flatten, serialize_with = "ListItem::serialize_extra")]
     pub extra: Map<String, Value>,
@@ -530,6 +530,8 @@ macro_rules! block_content {
                 #[doc = concat!("The `", $wire, "` editor document.")]
                 $variant($payload),
             )+
+            /// An explicit null document, retaining its block discriminator.
+            Null(BlockType),
             /// A future editor variant. Its type must not name a known variant.
             Other {
                 /// Unrecognized wire discriminator.
@@ -545,10 +547,12 @@ macro_rules! block_content {
             }
 
             pub(super) fn from_document(kind: &str, value: Value) -> Result<Self, String> {
+                if value.is_null() {
+                    return Ok(Self::Null(BlockType::from(kind.to_owned())));
+                }
                 let data = wire::object(value).map_err(|error| format!("editor_content: {error}"))?;
                 match kind {
-                    $($wire => wire::decode(Value::Object(data)).map(Self::$variant)
-                        .map_err(|error| format!("editor_content.{error}")),)+
+                    $($wire => wire::decode_at(Value::Object(data), "editor_content").map(Self::$variant),)+
                     _ => Ok(Self::Other { kind: kind.to_owned(), fields: data }),
                 }
             }
@@ -557,6 +561,7 @@ macro_rules! block_content {
             pub fn block_type(&self) -> BlockType {
                 match self {
                     $(Self::$variant(_) => BlockType::$variant,)+
+                    Self::Null(kind) => kind.clone(),
                     Self::Other {kind, ..} => BlockType::from(kind.clone()),
                 }
             }
@@ -564,16 +569,8 @@ macro_rules! block_content {
 
         impl<'de> Deserialize<'de> for BlockContent {
             fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-                #[derive(Deserialize)]
-                struct Document {
-                    #[serde(rename = "type")]
-                    kind: String,
-                    #[serde(default = "wire::empty_object")]
-                    editor_content: Value,
-                }
-                let document = Document::deserialize(deserializer)?;
-                Self::from_document(&document.kind, document.editor_content)
-                    .map_err(|error| serde::de::Error::custom(format!("block type {:?}: {error}", document.kind)))
+                let mut document = wire::BlockEnvelope::deserialize(deserializer)?;
+                document.decode_content().map_err(serde::de::Error::custom)
             }
         }
 
@@ -581,6 +578,7 @@ macro_rules! block_content {
             fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
                 match self {
                     $(Self::$variant(data) => TaggedBlock {kind: $wire, editor_content: data}.serialize(serializer),)+
+                    Self::Null(kind) => TaggedBlock {kind: kind.as_str(), editor_content: &()}.serialize(serializer),
                     Self::Other {kind, fields} => {
                         if Self::is_known_kind(kind) {
                             return Err(serde::ser::Error::custom("known blocks must use typed content"));
@@ -597,6 +595,7 @@ macro_rules! block_content {
             fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
                 match self.0 {
                     $(BlockContent::$variant(data) => data.serialize(serializer),)+
+                    BlockContent::Null(_) => serializer.serialize_unit(),
                     BlockContent::Other {kind, fields} => {
                         if BlockContent::is_known_kind(kind) {
                             return Err(serde::ser::Error::custom("known blocks must use typed content"));
@@ -621,7 +620,7 @@ block_content! {
     /// };
     ///
     /// let content = BlockContent::Paragraph(BlockData {
-    ///     attrs: Some(ParagraphAttributes {
+    ///     attrs: Patch::Value(ParagraphAttributes {
     ///         text_align: Patch::Value(TextAlignment::Center),
     ///         ..Default::default()
     ///     }),
@@ -673,6 +672,46 @@ mod tests {
     use super::*;
     use crate::models::emails::{EmailBlock, EmailDocument, TextAlignment, WithEtag};
     use serde_json::json;
+
+    #[test]
+    fn null_block_document_decodes_in_both_representations() {
+        for kind in ["paragraph", "image", "future_block"] {
+            let wire = json!({"id":"57","type":kind,"editor_content":null,"children":null});
+            let content = serde_json::from_value::<BlockContent>(wire.clone());
+            let block = serde_json::from_value::<EmailBlock>(wire.clone());
+            assert!(content.is_ok(), "{kind}: {content:?}");
+            assert!(block.is_ok(), "{kind}: {block:?}");
+            let block = block.unwrap();
+            assert!(block.children.is_empty());
+            assert_eq!(block.content, content.unwrap());
+            assert_eq!(
+                serde_json::to_value(ContentRef(&block.content)).unwrap(),
+                Value::Null
+            );
+            assert_eq!(block.content.block_type().as_str(), kind);
+            assert_eq!(
+                serde_json::to_value(block.content).unwrap(),
+                json!({"type":kind,"editor_content":null})
+            );
+        }
+    }
+
+    #[test]
+    fn optional_editor_nulls_survive_round_trip() {
+        for wire in [
+            json!({"type":"image","editor_content":{"attrs":{"src":null,"url":null,"alt":null,"caption":null,"linkType":null},"mobile":null,"visibility":null}}),
+            json!({"type":"paragraph","editor_content":{"attrs":null,"content":null,"mobile":null,"visibility":null}}),
+            json!({"type":"paragraph","editor_content":{"attrs":{"class":null},"content":[{"type":"text","text":"Hello","marks":null}]}}),
+            json!({"type":"video","editor_content":{"attrs":{"alt":null,"videoCode":null}}}),
+            json!({"type":"button","editor_content":{"attrs":{"url":null,"linkType":null}}}),
+            json!({"type":"social_icon","editor_content":{"attrs":{"items":[{"url":"https://example.com","uuid":"link-1","type":"website","label":null}]}}}),
+            json!({"type":"bulleted_list","editor_content":{"attrs":null,"content":[{"type":"listItem","attrs":null,"content":null}]}}),
+            json!({"type":"title","editor_content":{"attrs":null,"content":null}}),
+        ] {
+            let content: BlockContent = serde_json::from_value(wire.clone()).unwrap();
+            assert_eq!(serde_json::to_value(content).unwrap(), wire);
+        }
+    }
 
     #[test]
     fn nullable_attributes_decode() {
@@ -799,11 +838,14 @@ mod tests {
         let BlockContent::Paragraph(data) = &email.data.blocks[0].content else {
             panic!("expected paragraph")
         };
-        assert_eq!(
-            data.attrs.as_ref().unwrap().text_align,
-            Patch::Value(TextAlignment::Left)
-        );
-        let InlineNode::Text(text) = &data.content.as_ref().unwrap()[0] else {
+        let Patch::Value(attrs) = &data.attrs else {
+            panic!("expected attributes")
+        };
+        let Patch::Value(content) = &data.content else {
+            panic!("expected content")
+        };
+        assert_eq!(attrs.text_align, Patch::Value(TextAlignment::Left));
+        let InlineNode::Text(text) = &content[0] else {
             panic!("expected text")
         };
         assert_eq!(text.text, Patch::Value("Hello".into()));

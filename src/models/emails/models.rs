@@ -141,29 +141,13 @@ pub struct EmailBlock {
 
 impl<'de> Deserialize<'de> for EmailBlock {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        // Buffer only the editor document; keep children on the outer decoder's path.
-        #[derive(Deserialize)]
-        struct Fields {
-            id: String,
-            #[serde(rename = "type")]
-            kind: String,
-            #[serde(default = "super::wire::empty_object")]
-            editor_content: Value,
-            #[serde(default)]
-            children: Vec<EmailBlock>,
-            #[serde(default)]
-            placement: Option<BlockPlacement>,
-        }
-        let fields = Fields::deserialize(deserializer)?;
-        let content =
-            BlockContent::from_document(&fields.kind, fields.editor_content).map_err(|error| {
-                serde::de::Error::custom(format!(
-                    "block {:?} ({:?}): {error}",
-                    fields.id, fields.kind
-                ))
-            })?;
+        let mut fields = super::wire::BlockEnvelope::deserialize(deserializer)?;
+        let content = fields.decode_content().map_err(serde::de::Error::custom)?;
+        let id = fields
+            .id
+            .ok_or_else(|| serde::de::Error::missing_field("id"))?;
         Ok(Self {
-            id: fields.id,
+            id,
             content,
             children: fields.children,
             placement: fields.placement,
@@ -765,7 +749,7 @@ mod tests {
     #[test]
     fn object_fields_accept_empty_arrays_but_reject_malformed_values() {
         // Object fields also accept the API's alternate empty-array representation.
-        // Neither block content nor validation-error maps have null semantics.
+        // Validation-error maps and footer text still require objects.
         for wire in [json!({}), json!([])] {
             let text: EditorText = serde_json::from_value(json!({"editor_content": wire})).unwrap();
             assert_eq!(text.editor_content, BlockData::default());
@@ -783,11 +767,12 @@ mod tests {
             json!([{}]),
         ] {
             assert!(serde_json::from_value::<EditorText>(json!({"editor_content": wire})).is_err());
-            assert!(
+            assert_eq!(
                 serde_json::from_value::<EmailBlock>(json!({
                     "id": "1", "type": "paragraph", "editor_content": wire
                 }))
-                .is_err()
+                .is_ok(),
+                wire.is_null()
             );
             assert!(
                 serde_json::from_value::<Validation>(json!({

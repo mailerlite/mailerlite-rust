@@ -224,26 +224,24 @@ impl<'a> Emails<'a> {
     }
 
     /// Replaces the content of a block. The API removes the keys that you do not send. The type and the
-    /// position of the block do not change. Supply the existing block returned by a read
-    /// or write. A replacement of a different kind is rejected before dispatch. Only its
-    /// document is sent; no implicit read is performed. Returns the block and the new etag.
+    /// position of the block do not change. Only the document is sent; its variant selects
+    /// the SDK encoding, not a server-side type assertion. The server validates content
+    /// against the stored block kind. No implicit read is performed. Returns the block and new etag.
     ///
     /// # Examples
     /// ```no_run
     /// use mailerlite_rs::{MailerLite, models::emails::BlockContent};
     ///
     /// # async fn example(client: &MailerLite) -> mailerlite_rs::Result<()> {
-    /// let block = client.emails().get_block("123", "456").await?;
     /// let content = BlockContent::paragraph("Updated text");
     ///
-    /// let response = client.emails().update_block("123", &block.data.data, &block.data.etag, &content).await?;
+    /// let response = client.emails().update_block("123", "456", "current-etag", &content).await?;
     /// # Ok(())
     /// # }
     /// ```
     ///
     /// # Errors
-    /// Returns [`Error::Config`] before dispatch for empty or non-ASCII-digit path IDs,
-    /// or when the replacement kind differs from the supplied block.
+    /// Returns [`Error::Config`] before dispatch for empty or non-ASCII-digit path IDs.
     /// An idempotency key that cannot be encoded as an HTTP header also fails locally.
     /// HTTP failures return [`Error::Api`]; inspect its status and validation messages.
     /// Transport, serialization, decoding, and deadline failures retain the shared client error contract.
@@ -253,22 +251,14 @@ impl<'a> Emails<'a> {
     pub async fn update_block(
         &self,
         email_id: impl AsRef<str>,
-        block: &EmailBlock,
+        block_id: impl AsRef<str>,
         etag: impl AsRef<str>,
         editor_content: &BlockContent,
     ) -> Result<Response<WithEtag<EmailBlock>, EmailResponseMetadata>, Error> {
         let (email_id, block_id, etag): (&str, &str, &str) =
-            (email_id.as_ref(), block.id.as_str(), etag.as_ref());
+            (email_id.as_ref(), block_id.as_ref(), etag.as_ref());
         validate::path_id("email_id", email_id)?;
         validate::path_id("block_id", block_id)?;
-        let expected = block.content.block_type();
-        let replacement = editor_content.block_type();
-        if replacement != expected {
-            return Err(Error::Config(format!(
-                "replacement block type {replacement} does not match existing block type {expected}"
-            )));
-        }
-
         let idempotency_key: Option<&str> = self.idempotency_key.as_deref();
 
         send(
