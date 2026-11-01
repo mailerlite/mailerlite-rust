@@ -7,9 +7,10 @@ use crate::editor_support::{
 use mailerlite_rs::{
     Error, Response,
     models::emails::{
-        BlockType, BrandMode, EditorText, EmailBlock, EmailDocument, EmailHtml,
-        EmailResponseMetadata, EmailTemplate, EmailVersion, EtagOnly, Position, SettingsResult,
-        VERSION_CONFLICT, Validation, WithEtag,
+        BlockContent, BlockType, BrandMode, EditorText, EmailBlock, EmailDocument, EmailHtml,
+        EmailOwnerType, EmailResponseMetadata, EmailTemplate, EmailTemplateType, EmailType,
+        EmailVersion, EtagOnly, Position, SettingsResult, SocialLinkType, VERSION_CONFLICT,
+        Validation, WithEtag,
     },
     pagination::NumberedPage,
     resources::emails::{
@@ -43,8 +44,8 @@ async fn find_gets_the_email() {
 
     let email: &EmailDocument = &response.data.data;
     assert_eq!(email.id, "123");
-    assert_eq!(email.email_type, "builder_inline_email");
-    assert_eq!(email.emailable_type, "campaigns");
+    assert_eq!(email.email_type, EmailType::SimpleEditor);
+    assert_eq!(email.emailable_type, EmailOwnerType::Campaign);
     assert_eq!(email.emailable_id, "456");
 
     let brand = email.settings.brand.as_ref().unwrap();
@@ -73,26 +74,35 @@ async fn find_gets_the_email() {
     let footer = email.settings.footer.as_ref().unwrap();
     assert_eq!(footer.show_preferences, Some(false));
     assert_eq!(
-        footer.company_name.as_ref().unwrap().editor_content["content"][0]["text"],
+        serde_json::to_value(&footer.company_name.as_ref().unwrap().editor_content).unwrap()["content"]
+            [0]["text"],
         "Acme"
     );
     assert_eq!(footer.unsubscribe_text.as_deref(), Some("Unsubscribe"));
     let social_link = &footer.social_links.as_ref().unwrap()[0];
     assert_eq!(social_link.url.as_deref(), Some("https://example.com"));
-    assert_eq!(social_link.link_type.as_deref(), Some("website"));
+    assert_eq!(social_link.link_type, Some(SocialLinkType::Website));
     assert_eq!(social_link.link_id, Some(7));
 
     assert_eq!(email.blocks.len(), 2);
     assert_eq!(email.blocks[0].id, "1");
-    assert_eq!(email.blocks[0].block_type, BlockType::Paragraph);
+    assert_eq!(email.blocks[0].content.block_type(), BlockType::Paragraph);
     assert_eq!(
-        email.blocks[0].editor_content["attrs"],
+        serde_json::to_value(&email.blocks[0].content).unwrap()["editor_content"]["attrs"],
         json!({"textAlign": "left"})
     );
     assert!(email.blocks[0].children.is_empty());
     assert!(email.blocks[0].placement.is_none());
-    assert_eq!(email.blocks[1].block_type, BlockType::BulletedList);
-    assert!(email.blocks[1].editor_content.is_empty());
+    assert_eq!(
+        email.blocks[1].content.block_type(),
+        BlockType::BulletedList
+    );
+    assert!(
+        serde_json::to_value(&email.blocks[1].content).unwrap()["editor_content"]
+            .as_object()
+            .unwrap()
+            .is_empty()
+    );
     assert_eq!(email.blocks[1].children[0].id, "3");
 }
 
@@ -131,8 +141,16 @@ async fn find_decodes_null_values_and_keeps_unknown_keys() {
     assert_eq!(settings.extra["new_group"], json!({"a": 1}));
 
     let block = &response.data.data.blocks[0];
-    assert_eq!(block.block_type, BlockType::Other("countdown".to_string()));
-    assert!(block.editor_content.is_empty());
+    assert_eq!(
+        block.content.block_type(),
+        BlockType::Other("countdown".to_string())
+    );
+    assert!(
+        serde_json::to_value(&block.content).unwrap()["editor_content"]
+            .as_object()
+            .unwrap()
+            .is_empty()
+    );
 }
 
 #[tokio::test]
@@ -248,9 +266,13 @@ async fn find_block_gets_the_block_and_its_placement() {
     mock.assert_async().await;
     assert_eq!(response.data.etag, "43");
     assert_eq!(response.data.data.id, "57");
-    assert_eq!(response.data.data.block_type, BlockType::Paragraph);
     assert_eq!(
-        response.data.data.editor_content["content"][0]["text"],
+        response.data.data.content.block_type(),
+        BlockType::Paragraph
+    );
+    assert_eq!(
+        serde_json::to_value(&response.data.data.content).unwrap()["editor_content"]["content"][0]
+            ["text"],
         "Hello"
     );
     let placement = response.data.data.placement.as_ref().unwrap();
@@ -288,12 +310,7 @@ async fn find_block_rejects_bad_ids_without_a_request() {
 
 fn new_paragraph(placement: Option<Placement>) -> NewBlock {
     NewBlock {
-        block_type: BlockType::Paragraph,
-        editor_content:
-            json!({"attrs": {"textAlign": "center"}, "content": [{"type": "text", "text": "Hi"}]})
-                .as_object()
-                .unwrap()
-                .clone(),
+        content: serde_json::from_value(json!({"type":"paragraph","editor_content":{"attrs":{"textAlign":"center"},"content":[{"type":"text","text":"Hi"}]}})).unwrap(),
         placement,
     }
 }
@@ -345,8 +362,7 @@ async fn create_block_sends_no_placement_when_there_is_none() {
     .await;
 
     let block: NewBlock = NewBlock {
-        block_type: BlockType::Divider,
-        editor_content: serde_json::Map::new(),
+        content: BlockContent::Divider(Default::default()),
         placement: None,
     };
     mailerlite(&server)
@@ -493,11 +509,8 @@ async fn create_block_sends_the_placement_block_id_as_given() {
     }
 }
 
-fn hello_again() -> serde_json::Map<String, serde_json::Value> {
-    json!({"content": [{"type": "text", "text": "Hello again"}]})
-        .as_object()
-        .unwrap()
-        .clone()
+fn hello_again() -> BlockContent {
+    BlockContent::paragraph("Hello again")
 }
 
 #[tokio::test]
@@ -525,7 +538,8 @@ async fn update_block_patches_the_content() {
     mock.assert_async().await;
     assert_eq!(response.data.etag, "44");
     assert_eq!(
-        response.data.data.editor_content["content"][0]["text"],
+        serde_json::to_value(&response.data.data.content).unwrap()["editor_content"]["content"][0]
+            ["text"],
         "Hello again"
     );
     let placement = response.data.data.placement.as_ref().unwrap();
@@ -868,8 +882,7 @@ async fn validate_block_sends_the_block_without_an_etag() {
     .await;
 
     let block: NewBlock = NewBlock {
-        block_type: BlockType::Divider,
-        editor_content: serde_json::Map::new(),
+        content: BlockContent::Divider(Default::default()),
         placement: None,
     };
     let response: Response<Validation, EmailResponseMetadata> = mailerlite(&server)
@@ -900,8 +913,10 @@ async fn validate_block_gives_the_errors_of_an_invalid_block() {
     .await;
 
     let block: NewBlock = NewBlock {
-        block_type: BlockType::Other("countdown".to_string()),
-        editor_content: serde_json::Map::new(),
+        content: BlockContent::Other {
+            kind: "countdown".into(),
+            fields: Default::default(),
+        },
         placement: None,
     };
     let response: Response<Validation, EmailResponseMetadata> = mailerlite(&server)
@@ -932,8 +947,7 @@ async fn validate_block_accepts_an_empty_array_for_the_errors() {
     .await;
 
     let block: NewBlock = NewBlock {
-        block_type: BlockType::Divider,
-        editor_content: serde_json::Map::new(),
+        content: BlockContent::Divider(Default::default()),
         placement: None,
     };
     let response: Response<Validation, EmailResponseMetadata> = mailerlite(&server)
@@ -1001,7 +1015,7 @@ fn settings_update() -> EmailSettingsUpdate {
             info_text: Some(EditorText::default()),
             social_links: Some(vec![SocialLinkUpdate {
                 url: Some("https://example.com".to_string()),
-                link_type: Some("website".to_string()),
+                link_type: Some(SocialLinkType::Website),
                 label: Some("Website".to_string()),
                 link_id: Some(7),
                 ..Default::default()
@@ -1215,7 +1229,7 @@ async fn create_template_sends_the_name() {
     assert_eq!(response.metadata.status, 201);
     assert_eq!(response.data.id, "789");
     assert_eq!(response.data.name, "Newsletter");
-    assert_eq!(response.data.template_type, "email");
+    assert_eq!(response.data.template_type, EmailTemplateType::Email);
     assert_eq!(response.data.created_at, "2026-10-28 12:00:00");
 }
 
@@ -1733,8 +1747,7 @@ async fn validate_block_decodes_a_null_schema() {
     .await;
 
     let block: NewBlock = NewBlock {
-        block_type: BlockType::Divider,
-        editor_content: serde_json::Map::new(),
+        content: BlockContent::Divider(Default::default()),
         placement: None,
     };
     let response: Response<Validation, EmailResponseMetadata> = mailerlite(&server)

@@ -3,10 +3,11 @@
 //! Requires `MAILERLITE_API_TOKEN`.
 use mailerlite_rs::{
     MailerLite, Response,
-    models::emails::{BlockType, EmailResponseMetadata, Validation},
+    models::emails::{
+        BlockContent, BlockData, ButtonAttributes, EmailResponseMetadata, Validation,
+    },
     resources::emails::NewBlock,
 };
-use serde_json::{Map, Value, json};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -14,15 +15,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mailerlite: MailerLite = MailerLite::new(api_key)?;
 
-    let editor_content: Map<String, Value> = json!({
-        "attrs": {"href": "https://example.com"},
-        "content": [{"type": "text", "text": "Buy now"}]
-    })
-    .as_object()
-    .cloned()
-    .unwrap_or_default();
-
-    let block: NewBlock = NewBlock::new(BlockType::Button, editor_content);
+    let content = BlockData {
+        attrs: Some(ButtonAttributes {
+            url: Some("https://example.com".into()),
+            ..Default::default()
+        }),
+        ..BlockData::text("Buy now")
+    };
+    let block = NewBlock::new(BlockContent::Button(content));
 
     let response: Response<Validation, EmailResponseMetadata> =
         mailerlite.emails().validate_block(&block).await?;

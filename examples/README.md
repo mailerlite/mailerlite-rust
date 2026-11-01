@@ -343,6 +343,9 @@ from `MAILERLITE_CAMPAIGN_NAME`, `MAILERLITE_SUBJECT`, `MAILERLITE_FROM_NAME`, a
 `MAILERLITE_FROM_EMAIL`.
 
 `update_email_block` requires the complete replacement block document in
-`MAILERLITE_EDITOR_CONTENT_JSON`. `update_email_settings` requires
+`MAILERLITE_EDITOR_CONTENT_JSON` as a typed block envelope, for example
+`{"type":"paragraph","editor_content":{"content":[{"type":"text","text":"Hello"}]}}`.
+The type must match the existing block; the update sends only `editor_content`.
+`update_email_settings` requires
 `MAILERLITE_BACKGROUND_COLOR` and `MAILERLITE_PARAGRAPH_SIZE`.
 `create_email_template` uses `MAILERLITE_TEMPLATE_NAME`.

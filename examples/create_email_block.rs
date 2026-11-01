@@ -3,10 +3,9 @@
 //! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_EMAIL_ID`.
 use mailerlite_rs::{
     MailerLite, Response,
-    models::emails::{BlockType, EmailBlock, EmailDocument, EmailResponseMetadata, WithEtag},
+    models::emails::{BlockContent, EmailBlock, EmailDocument, EmailResponseMetadata, WithEtag},
     resources::emails::{NewBlock, Placement},
 };
-use serde_json::{Map, Value, json};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -19,16 +18,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let email: Response<WithEtag<EmailDocument>, EmailResponseMetadata> =
         mailerlite.emails().get(&email_id).await?;
 
-    let editor_content: Map<String, Value> = json!({
-        "attrs": {"textAlign": "left"},
-        "content": [{"type": "text", "text": "Hello"}]
-    })
-    .as_object()
-    .cloned()
-    .unwrap_or_default();
-
-    let block: NewBlock =
-        NewBlock::new(BlockType::Paragraph, editor_content).placement(Placement::start());
+    let block = NewBlock::new(BlockContent::paragraph("Hello")).placement(Placement::start());
 
     let response: Response<WithEtag<EmailBlock>, EmailResponseMetadata> = mailerlite
         .emails()

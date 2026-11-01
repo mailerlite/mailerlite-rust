@@ -143,6 +143,13 @@ deletion/movement, block and settings validation, settings updates, template
 creation, version listing/creation, and version restoration. Response models
 live in `models::emails`; write parameters live in `resources::emails`.
 
+Create a typed paragraph with `NewBlock::new(BlockContent::paragraph("Hello"))`.
+`BlockContent` selects the attributes for each block kind, and `InlineNode` and
+`TextMark` describe text, personalization, and formatting. Returned blocks expose
+the same types through `block.content`. Unknown variants and extension fields
+preserve their JSON; list-item content and open editor attributes retain the
+flexibility of the API schema.
+
 Email operations return `Response<T, EmailResponseMetadata>`, with metadata
 from `models::emails`. Versioned operations return
 `Response<WithEtag<T>, EmailResponseMetadata>`: HTTP metadata is in

@@ -4,10 +4,9 @@
 //! `MAILERLITE_IDEMPOTENCY_KEY`.
 use mailerlite_rs::{
     Error, MailerLite, Response,
-    models::emails::{BlockType, EmailBlock, EmailResponseMetadata, WithEtag},
+    models::emails::{BlockContent, EmailBlock, EmailResponseMetadata, WithEtag},
     resources::emails::{Emails, NewBlock},
 };
-use serde_json::Map;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -22,7 +21,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Use a new key for each write, for example a UUID.
     let idempotency_key: String = std::env::var("MAILERLITE_IDEMPOTENCY_KEY")?;
 
-    let block: NewBlock = NewBlock::new(BlockType::Divider, Map::new());
+    let block: NewBlock = NewBlock::new(BlockContent::Divider(Default::default()));
 
     let email: Emails = mailerlite.emails().with_idempotency_key(idempotency_key);
 

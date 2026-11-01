@@ -10,8 +10,9 @@ use crate::{
     Error, MailerLite, Response,
     http::OperationPolicy,
     models::emails::{
-        DataOnly, EmailBlock, EmailDocument, EmailHtml, EmailResponseMetadata, EmailTemplate,
-        EmailVersion, EtagOnly, SettingsResult, Validation, WithEtag,
+        BlockContent, ContentRef, DataOnly, EmailBlock, EmailDocument, EmailHtml,
+        EmailResponseMetadata, EmailTemplate, EmailVersion, EtagOnly, SettingsResult, Validation,
+        WithEtag,
     },
     pagination::NumberedPage,
     resources::query::query_pairs,
@@ -181,10 +182,10 @@ impl<'a> Emails<'a> {
     /// # Examples
     /// ```no_run
     /// use mailerlite_rs::MailerLite;
-    /// use mailerlite_rs::{models::emails::BlockType, resources::emails::NewBlock};
+    /// use mailerlite_rs::{models::emails::BlockContent, resources::emails::NewBlock};
     ///
     /// # async fn example(client: &MailerLite) -> mailerlite_rs::Result<()> {
-    /// let block = NewBlock::new(BlockType::Divider, Default::default());
+    /// let block = NewBlock::new(BlockContent::Divider(Default::default()));
     ///
     /// let response = client.emails().create_block("123", "current-etag", &block).await?;
     /// # Ok(())
@@ -223,15 +224,15 @@ impl<'a> Emails<'a> {
     }
 
     /// Replaces the content of a block. The API removes the keys that you do not send. The type and the
-    /// position of the block do not change. Returns the block and the new etag.
+    /// position of the block do not change. Pass the content variant matching the existing
+    /// block; only its document is sent. Returns the block and the new etag.
     ///
     /// # Examples
     /// ```no_run
-    /// use mailerlite_rs::MailerLite;
-    /// use serde_json::{Map, Value};
+    /// use mailerlite_rs::{MailerLite, models::emails::BlockContent};
     ///
     /// # async fn example(client: &MailerLite) -> mailerlite_rs::Result<()> {
-    /// let content: Map<String, Value> = serde_json::from_str(r#"{"content": []}"#)?;
+    /// let content = BlockContent::paragraph("Updated text");
     ///
     /// let response = client.emails().update_block("123", "456", "current-etag", &content).await?;
     /// # Ok(())
@@ -251,7 +252,7 @@ impl<'a> Emails<'a> {
         email_id: impl AsRef<str>,
         block_id: impl AsRef<str>,
         etag: impl AsRef<str>,
-        editor_content: &Map<String, Value>,
+        editor_content: &BlockContent,
     ) -> Result<Response<WithEtag<EmailBlock>, EmailResponseMetadata>, Error> {
         let (email_id, block_id, etag): (&str, &str, &str) =
             (email_id.as_ref(), block_id.as_ref(), etag.as_ref());
@@ -266,7 +267,7 @@ impl<'a> Emails<'a> {
             &["emails", email_id, "blocks", block_id],
             &[],
             Some(&EditorContentBody {
-                editor_content,
+                editor_content: ContentRef(editor_content),
                 etag,
             }),
             idempotency_key,
@@ -314,7 +315,7 @@ impl<'a> Emails<'a> {
             &["emails", email_id, "blocks", block_id],
             &[],
             Some(&EtagBody {
-                body: &Map::new(),
+                body: &Map::<String, Value>::new(),
                 etag,
             }),
             idempotency_key,
@@ -379,10 +380,10 @@ impl<'a> Emails<'a> {
     /// # Examples
     /// ```no_run
     /// use mailerlite_rs::MailerLite;
-    /// use mailerlite_rs::{models::emails::BlockType, resources::emails::NewBlock};
+    /// use mailerlite_rs::{models::emails::BlockContent, resources::emails::NewBlock};
     ///
     /// # async fn example(client: &MailerLite) -> mailerlite_rs::Result<()> {
-    /// let block = NewBlock::new(BlockType::Divider, Default::default());
+    /// let block = NewBlock::new(BlockContent::Divider(Default::default()));
     ///
     /// let response = client.emails().validate_block(&block).await?;
     ///
@@ -682,7 +683,7 @@ impl<'a> Emails<'a> {
             &["emails", email_id, "versions", version_id, "restore"],
             &[],
             Some(&EtagBody {
-                body: &Map::new(),
+                body: &Map::<String, Value>::new(),
                 etag,
             }),
             idempotency_key,

@@ -1,4 +1,8 @@
 //! Simple-editor email documents, design settings, and versioned response envelopes.
+use super::{
+    BlockContent, BlockData, EmailOwnerType, EmailTemplateType, EmailType, ParagraphAttributes,
+    SocialLinkType,
+};
 use crate::models::open_enum::open_enum;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{Map, Value};
@@ -127,9 +131,9 @@ pub struct EmailDocument {
     pub id: String,
     /// The type of the email, for example `"builder_inline_email"`.
     #[serde(rename = "type")]
-    pub email_type: String,
+    pub email_type: EmailType,
     /// Server discriminator for the email owner.
-    pub emailable_type: String,
+    pub emailable_type: EmailOwnerType,
     /// Identifier of the campaign or automation that owns this email.
     pub emailable_id: String,
     /// Design settings currently applied to this email.
@@ -145,12 +149,9 @@ pub struct EmailDocument {
 pub struct EmailBlock {
     /// Opaque identifier, preserved as returned by the server.
     pub id: String,
-    #[serde(rename = "type")]
-    /// Editor block discriminator.
-    pub block_type: BlockType,
-    /// The editor document of the block. Its keys are camelCase, for example `textAlign`.
-    #[serde(default, deserialize_with = "object_or_empty_array")]
-    pub editor_content: Map<String, Value>,
+    /// Typed block document, selected by its wire discriminator.
+    #[serde(flatten)]
+    pub content: BlockContent,
     /// The blocks in this block, for example the items of a list.
     #[serde(default)]
     pub children: Vec<EmailBlock>,
@@ -354,7 +355,7 @@ pub struct Footer {
 pub struct EditorText {
     #[serde(default, deserialize_with = "object_or_empty_array")]
     /// Editor document with the API camelCase property names.
-    pub editor_content: Map<String, Value>,
+    pub editor_content: BlockData<ParagraphAttributes>,
 }
 
 /// A social link of the footer. `link_id` keeps the click history of the link.
@@ -365,7 +366,7 @@ pub struct SocialLink {
     pub url: Option<String>,
     #[serde(rename = "type")]
     /// Social-link type understood by the editor.
-    pub link_type: Option<String>,
+    pub link_type: Option<SocialLinkType>,
     /// Display label for the link.
     pub label: Option<String>,
     /// Link id value in the API representation.
@@ -444,7 +445,7 @@ pub struct EmailTemplate {
     pub name: String,
     #[serde(rename = "type")]
     /// Template type value in the API representation.
-    pub template_type: String,
+    pub template_type: EmailTemplateType,
     /// Server timestamp retained without assuming a timezone.
     pub created_at: String,
 }
@@ -755,7 +756,7 @@ mod tests {
         // Neither block content nor validation-error maps have null semantics.
         for wire in [json!({}), json!([])] {
             let text: EditorText = serde_json::from_value(json!({"editor_content": wire})).unwrap();
-            assert!(text.editor_content.is_empty());
+            assert_eq!(text.editor_content, BlockData::default());
             let validation: Validation = serde_json::from_value(json!({
                 "valid": true, "errors": wire, "schema": {"version": null, "hash": null}
             }))

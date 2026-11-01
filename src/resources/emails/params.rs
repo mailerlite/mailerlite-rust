@@ -3,8 +3,8 @@ use super::validation as validate;
 use crate::{
     Error,
     models::emails::{
-        BlockType, BrandMode, EditorText, FontWeight, LayoutAlignment, LetterSpacing, LineHeight,
-        Position, WidthMode,
+        BlockContent, BrandMode, ContentRef, EditorText, FontWeight, LayoutAlignment,
+        LetterSpacing, LineHeight, Position, SocialLinkType, WidthMode,
     },
 };
 use serde::Serialize;
@@ -12,26 +12,22 @@ use serde_json::{Map, Value};
 /// A new block for `Emails::create_block` and `Emails::validate_block`.
 #[derive(Debug, Clone, Serialize)]
 pub struct NewBlock {
-    #[serde(rename = "type")]
-    /// Editor block discriminator.
-    pub block_type: BlockType,
-    /// The editor document of the block. Its keys are camelCase. Use an empty map for a block with no
-    /// content, for example a divider.
-    pub editor_content: Map<String, Value>,
+    /// Typed document; its variant determines the API block type.
+    #[serde(flatten)]
+    pub content: BlockContent,
     /// Where to put the block. Without a placement, the API puts the block at the end of the email.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub placement: Option<Placement>,
 }
 
 impl NewBlock {
-    /// Create a block with its required type and editor document.
+    /// Create a block with its typed document.
     ///
-    /// Content remains an open JSON object so editor-specific camelCase keys and
-    /// future document nodes are preserved. The API validates the document.
-    pub fn new(block_type: BlockType, editor_content: Map<String, Value>) -> Self {
+    /// The content variant supplies the block type, preventing mismatches between
+    /// known block types and their attributes. The API validates values and links.
+    pub fn new(content: BlockContent) -> Self {
         Self {
-            block_type,
-            editor_content,
+            content,
             placement: None,
         }
     }
@@ -97,7 +93,7 @@ pub(super) struct EtagBody<'a, T: Serialize> {
 
 #[derive(Serialize)]
 pub(super) struct EditorContentBody<'a> {
-    pub(super) editor_content: &'a Map<String, Value>,
+    pub(super) editor_content: ContentRef<'a>,
     pub(super) etag: &'a str,
 }
 
@@ -357,7 +353,7 @@ pub struct SocialLinkUpdate {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "type")]
     /// Social-link type understood by the editor.
-    pub link_type: Option<String>,
+    pub link_type: Option<SocialLinkType>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Display label for the link.
     pub label: Option<String>,
@@ -373,16 +369,16 @@ pub struct SocialLinkUpdate {
 impl SocialLinkUpdate {
     /// Create a replacement social link with its required URL, type, and label.
     ///
-    /// Link types remain strings because the editor schema does not enumerate
-    /// them. The API sanitizes the URL and validates the supplied values.
+    /// Known networks have named variants; future types use `SocialLinkType::Other`.
+    /// The API sanitizes the URL and validates the supplied values.
     pub fn new(
         url: impl Into<String>,
-        link_type: impl Into<String>,
+        link_type: SocialLinkType,
         label: impl Into<String>,
     ) -> Self {
         Self {
             url: Some(url.into()),
-            link_type: Some(link_type.into()),
+            link_type: Some(link_type),
             label: Some(label.into()),
             ..Self::default()
         }
@@ -587,18 +583,21 @@ mod tests {
 
     #[test]
     fn new_block_preserves_content_and_replaces_placement() {
-        let content = Map::from_iter([("textAlign".into(), json!("left"))]);
-        let block = NewBlock::new(BlockType::Paragraph, content)
+        let content = serde_json::from_value(
+            json!({"type":"paragraph","editor_content":{"attrs":{"textAlign":"left"}}}),
+        )
+        .unwrap();
+        let block = NewBlock::new(content)
             .placement(Placement::before("00123"))
             .placement(Placement::after("00456"));
         assert_eq!(
             serde_json::to_value(block).unwrap(),
             json!({
-                "type": "paragraph", "editor_content": {"textAlign": "left"},
+                "type": "paragraph", "editor_content": {"attrs": {"textAlign": "left"}},
                 "placement": {"position": "after", "block_id": "00456"}
             })
         );
-        let block = NewBlock::new(BlockType::Divider, Map::new());
+        let block = NewBlock::new(BlockContent::Divider(Default::default()));
         assert_eq!(
             serde_json::to_value(block).unwrap(),
             json!({"type": "divider", "editor_content": {}})
@@ -607,9 +606,13 @@ mod tests {
 
     #[test]
     fn social_link_constructor_supplies_required_fields_and_preserves_id() {
-        let link = SocialLinkUpdate::new("https://example.test", "future", "Example")
-            .link_id(1)
-            .link_id(u64::MAX);
+        let link = SocialLinkUpdate::new(
+            "https://example.test",
+            SocialLinkType::Other("future".into()),
+            "Example",
+        )
+        .link_id(1)
+        .link_id(u64::MAX);
         assert_eq!(
             serde_json::to_value(link).unwrap(),
             json!({
@@ -718,7 +721,7 @@ mod tests {
         });
         keys(SocialLinkUpdate {
             url: set(),
-            link_type: set(),
+            link_type: Some(SocialLinkType::Website),
             label: set(),
             link_id: set(),
             extra: extra(),

@@ -1,7 +1,7 @@
 //! Simple-editor requests inherit v2 transport policy and redaction guarantees.
 #![allow(clippy::unwrap_used, reason = "Tests assert fixture outcomes")]
 use mailerlite_rs::{
-    ApiVersion, Error, MailerLite, RetryPolicy, models::emails::BlockType,
+    ApiVersion, Error, MailerLite, RetryPolicy, models::emails::BlockContent,
     resources::emails::NewBlock,
 };
 use std::{
@@ -64,8 +64,7 @@ async fn an_idempotency_key_does_not_enable_automatic_write_retries() {
     let emails = client.emails().with_idempotency_key("private-key");
     assert!(!format!("{emails:?}").contains("private-key"));
     let block = NewBlock {
-        block_type: BlockType::Divider,
-        editor_content: Default::default(),
+        content: BlockContent::Divider(Default::default()),
         placement: None,
     };
     assert!(

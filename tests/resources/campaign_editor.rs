@@ -32,8 +32,8 @@ async fn create_sends_simple_editor_and_template_as_json() {
     mock.assert_async().await;
     assert_eq!(response.data.default_email_id.as_deref(), Some("123"));
     assert_eq!(
-        response.data.emails.unwrap()[0].kind.as_deref(),
-        Some("builder_inline_email")
+        response.data.emails.unwrap()[0].kind,
+        Some(mailerlite_rs::models::emails::EmailType::SimpleEditor)
     );
 }
 #[tokio::test]

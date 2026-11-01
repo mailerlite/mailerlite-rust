@@ -1,5 +1,5 @@
 //! Campaigns, messages, and engagement reports.
-use crate::models::CampaignId;
+use crate::models::{CampaignId, emails::EmailType};
 
 pub use crate::models::common::Rate;
 
@@ -60,7 +60,7 @@ pub struct CampaignSettings {
 pub struct CampaignEmail {
     /// Server editor type, such as `builder_inline_email`.
     #[serde(rename = "type")]
-    pub kind: Option<String>,
+    pub kind: Option<EmailType>,
     /// MailerLite identifier, preserved as text.
     pub id: String,
     /// Email subject line, when included in the response.
