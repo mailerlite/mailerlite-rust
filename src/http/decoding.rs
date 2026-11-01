@@ -12,10 +12,25 @@ pub(crate) async fn request<T: DeserializeOwned>(
     body: Option<&dyn RequestBody>,
     policy: OperationPolicy,
 ) -> Result<Response<T>> {
+    request_with_metadata(client, method, path, query, body, policy, |metadata, _| {
+        metadata
+    })
+    .await
+}
+
+pub(crate) async fn request_with_metadata<T: DeserializeOwned, M>(
+    client: &MailerLite,
+    method: Method,
+    path: &[&str],
+    query: &[(String, String)],
+    body: Option<&dyn RequestBody>,
+    policy: OperationPolicy,
+    map_metadata: impl FnOnce(crate::ResponseMetadata, bool) -> M,
+) -> Result<Response<T, M>> {
     let deadline = Deadline::new(client.inner.operation_timeout)?;
     deadline
         .run(async {
-            let (metadata, bytes) =
+            let (metadata, bytes, replayed) =
                 execute(client, method, path, query, body, policy, deadline).await?;
             deadline.check()?;
             let mut deserializer = serde_json::Deserializer::from_slice(&bytes);
@@ -35,7 +50,10 @@ pub(crate) async fn request<T: DeserializeOwned>(
                     error,
                 ))
             })?;
-            Ok(Response { data, metadata })
+            Ok(Response {
+                data,
+                metadata: map_metadata(metadata, replayed),
+            })
         })
         .await
 }
@@ -51,7 +69,7 @@ pub(crate) async fn empty(
     let deadline = Deadline::new(client.inner.operation_timeout)?;
     deadline
         .run(async {
-            let (metadata, bytes) = execute(
+            let (metadata, bytes, _) = execute(
                 client,
                 method,
                 path,

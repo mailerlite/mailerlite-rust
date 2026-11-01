@@ -1,6 +1,9 @@
-//! Validate email settings. Requires MAILERLITE_API_TOKEN.
+//! Validate email settings.
+//!
+//! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_EMAIL_ID`.
+use mailerlite_rs::models::emails::EmailResponse;
 use mailerlite_rs::{
-    MailerLite, Response,
+    MailerLite,
     models::emails::Validation,
     resources::emails::{ButtonUpdate, EmailSettingsUpdate},
 };
@@ -21,7 +24,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ..Default::default()
     };
 
-    let response: Response<Validation> = mailerlite
+    let response: EmailResponse<Validation> = mailerlite
         .emails()
         .validate_settings(email_id, &settings)
         .await?;

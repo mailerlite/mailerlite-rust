@@ -1,5 +1,8 @@
-//! Get email html. Requires MAILERLITE_API_TOKEN.
-use mailerlite_rs::{MailerLite, Response, models::emails::EmailHtml, models::emails::WithEtag};
+//! Get email html.
+//!
+//! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_EMAIL_ID`.
+use mailerlite_rs::models::emails::EmailResponse;
+use mailerlite_rs::{MailerLite, models::emails::EmailHtml, models::emails::WithEtag};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -9,7 +12,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let email_id: String = std::env::var("MAILERLITE_EMAIL_ID")?;
 
-    let response: Response<WithEtag<EmailHtml>> = mailerlite.emails().html(email_id).await?;
+    let response: EmailResponse<WithEtag<EmailHtml>> = mailerlite.emails().html(email_id).await?;
 
     println!("{}", response.data.data.html);
 

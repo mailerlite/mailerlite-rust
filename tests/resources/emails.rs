@@ -4,8 +4,9 @@
 use crate::editor_support::{
     BAD_IDS, assert_no_request, expect_no_request, expect_request, fixture, mailerlite,
 };
+use mailerlite_rs::models::emails::EmailResponse;
 use mailerlite_rs::{
-    Error, Response,
+    Error,
     models::emails::{
         BlockType, BrandMode, EditorText, EmailBlock, EmailDocument, EmailHtml, EmailTemplate,
         EmailVersion, Position, SettingsResult, VERSION_CONFLICT, Validation,
@@ -34,7 +35,7 @@ async fn find_gets_the_email() {
     )
     .await;
 
-    let response: Response<WithEtag<EmailDocument>> =
+    let response: EmailResponse<WithEtag<EmailDocument>> =
         mailerlite(&server).emails().get("123").await.unwrap();
 
     mock.assert_async().await;
@@ -48,17 +49,23 @@ async fn find_gets_the_email() {
     assert_eq!(email.emailable_id, "456");
 
     let brand = email.settings.brand.as_ref().unwrap();
-    assert_eq!(brand.mode.as_deref(), Some("account"));
+    assert_eq!(brand.mode, Some(BrandMode::Account));
     assert_eq!(brand.background_color.as_deref(), Some("#ffffff"));
     let layout = email.settings.layout.as_ref().unwrap();
-    assert_eq!(layout.width_mode.as_deref(), Some("default"));
+    assert_eq!(
+        layout.width_mode.as_ref().map(|value| value.as_str()),
+        Some("default")
+    );
     let typography = email.settings.typography.as_ref().unwrap();
     assert_eq!(
         typography.link.as_ref().unwrap().color.as_deref(),
         Some("#2cb191")
     );
     let heading = typography.heading.as_ref().unwrap();
-    assert_eq!(heading.font_weight.as_deref(), Some("700"));
+    assert_eq!(
+        heading.font_weight.as_ref().map(|value| value.as_str()),
+        Some("700")
+    );
     assert_eq!(heading.h1.as_ref().unwrap().size.as_deref(), Some("32"));
     let paragraph = typography.paragraph.as_ref().unwrap();
     assert_eq!(paragraph.p1.as_ref().unwrap().size.as_deref(), Some("16"));
@@ -111,7 +118,7 @@ async fn find_decodes_null_values_and_keeps_unknown_keys() {
     .to_string();
     expect_request(&mut server, "GET", "/emails/123", None, 200, &body).await;
 
-    let response: Response<WithEtag<EmailDocument>> =
+    let response: EmailResponse<WithEtag<EmailDocument>> =
         mailerlite(&server).emails().get("123").await.unwrap();
 
     let settings = &response.data.data.settings;
@@ -162,7 +169,7 @@ async fn html_gets_the_html() {
     )
     .await;
 
-    let response: Response<WithEtag<EmailHtml>> =
+    let response: EmailResponse<WithEtag<EmailHtml>> =
         mailerlite(&server).emails().html("123").await.unwrap();
 
     mock.assert_async().await;
@@ -233,7 +240,7 @@ async fn find_block_gets_the_block_and_its_placement() {
     )
     .await;
 
-    let response: Response<WithEtag<EmailBlock>> = mailerlite(&server)
+    let response: EmailResponse<WithEtag<EmailBlock>> = mailerlite(&server)
         .emails()
         .get_block("123", "57")
         .await
@@ -310,7 +317,7 @@ async fn create_block_sends_the_block_and_the_etag() {
     )
     .await;
 
-    let response: Response<WithEtag<EmailBlock>> = mailerlite(&server)
+    let response: EmailResponse<WithEtag<EmailBlock>> = mailerlite(&server)
         .emails()
         .create_block("123", "42", &new_paragraph(Some(Placement::after("57"))))
         .await
@@ -510,7 +517,7 @@ async fn update_block_patches_the_content() {
     )
     .await;
 
-    let response: Response<WithEtag<EmailBlock>> = mailerlite(&server)
+    let response: EmailResponse<WithEtag<EmailBlock>> = mailerlite(&server)
         .emails()
         .update_block("123", "57", "43", &hello_again())
         .await
@@ -631,7 +638,7 @@ async fn delete_block_sends_the_etag_in_the_body() {
     )
     .await;
 
-    let response: Response<EtagOnly> = mailerlite(&server)
+    let response: EmailResponse<EtagOnly> = mailerlite(&server)
         .emails()
         .delete_block("123", "57", "44")
         .await
@@ -684,7 +691,7 @@ async fn move_block_sends_the_placement_and_the_etag() {
     )
     .await;
 
-    let response: Response<WithEtag<EmailBlock>> = mailerlite(&server)
+    let response: EmailResponse<WithEtag<EmailBlock>> = mailerlite(&server)
         .emails()
         .move_block("123", "57", "45", &Placement::before("1"))
         .await
@@ -866,7 +873,7 @@ async fn validate_block_sends_the_block_without_an_etag() {
         editor_content: serde_json::Map::new(),
         placement: None,
     };
-    let response: Response<Validation> = mailerlite(&server)
+    let response: EmailResponse<Validation> = mailerlite(&server)
         .emails()
         .validate_block(&block)
         .await
@@ -898,7 +905,7 @@ async fn validate_block_gives_the_errors_of_an_invalid_block() {
         editor_content: serde_json::Map::new(),
         placement: None,
     };
-    let response: Response<Validation> = mailerlite(&server)
+    let response: EmailResponse<Validation> = mailerlite(&server)
         .emails()
         .validate_block(&block)
         .await
@@ -930,7 +937,7 @@ async fn validate_block_accepts_an_empty_array_for_the_errors() {
         editor_content: serde_json::Map::new(),
         placement: None,
     };
-    let response: Response<Validation> = mailerlite(&server)
+    let response: EmailResponse<Validation> = mailerlite(&server)
         .emails()
         .validate_block(&block)
         .await
@@ -958,7 +965,7 @@ async fn validate_block_sends_a_bad_placement_and_gives_the_errors() {
     .await;
 
     let block: NewBlock = new_paragraph(Some(Placement::after("1/2")));
-    let response: Response<Validation> = mailerlite(&server)
+    let response: EmailResponse<Validation> = mailerlite(&server)
         .emails()
         .validate_block(&block)
         .await
@@ -974,7 +981,7 @@ fn settings_update() -> EmailSettingsUpdate {
 
     EmailSettingsUpdate {
         brand: Some(BrandUpdate {
-            mode: Some(BrandMode::Custom.into()),
+            mode: Some(BrandMode::Custom),
             style: Some("preset-retro".to_string()),
             background_color: Some("#f4f4f4".to_string()),
             text_color: Some(String::new()),
@@ -1042,7 +1049,7 @@ async fn update_settings_sends_only_the_keys_that_are_set() {
     )
     .await;
 
-    let response: Response<SettingsResult> = mailerlite(&server)
+    let response: EmailResponse<SettingsResult> = mailerlite(&server)
         .emails()
         .update_settings("123", "46", &settings_update())
         .await
@@ -1051,7 +1058,7 @@ async fn update_settings_sends_only_the_keys_that_are_set() {
     mock.assert_async().await;
     assert_eq!(response.data.etag, "47");
     let brand = response.data.data.brand.as_ref().unwrap();
-    assert_eq!(brand.mode.as_deref(), Some("custom"));
+    assert_eq!(brand.mode, Some(BrandMode::Custom));
     assert_eq!(brand.background_color.as_deref(), Some("#f4f4f4"));
     let rejected = response.data.rejected.as_ref().unwrap();
     assert_eq!(rejected.message, "Some attributes were rejected.");
@@ -1120,7 +1127,7 @@ async fn validate_settings_sends_the_settings_without_an_etag() {
     )
     .await;
 
-    let response: Response<Validation> = mailerlite(&server)
+    let response: EmailResponse<Validation> = mailerlite(&server)
         .emails()
         .validate_settings("123", &settings_update())
         .await
@@ -1199,7 +1206,7 @@ async fn create_template_sends_the_name() {
     )
     .await;
 
-    let response: Response<EmailTemplate> = mailerlite(&server)
+    let response: EmailResponse<EmailTemplate> = mailerlite(&server)
         .emails()
         .create_template("123", "Newsletter")
         .await
@@ -1251,7 +1258,7 @@ async fn versions_lists_the_versions_with_the_page_options() {
         page: Some(2),
         limit: Some(10),
     };
-    let response: Response<NumberedPage<EmailVersion>> = mailerlite(&server)
+    let response: EmailResponse<NumberedPage<EmailVersion>> = mailerlite(&server)
         .emails()
         .versions("123", options)
         .await
@@ -1327,7 +1334,7 @@ async fn create_version_sends_no_body_and_gives_the_status_code() {
         )
         .await;
 
-        let response: Response<EmailVersion> = mailerlite(&server)
+        let response: EmailResponse<EmailVersion> = mailerlite(&server)
             .emails()
             .create_version("123")
             .await
@@ -1374,7 +1381,7 @@ async fn restore_version_sends_the_etag_and_gives_the_email() {
     )
     .await;
 
-    let response: Response<WithEtag<EmailDocument>> = mailerlite(&server)
+    let response: EmailResponse<WithEtag<EmailDocument>> = mailerlite(&server)
         .emails()
         .restore_version("123", "901", "41")
         .await
@@ -1702,7 +1709,7 @@ async fn a_replayed_write_has_the_replay_flag() {
         .create_async()
         .await;
 
-    let response: Response<EmailVersion> = mailerlite(&server)
+    let response: EmailResponse<EmailVersion> = mailerlite(&server)
         .emails()
         .with_idempotency_key("key-1")
         .create_version("123")
@@ -1731,7 +1738,7 @@ async fn validate_block_decodes_a_null_schema() {
         editor_content: serde_json::Map::new(),
         placement: None,
     };
-    let response: Response<Validation> = mailerlite(&server)
+    let response: EmailResponse<Validation> = mailerlite(&server)
         .emails()
         .validate_block(&block)
         .await
@@ -1744,31 +1751,6 @@ async fn validate_block_decodes_a_null_schema() {
     );
     assert_eq!(response.data.schema.version, None);
     assert_eq!(response.data.schema.hash, None);
-}
-
-#[test]
-fn an_other_value_equals_the_known_variant_with_the_same_value() {
-    use std::collections::hash_map::DefaultHasher;
-    use std::hash::{Hash, Hasher};
-
-    fn hash(value: &BlockType) -> u64 {
-        let mut hasher: DefaultHasher = DefaultHasher::new();
-        value.hash(&mut hasher);
-        hasher.finish()
-    }
-
-    let other: BlockType = BlockType::Other("paragraph".to_string());
-    assert_eq!(other, BlockType::Paragraph);
-    assert_eq!(hash(&other), hash(&BlockType::Paragraph));
-    assert_ne!(
-        BlockType::Other("countdown".to_string()),
-        BlockType::Paragraph
-    );
-    assert_eq!(Position::Other("end".to_string()), Position::End);
-    assert!(matches!(
-        BlockType::from("paragraph".to_string()),
-        BlockType::Paragraph
-    ));
 }
 
 #[tokio::test]

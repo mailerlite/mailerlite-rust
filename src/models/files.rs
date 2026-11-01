@@ -43,3 +43,34 @@ pub struct MediaFile {
     /// Server timestamp retained without assuming a timezone.
     pub created_at: String,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::FileSort;
+    #[test]
+    fn file_sort_values_match_the_api() {
+        let sorts: Vec<String> = [
+            FileSort::CreatedAt,
+            FileSort::CreatedAtDesc,
+            FileSort::Name,
+            FileSort::NameDesc,
+            FileSort::Size,
+            FileSort::SizeDesc,
+        ]
+        .into_iter()
+        .map(String::from)
+        .collect();
+
+        assert_eq!(
+            sorts,
+            vec![
+                "created_at",
+                "-created_at",
+                "name",
+                "-name",
+                "size",
+                "-size"
+            ]
+        );
+    }
+}

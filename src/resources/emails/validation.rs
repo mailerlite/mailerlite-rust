@@ -3,7 +3,7 @@ use crate::error::Error;
 use serde_json::{Map, Value};
 
 /// The API decodes an escaped "/" in the path, so URL encoding alone does not stop "123%2Fhtml".
-pub(crate) fn path_id(name: &'static str, value: &str) -> Result<(), Error> {
+pub(super) fn path_id(name: &'static str, value: &str) -> Result<(), Error> {
     if value.is_empty() {
         return Err(Error::Config(format!("{name} must not be empty")));
     }
@@ -17,7 +17,7 @@ pub(crate) fn path_id(name: &'static str, value: &str) -> Result<(), Error> {
 }
 
 /// The SDK adds the etag itself.
-pub(crate) fn no_etag_key(extra: &Map<String, Value>) -> Result<(), Error> {
+pub(super) fn no_etag_key(extra: &Map<String, Value>) -> Result<(), Error> {
     if extra.contains_key("etag") {
         return Err(Error::Config(
             "settings must not contain an etag key".into(),
@@ -28,7 +28,7 @@ pub(crate) fn no_etag_key(extra: &Map<String, Value>) -> Result<(), Error> {
 }
 
 /// A key that is also a typed field at the same level would go into the body two times.
-pub(crate) fn no_field_keys(
+pub(super) fn no_field_keys(
     extra: &Map<String, Value>,
     fields: &[&str],
     path: &str,
@@ -42,7 +42,7 @@ pub(crate) fn no_field_keys(
     }
 }
 
-pub(crate) fn settings_path(path: &str, key: &str) -> String {
+pub(super) fn settings_path(path: &str, key: &str) -> String {
     if path.is_empty() {
         key.to_string()
     } else {

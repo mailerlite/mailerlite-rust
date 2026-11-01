@@ -7,11 +7,11 @@ use super::{
     validation as validate,
 };
 use crate::{
-    Error, MailerLite, Response,
+    Error, MailerLite,
     http::OperationPolicy,
     models::emails::{
-        DataOnly, EmailBlock, EmailDocument, EmailHtml, EmailTemplate, EmailVersion, EtagOnly,
-        SettingsResult, Validation, WithEtag,
+        DataOnly, EmailBlock, EmailDocument, EmailHtml, EmailResponse, EmailResponseMetadata,
+        EmailTemplate, EmailVersion, EtagOnly, SettingsResult, Validation, WithEtag,
     },
     pagination::NumberedPage,
     resources::query::query_pairs,
@@ -77,12 +77,13 @@ impl<'a> Emails<'a> {
     /// ```
     ///
     /// # Errors
-    /// Returns local configuration errors before dispatch, or shared transport, API,
-    /// decoding, and operation-timeout errors. Writes are never automatically retried.
+    /// Returns [`Error::Config`] before dispatch for empty or non-ASCII-digit path IDs.
+    /// HTTP failures return [`Error::Api`]; inspect its status and validation messages.
+    /// Transport, serialization, decoding, and deadline failures retain the shared client error contract.
     pub async fn get(
         &self,
         email_id: impl AsRef<str>,
-    ) -> Result<Response<WithEtag<EmailDocument>>, Error> {
+    ) -> Result<EmailResponse<WithEtag<EmailDocument>>, Error> {
         let email_id: &str = email_id.as_ref();
         validate::path_id("email_id", email_id)?;
 
@@ -116,12 +117,13 @@ impl<'a> Emails<'a> {
     /// ```
     ///
     /// # Errors
-    /// Returns local configuration errors before dispatch, or shared transport, API,
-    /// decoding, and operation-timeout errors. Writes are never automatically retried.
+    /// Returns [`Error::Config`] before dispatch for empty or non-ASCII-digit path IDs.
+    /// HTTP failures return [`Error::Api`]; inspect its status and validation messages.
+    /// Transport, serialization, decoding, and deadline failures retain the shared client error contract.
     pub async fn html(
         &self,
         email_id: impl AsRef<str>,
-    ) -> Result<Response<WithEtag<EmailHtml>>, Error> {
+    ) -> Result<EmailResponse<WithEtag<EmailHtml>>, Error> {
         let email_id: &str = email_id.as_ref();
         validate::path_id("email_id", email_id)?;
 
@@ -139,14 +141,25 @@ impl<'a> Emails<'a> {
 
     /// Retrieve one block and the current email version.
     ///
+    /// # Examples
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(client: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = client.emails().get_block("123", "456").await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
     /// # Errors
-    /// Returns local configuration errors before dispatch, or shared transport, API,
-    /// decoding, and operation-timeout errors. Writes are never automatically retried.
+    /// Returns [`Error::Config`] before dispatch for empty or non-ASCII-digit path IDs.
+    /// HTTP failures return [`Error::Api`]; inspect its status and validation messages.
+    /// Transport, serialization, decoding, and deadline failures retain the shared client error contract.
     pub async fn get_block(
         &self,
         email_id: impl AsRef<str>,
         block_id: impl AsRef<str>,
-    ) -> Result<Response<WithEtag<EmailBlock>>, Error> {
+    ) -> Result<EmailResponse<WithEtag<EmailBlock>>, Error> {
         let (email_id, block_id): (&str, &str) = (email_id.as_ref(), block_id.as_ref());
         validate::path_id("email_id", email_id)?;
         validate::path_id("block_id", block_id)?;
@@ -165,15 +178,33 @@ impl<'a> Emails<'a> {
 
     /// Inserts a block into an email. Returns the new block (status `201`) and the new etag.
     ///
+    /// # Examples
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::{models::emails::BlockType, resources::emails::NewBlock};
+    ///
+    /// # async fn example(client: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let block = NewBlock::new(BlockType::Divider, Default::default());
+    ///
+    /// let response = client.emails().create_block("123", "current-etag", &block).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
     /// # Errors
-    /// Returns local configuration errors before dispatch, or shared transport, API,
-    /// decoding, and operation-timeout errors. Writes are never automatically retried.
+    /// Returns [`Error::Config`] before dispatch for empty or non-ASCII-digit path IDs.
+    /// An idempotency key that cannot be encoded as an HTTP header also fails locally.
+    /// HTTP failures return [`Error::Api`]; inspect its status and validation messages.
+    /// Transport, serialization, decoding, and deadline failures retain the shared client error contract.
+    /// Writes are never automatically retried. A failure after dispatch may leave the
+    /// server outcome uncertain; reuse the same idempotency key only for the same write.
+    /// A stale etag can return HTTP 409; inspect [`crate::ApiError::is_version_conflict`].
     pub async fn create_block(
         &self,
         email_id: impl AsRef<str>,
         etag: impl AsRef<str>,
         block: &NewBlock,
-    ) -> Result<Response<WithEtag<EmailBlock>>, Error> {
+    ) -> Result<EmailResponse<WithEtag<EmailBlock>>, Error> {
         let (email_id, etag): (&str, &str) = (email_id.as_ref(), etag.as_ref());
         validate::path_id("email_id", email_id)?;
 
@@ -194,16 +225,34 @@ impl<'a> Emails<'a> {
     /// Replaces the content of a block. The API removes the keys that you do not send. The type and the
     /// position of the block do not change. Returns the block and the new etag.
     ///
+    /// # Examples
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use serde_json::{Map, Value};
+    ///
+    /// # async fn example(client: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let content: Map<String, Value> = serde_json::from_str(r#"{"content": []}"#)?;
+    ///
+    /// let response = client.emails().update_block("123", "456", "current-etag", &content).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
     /// # Errors
-    /// Returns local configuration errors before dispatch, or shared transport, API,
-    /// decoding, and operation-timeout errors. Writes are never automatically retried.
+    /// Returns [`Error::Config`] before dispatch for empty or non-ASCII-digit path IDs.
+    /// An idempotency key that cannot be encoded as an HTTP header also fails locally.
+    /// HTTP failures return [`Error::Api`]; inspect its status and validation messages.
+    /// Transport, serialization, decoding, and deadline failures retain the shared client error contract.
+    /// Writes are never automatically retried. A failure after dispatch may leave the
+    /// server outcome uncertain; reuse the same idempotency key only for the same write.
+    /// A stale etag can return HTTP 409; inspect [`crate::ApiError::is_version_conflict`].
     pub async fn update_block(
         &self,
         email_id: impl AsRef<str>,
         block_id: impl AsRef<str>,
         etag: impl AsRef<str>,
         editor_content: &Map<String, Value>,
-    ) -> Result<Response<WithEtag<EmailBlock>>, Error> {
+    ) -> Result<EmailResponse<WithEtag<EmailBlock>>, Error> {
         let (email_id, block_id, etag): (&str, &str, &str) =
             (email_id.as_ref(), block_id.as_ref(), etag.as_ref());
         validate::path_id("email_id", email_id)?;
@@ -228,15 +277,30 @@ impl<'a> Emails<'a> {
 
     /// Deletes a block and the blocks in it. The response has only the new etag.
     ///
+    /// # Examples
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(client: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = client.emails().delete_block("123", "456", "current-etag").await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
     /// # Errors
-    /// Returns local configuration errors before dispatch, or shared transport, API,
-    /// decoding, and operation-timeout errors. Writes are never automatically retried.
+    /// Returns [`Error::Config`] before dispatch for empty or non-ASCII-digit path IDs.
+    /// An idempotency key that cannot be encoded as an HTTP header also fails locally.
+    /// HTTP failures return [`Error::Api`]; inspect its status and validation messages.
+    /// Transport, serialization, decoding, and deadline failures retain the shared client error contract.
+    /// Writes are never automatically retried. A failure after dispatch may leave the
+    /// server outcome uncertain; reuse the same idempotency key only for the same write.
+    /// A stale etag can return HTTP 409; inspect [`crate::ApiError::is_version_conflict`].
     pub async fn delete_block(
         &self,
         email_id: impl AsRef<str>,
         block_id: impl AsRef<str>,
         etag: impl AsRef<str>,
-    ) -> Result<Response<EtagOnly>, Error> {
+    ) -> Result<EmailResponse<EtagOnly>, Error> {
         let (email_id, block_id, etag): (&str, &str, &str) =
             (email_id.as_ref(), block_id.as_ref(), etag.as_ref());
         validate::path_id("email_id", email_id)?;
@@ -262,16 +326,34 @@ impl<'a> Emails<'a> {
     /// Moves a block among the blocks at the same level. The nesting of the block does not change.
     /// Returns the block and the new etag.
     ///
+    /// # Examples
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::emails::Placement;
+    ///
+    /// # async fn example(client: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let placement = Placement::after("789");
+    ///
+    /// let response = client.emails().move_block("123", "456", "current-etag", &placement).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
     /// # Errors
-    /// Returns local configuration errors before dispatch, or shared transport, API,
-    /// decoding, and operation-timeout errors. Writes are never automatically retried.
+    /// Returns [`Error::Config`] before dispatch for empty or non-ASCII-digit path IDs.
+    /// An idempotency key that cannot be encoded as an HTTP header also fails locally.
+    /// HTTP failures return [`Error::Api`]; inspect its status and validation messages.
+    /// Transport, serialization, decoding, and deadline failures retain the shared client error contract.
+    /// Writes are never automatically retried. A failure after dispatch may leave the
+    /// server outcome uncertain; reuse the same idempotency key only for the same write.
+    /// A stale etag can return HTTP 409; inspect [`crate::ApiError::is_version_conflict`].
     pub async fn move_block(
         &self,
         email_id: impl AsRef<str>,
         block_id: impl AsRef<str>,
         etag: impl AsRef<str>,
         placement: &Placement,
-    ) -> Result<Response<WithEtag<EmailBlock>>, Error> {
+    ) -> Result<EmailResponse<WithEtag<EmailBlock>>, Error> {
         let (email_id, block_id, etag): (&str, &str, &str) =
             (email_id.as_ref(), block_id.as_ref(), etag.as_ref());
         validate::path_id("email_id", email_id)?;
@@ -294,10 +376,29 @@ impl<'a> Emails<'a> {
     /// Checks a block with the rules of `create_block`. The API saves nothing. The method needs no email
     /// and no etag.
     ///
+    /// # Examples
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::{models::emails::BlockType, resources::emails::NewBlock};
+    ///
+    /// # async fn example(client: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let block = NewBlock::new(BlockType::Divider, Default::default());
+    ///
+    /// let response = client.emails().validate_block(&block).await?;
+    ///
+    /// println!("Valid: {}", response.data.valid);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
     /// # Errors
-    /// Returns local configuration errors before dispatch, or shared transport, API,
-    /// decoding, and operation-timeout errors. Writes are never automatically retried.
-    pub async fn validate_block(&self, block: &NewBlock) -> Result<Response<Validation>, Error> {
+    /// HTTP failures return [`Error::Api`]; inspect its status and validation messages.
+    /// Transport, serialization, decoding, and deadline failures retain the shared client error contract.
+    /// Invalid input can also return a successful response with `valid: false`.
+    pub async fn validate_block(
+        &self,
+        block: &NewBlock,
+    ) -> Result<EmailResponse<Validation>, Error> {
         send(
             self.mailerlite,
             Method::POST,
@@ -313,15 +414,38 @@ impl<'a> Emails<'a> {
     /// Changes the design settings of an email. The SDK sends only the values that you set.
     /// Returns the settings, the new etag and the keys of the unsafe values that the API removed.
     ///
+    /// # Examples
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::{models::emails::BrandMode, resources::emails::{BrandUpdate, EmailSettingsUpdate}};
+    ///
+    /// # async fn example(client: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let settings = EmailSettingsUpdate {
+    ///     brand: Some(BrandUpdate { mode: Some(BrandMode::Custom), ..Default::default() }),
+    ///     ..Default::default()
+    /// };
+    ///
+    /// let response = client.emails().update_settings("123", "current-etag", &settings).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
     /// # Errors
-    /// Returns local configuration errors before dispatch, or shared transport, API,
-    /// decoding, and operation-timeout errors. Writes are never automatically retried.
+    /// Returns [`Error::Config`] before dispatch for empty or non-ASCII-digit path IDs.
+    /// An idempotency key that cannot be encoded as an HTTP header also fails locally.
+    /// Duplicate typed keys in extension maps return [`Error::Config`].
+    /// A top-level `etag` extension key is rejected because the SDK supplies it.
+    /// HTTP failures return [`Error::Api`]; inspect its status and validation messages.
+    /// Transport, serialization, decoding, and deadline failures retain the shared client error contract.
+    /// Writes are never automatically retried. A failure after dispatch may leave the
+    /// server outcome uncertain; reuse the same idempotency key only for the same write.
+    /// A stale etag can return HTTP 409; inspect [`crate::ApiError::is_version_conflict`].
     pub async fn update_settings(
         &self,
         email_id: impl AsRef<str>,
         etag: impl AsRef<str>,
         settings: &EmailSettingsUpdate,
-    ) -> Result<Response<SettingsResult>, Error> {
+    ) -> Result<EmailResponse<SettingsResult>, Error> {
         let (email_id, etag): (&str, &str) = (email_id.as_ref(), etag.as_ref());
         validate::path_id("email_id", email_id)?;
         settings.check()?;
@@ -346,14 +470,32 @@ impl<'a> Emails<'a> {
     /// Checks a settings change with the rules of `update_settings`. The API saves nothing. The method
     /// needs no etag.
     ///
+    /// # Examples
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::emails::EmailSettingsUpdate;
+    ///
+    /// # async fn example(client: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let settings = EmailSettingsUpdate::default();
+    ///
+    /// let response = client.emails().validate_settings("123", &settings).await?;
+    ///
+    /// println!("Valid: {}", response.data.valid);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
     /// # Errors
-    /// Returns local configuration errors before dispatch, or shared transport, API,
-    /// decoding, and operation-timeout errors. Writes are never automatically retried.
+    /// Returns [`Error::Config`] before dispatch for empty or non-ASCII-digit path IDs.
+    /// Duplicate typed keys in extension maps return [`Error::Config`].
+    /// HTTP failures return [`Error::Api`]; inspect its status and validation messages.
+    /// Transport, serialization, decoding, and deadline failures retain the shared client error contract.
+    /// Invalid input can also return a successful response with `valid: false`.
     pub async fn validate_settings(
         &self,
         email_id: impl AsRef<str>,
         settings: &EmailSettingsUpdate,
-    ) -> Result<Response<Validation>, Error> {
+    ) -> Result<EmailResponse<Validation>, Error> {
         let email_id: &str = email_id.as_ref();
         validate::path_id("email_id", email_id)?;
         settings.check_keys("")?;
@@ -372,14 +514,28 @@ impl<'a> Emails<'a> {
 
     /// Saves a copy of an email as a new template (status `201`). The API cannot delete templates.
     ///
+    /// # Examples
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(client: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = client.emails().create_template("123", "Newsletter").await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
     /// # Errors
-    /// Returns local configuration errors before dispatch, or shared transport, API,
-    /// decoding, and operation-timeout errors. Writes are never automatically retried.
+    /// Returns [`Error::Config`] before dispatch for empty or non-ASCII-digit path IDs.
+    /// An idempotency key that cannot be encoded as an HTTP header also fails locally.
+    /// HTTP failures return [`Error::Api`]; inspect its status and validation messages.
+    /// Transport, serialization, decoding, and deadline failures retain the shared client error contract.
+    /// Writes are never automatically retried. A failure after dispatch may leave the
+    /// server outcome uncertain; reuse the same idempotency key only for the same write.
     pub async fn create_template(
         &self,
         email_id: impl AsRef<str>,
         name: impl AsRef<str>,
-    ) -> Result<Response<EmailTemplate>, Error> {
+    ) -> Result<EmailResponse<EmailTemplate>, Error> {
         let email_id: &str = email_id.as_ref();
         validate::path_id("email_id", email_id)?;
 
@@ -402,14 +558,28 @@ impl<'a> Emails<'a> {
 
     /// Lists the saved versions of an email. The newest version is first.
     ///
+    /// # Examples
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    /// use mailerlite_rs::resources::emails::ListVersionsOptions;
+    ///
+    /// # async fn example(client: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let options = ListVersionsOptions { page: Some(1), limit: Some(10) };
+    ///
+    /// let response = client.emails().versions("123", options).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
     /// # Errors
-    /// Returns local configuration errors before dispatch, or shared transport, API,
-    /// decoding, and operation-timeout errors. Writes are never automatically retried.
+    /// Returns [`Error::Config`] before dispatch for empty or non-ASCII-digit path IDs.
+    /// HTTP failures return [`Error::Api`]; inspect its status and validation messages.
+    /// Transport, serialization, decoding, and deadline failures retain the shared client error contract.
     pub async fn versions(
         &self,
         email_id: impl AsRef<str>,
         options: ListVersionsOptions,
-    ) -> Result<Response<NumberedPage<EmailVersion>>, Error> {
+    ) -> Result<EmailResponse<NumberedPage<EmailVersion>>, Error> {
         let email_id: &str = email_id.as_ref();
         validate::path_id("email_id", email_id)?;
         let query: Vec<(&str, String)> = query_pairs([
@@ -433,13 +603,27 @@ impl<'a> Emails<'a> {
     /// version, the API saves no new version and returns the last version: then `response.metadata.status` is `200`,
     /// not `201`.
     ///
+    /// # Examples
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(client: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = client.emails().create_version("123").await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
     /// # Errors
-    /// Returns local configuration errors before dispatch, or shared transport, API,
-    /// decoding, and operation-timeout errors. Writes are never automatically retried.
+    /// Returns [`Error::Config`] before dispatch for empty or non-ASCII-digit path IDs.
+    /// An idempotency key that cannot be encoded as an HTTP header also fails locally.
+    /// HTTP failures return [`Error::Api`]; inspect its status and validation messages.
+    /// Transport, serialization, decoding, and deadline failures retain the shared client error contract.
+    /// Writes are never automatically retried. A failure after dispatch may leave the
+    /// server outcome uncertain; reuse the same idempotency key only for the same write.
     pub async fn create_version(
         &self,
         email_id: impl AsRef<str>,
-    ) -> Result<Response<EmailVersion>, Error> {
+    ) -> Result<EmailResponse<EmailVersion>, Error> {
         let email_id: &str = email_id.as_ref();
         validate::path_id("email_id", email_id)?;
 
@@ -461,15 +645,30 @@ impl<'a> Emails<'a> {
     /// Puts an email back to a saved version. Before the restore, the API saves the current state as a
     /// version, so you can undo the restore. Returns the full email and the new etag.
     ///
+    /// # Examples
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(client: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = client.emails().restore_version("123", "901", "current-etag").await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
     /// # Errors
-    /// Returns local configuration errors before dispatch, or shared transport, API,
-    /// decoding, and operation-timeout errors. Writes are never automatically retried.
+    /// Returns [`Error::Config`] before dispatch for empty or non-ASCII-digit path IDs.
+    /// An idempotency key that cannot be encoded as an HTTP header also fails locally.
+    /// HTTP failures return [`Error::Api`]; inspect its status and validation messages.
+    /// Transport, serialization, decoding, and deadline failures retain the shared client error contract.
+    /// Writes are never automatically retried. A failure after dispatch may leave the
+    /// server outcome uncertain; reuse the same idempotency key only for the same write.
+    /// A stale etag can return HTTP 409; inspect [`crate::ApiError::is_version_conflict`].
     pub async fn restore_version(
         &self,
         email_id: impl AsRef<str>,
         version_id: impl AsRef<str>,
         etag: impl AsRef<str>,
-    ) -> Result<Response<WithEtag<EmailDocument>>, Error> {
+    ) -> Result<EmailResponse<WithEtag<EmailDocument>>, Error> {
         let (email_id, version_id, etag): (&str, &str, &str) =
             (email_id.as_ref(), version_id.as_ref(), etag.as_ref());
         validate::path_id("email_id", email_id)?;
@@ -501,7 +700,7 @@ async fn send<T: serde::de::DeserializeOwned>(
     body: Option<&dyn crate::http::RequestBody>,
     key: Option<&str>,
     mut policy: OperationPolicy,
-) -> crate::Result<Response<T>> {
+) -> crate::Result<EmailResponse<T>> {
     policy.idempotency_key = key
         .map(reqwest::header::HeaderValue::from_str)
         .transpose()
@@ -513,5 +712,17 @@ async fn send<T: serde::de::DeserializeOwned>(
         .iter()
         .map(|(k, v)| (k.to_string(), v.clone()))
         .collect();
-    client.request(method, path, &query, body, policy).await
+    crate::http::request_with_metadata(
+        client,
+        method,
+        path,
+        &query,
+        body,
+        policy,
+        |http, idempotent_replayed| EmailResponseMetadata {
+            http,
+            idempotent_replayed,
+        },
+    )
+    .await
 }

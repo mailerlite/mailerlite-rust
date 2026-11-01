@@ -958,11 +958,13 @@ pub struct CreateCampaign {
 impl CreateCampaign {
     /// Create all campaign emails with the simple editor.
     ///
-    /// HTML content cannot be combined with this editor. Edit the returned email
-    /// IDs through `MailerLite::emails()` after creating the campaign.
+    /// Clears any earlier template selection. HTML content cannot be combined
+    /// with this editor. Edit the returned email IDs through
+    /// [`MailerLite::emails`] after creating the campaign.
     pub fn simple_editor(mut self) -> Self {
         for email in &mut self.emails {
             email.editor = Some("simple");
+            email.template_id = None;
         }
         self
     }

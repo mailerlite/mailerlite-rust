@@ -33,10 +33,6 @@ fn metadata(status: StatusCode, headers: &HeaderMap) -> ResponseMetadata {
                 })
         });
     ResponseMetadata {
-        idempotent_replayed: headers
-            .get("Idempotent-Replayed")
-            .and_then(|v| v.to_str().ok())
-            .is_some_and(|v| v.trim().eq_ignore_ascii_case("true")),
         status,
         rate_limit: integer("x-ratelimit-limit"),
         rate_remaining: integer("x-ratelimit-remaining"),
@@ -56,7 +52,7 @@ pub(super) async fn execute(
     body: Option<&dyn RequestBody>,
     policy: OperationPolicy,
     deadline: Deadline,
-) -> Result<(ResponseMetadata, Vec<u8>)> {
+) -> Result<(ResponseMetadata, Vec<u8>, bool)> {
     let url = endpoint(&client.inner.base_url, path)?;
     execute_until(client, method, url, query, body, policy, deadline).await
 }
@@ -69,7 +65,7 @@ async fn execute_until(
     body: Option<&dyn RequestBody>,
     policy: OperationPolicy,
     deadline: Deadline,
-) -> Result<(ResponseMetadata, Vec<u8>)> {
+) -> Result<(ResponseMetadata, Vec<u8>, bool)> {
     let inner = &client.inner;
     let serialized = body.map(|body| body.serialize()).transpose();
     deadline.check()?;
@@ -119,6 +115,11 @@ async fn execute_until(
                 return Err(Error::Transport(error.without_url()));
             }
         };
+        let replayed = response
+            .headers()
+            .get("Idempotent-Replayed")
+            .and_then(|value| value.to_str().ok())
+            .is_some_and(|value| value.trim().eq_ignore_ascii_case("true"));
         let meta = metadata(response.status(), response.headers());
         #[cfg(feature = "tracing")]
         tracing::debug!(
@@ -183,7 +184,7 @@ async fn execute_until(
             )));
         }
         if meta.status.is_success() {
-            return Ok((meta, bytes));
+            return Ok((meta, bytes, replayed));
         }
         if policy.read_only
             && inner.retry.permits_status(meta.status)

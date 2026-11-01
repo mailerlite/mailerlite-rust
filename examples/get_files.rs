@@ -1,4 +1,6 @@
-//! Get files. Requires MAILERLITE_API_TOKEN.
+//! Get files.
+//!
+//! Requires `MAILERLITE_API_TOKEN`.
 use mailerlite_rs::{
     MailerLite, Response,
     models::files::{FileSort, FileType, MediaFile},

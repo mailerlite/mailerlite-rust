@@ -1,7 +1,11 @@
-//! Move email block. Requires MAILERLITE_API_TOKEN.
+//! Move email block.
+//!
+//! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_EMAIL_ID`, `MAILERLITE_BLOCK_ID`,
+//! `MAILERLITE_EMAIL_ETAG`, `MAILERLITE_ADJACENT_BLOCK_ID`.
+//! Moves the selected block after the supplied adjacent block at the same nesting level.
+use mailerlite_rs::models::emails::EmailResponse;
 use mailerlite_rs::{
-    MailerLite, Response, models::emails::EmailBlock, models::emails::WithEtag,
-    resources::emails::Placement,
+    MailerLite, models::emails::EmailBlock, models::emails::WithEtag, resources::emails::Placement,
 };
 
 #[tokio::main]
@@ -18,7 +22,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let placement: Placement = Placement::after(std::env::var("MAILERLITE_ADJACENT_BLOCK_ID")?);
 
-    let response: Response<WithEtag<EmailBlock>> = mailerlite
+    let response: EmailResponse<WithEtag<EmailBlock>> = mailerlite
         .emails()
         .move_block(email_id, block_id, etag, &placement)
         .await?;

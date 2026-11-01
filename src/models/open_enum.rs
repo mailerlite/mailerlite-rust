@@ -69,4 +69,4 @@ macro_rules! open_enum {
     };
 }
 
-pub(crate) use open_enum;
+pub(super) use open_enum;

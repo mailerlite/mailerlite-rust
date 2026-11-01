@@ -1,6 +1,9 @@
-//! Create email block. Requires MAILERLITE_API_TOKEN.
+//! Create email block.
+//!
+//! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_EMAIL_ID`.
+use mailerlite_rs::models::emails::EmailResponse;
 use mailerlite_rs::{
-    MailerLite, Response,
+    MailerLite,
     models::emails::WithEtag,
     models::emails::{BlockType, EmailBlock, EmailDocument},
     resources::emails::{NewBlock, Placement},
@@ -15,7 +18,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let email_id: String = std::env::var("MAILERLITE_EMAIL_ID")?;
 
-    let email: Response<WithEtag<EmailDocument>> = mailerlite.emails().get(&email_id).await?;
+    let email: EmailResponse<WithEtag<EmailDocument>> = mailerlite.emails().get(&email_id).await?;
 
     let editor_content: Map<String, Value> = json!({
         "attrs": {"textAlign": "left"},
@@ -25,13 +28,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     .cloned()
     .unwrap_or_default();
 
-    let block: NewBlock = NewBlock {
-        block_type: BlockType::Paragraph,
-        editor_content,
-        placement: Some(Placement::start()),
-    };
+    let block: NewBlock =
+        NewBlock::new(BlockType::Paragraph, editor_content).placement(Placement::start());
 
-    let response: Response<WithEtag<EmailBlock>> = mailerlite
+    let response: EmailResponse<WithEtag<EmailBlock>> = mailerlite
         .emails()
         .create_block(&email_id, &email.data.etag, &block)
         .await?;

@@ -1,4 +1,6 @@
-//! Get brand styles. Requires MAILERLITE_API_TOKEN.
+//! Get brand styles.
+//!
+//! Requires `MAILERLITE_API_TOKEN`.
 use mailerlite_rs::{MailerLite, Response, models::brand_styles::BrandStyles};
 
 #[tokio::main]

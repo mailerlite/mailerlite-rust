@@ -1,6 +1,9 @@
-//! Validate email block. Requires MAILERLITE_API_TOKEN.
+//! Validate email block.
+//!
+//! Requires `MAILERLITE_API_TOKEN`.
+use mailerlite_rs::models::emails::EmailResponse;
 use mailerlite_rs::{
-    MailerLite, Response,
+    MailerLite,
     models::emails::{BlockType, Validation},
     resources::emails::NewBlock,
 };
@@ -20,13 +23,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     .cloned()
     .unwrap_or_default();
 
-    let block: NewBlock = NewBlock {
-        block_type: BlockType::Button,
-        editor_content,
-        placement: None,
-    };
+    let block: NewBlock = NewBlock::new(BlockType::Button, editor_content);
 
-    let response: Response<Validation> = mailerlite.emails().validate_block(&block).await?;
+    let response: EmailResponse<Validation> = mailerlite.emails().validate_block(&block).await?;
 
     if !response.data.valid {
         println!("{:#?}", response.data.errors);

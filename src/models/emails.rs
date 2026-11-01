@@ -3,6 +3,36 @@ use crate::models::open_enum::open_enum;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{Map, Value};
 use std::collections::BTreeMap;
+/// Email response with the shared HTTP metadata and an idempotency replay flag.
+///
+/// The default [`crate::Response`] and [`crate::ResponseMetadata`] remain
+/// compatible with existing SDK callers. Only email operations use this metadata.
+pub type EmailResponse<T> = crate::Response<T, EmailResponseMetadata>;
+
+/// HTTP metadata for the simple-editor endpoints.
+#[derive(Debug, Clone)]
+pub struct EmailResponseMetadata {
+    /// Standard status, rate-limit, and correlation metadata.
+    pub http: crate::ResponseMetadata,
+    /// Whether the server returned a stored response for an idempotency key.
+    pub idempotent_replayed: bool,
+}
+
+impl EmailResponseMetadata {
+    /// Whether this response replayed a previously completed write.
+    pub fn is_idempotent_replay(&self) -> bool {
+        self.idempotent_replayed
+    }
+}
+
+impl std::ops::Deref for EmailResponseMetadata {
+    type Target = crate::ResponseMetadata;
+
+    fn deref(&self) -> &Self::Target {
+        &self.http
+    }
+}
+
 /// The `code` of a `409` error when the email changed after you read the etag.
 /// Then `ApiError::etag` has the current etag.
 pub const VERSION_CONFLICT: &str = "version_conflict";
@@ -42,6 +72,58 @@ open_enum! {
         Account => "account",
         Template => "template",
         Custom => "custom",
+    }
+}
+
+// Settings choices follow the Groot settings-schema.json and the API projection
+// in app/Http/Resources/InlineEmail/InlineEmailSettingsResource.php at backend
+// revision 8be496eb0642f60cd610ef9cb8ebd22d82c2e2ec. Unknown values remain in Other.
+open_enum! {
+    /// Editor width preset.
+    pub enum WidthMode {
+        Default => "default",
+        Full => "full",
+    }
+}
+
+open_enum! {
+    /// Horizontal alignment of the email layout.
+    pub enum LayoutAlignment {
+        Left => "left",
+        Center => "center",
+    }
+}
+
+open_enum! {
+    /// Editor font weight, serialized as a numeric CSS string.
+    pub enum FontWeight {
+        Light => "300",
+        Normal => "400",
+        Medium => "500",
+        SemiBold => "600",
+        Bold => "700",
+    }
+}
+
+open_enum! {
+    /// Editor line height, serialized as a percentage string.
+    pub enum LineHeight {
+        Percent100 => "100%",
+        Percent137 => "137%",
+        Percent150 => "150%",
+        Percent165 => "165%",
+        Percent200 => "200%",
+    }
+}
+
+open_enum! {
+    /// Editor letter-spacing preset, preserving its exact wire string.
+    pub enum LetterSpacing {
+        Tightest => "-0.05",
+        Tight => "-0.025",
+        Normal => "0",
+        Wide => "0.025",
+        Widest => "0.05",
     }
 }
 
@@ -117,12 +199,12 @@ pub struct EmailSettings {
     pub extra: Map<String, Value>,
 }
 
-/// The brand settings. `mode` is one of the `BrandMode` values.
+/// Brand settings with a typed source and preserved unknown modes.
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct Brand {
     /// Source of the brand settings: account, template, or custom.
-    pub mode: Option<String>,
+    pub mode: Option<BrandMode>,
     /// CSS font-family value used for this style.
     pub font_family: Option<String>,
     /// Background color in the API color format.
@@ -141,9 +223,9 @@ pub struct Brand {
 /// Layout settings returned by the editor.
 pub struct Layout {
     /// Width preset understood by the editor.
-    pub width_mode: Option<String>,
+    pub width_mode: Option<WidthMode>,
     /// Horizontal alignment understood by the editor.
-    pub alignment: Option<String>,
+    pub alignment: Option<LayoutAlignment>,
     #[serde(flatten)]
     /// Additional wire properties not represented by the typed fields.
     pub extra: Map<String, Value>,
@@ -182,11 +264,11 @@ pub struct HeadingStyle {
     /// CSS font-family value used for this style.
     pub font_family: Option<String>,
     /// Font weight as a CSS string.
-    pub font_weight: Option<String>,
+    pub font_weight: Option<FontWeight>,
     /// Line height as a CSS string.
-    pub line_height: Option<String>,
+    pub line_height: Option<LineHeight>,
     /// Letter spacing as a CSS string.
-    pub letter_spacing: Option<String>,
+    pub letter_spacing: Option<LetterSpacing>,
     /// Styles for first-level headings.
     pub h1: Option<TextStyle>,
     /// Styles for second-level headings.
@@ -205,11 +287,11 @@ pub struct ParagraphStyle {
     /// CSS font-family value used for this style.
     pub font_family: Option<String>,
     /// Font weight as a CSS string.
-    pub font_weight: Option<String>,
+    pub font_weight: Option<FontWeight>,
     /// Line height as a CSS string.
-    pub line_height: Option<String>,
+    pub line_height: Option<LineHeight>,
     /// Letter spacing as a CSS string.
-    pub letter_spacing: Option<String>,
+    pub letter_spacing: Option<LetterSpacing>,
     /// Styles for the default paragraph level.
     pub p1: Option<TextStyle>,
     #[serde(flatten)]
@@ -237,9 +319,9 @@ pub struct Button {
     /// CSS font-family value used for this style.
     pub font_family: Option<String>,
     /// Font weight as a CSS string.
-    pub font_weight: Option<String>,
+    pub font_weight: Option<FontWeight>,
     /// Letter spacing as a CSS string.
-    pub letter_spacing: Option<String>,
+    pub letter_spacing: Option<LetterSpacing>,
     /// Background color in the API color format.
     pub background_color: Option<String>,
     /// Foreground text color in the API color format.
@@ -388,8 +470,16 @@ pub struct EmailVersion {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-#[non_exhaustive]
 /// Typed response payload paired with an optimistic-concurrency version.
+///
+/// This reusable envelope remains constructible by callers.
+/// ```
+/// use mailerlite_rs::models::emails::{WithEtag, EtagOnly};
+///
+/// let envelope = WithEtag { data: "payload", etag: "42".to_owned() };
+/// let version = EtagOnly { etag: envelope.etag };
+/// assert_eq!(version.etag, "42");
+/// ```
 pub struct WithEtag<T> {
     /// Typed payload returned inside the API envelope.
     pub data: T,
@@ -406,7 +496,6 @@ pub(crate) struct DataOnly<T> {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-#[non_exhaustive]
 /// New optimistic-concurrency version returned after a write.
 pub struct EtagOnly {
     /// Send this etag with the next write to the email.
@@ -414,14 +503,294 @@ pub struct EtagOnly {
 }
 
 /// Decodes a JSON object, and also accepts `[]` as an empty object. PHP encodes an empty array as `[]`.
-pub(crate) fn object_or_empty_array<'de, D, T>(deserializer: D) -> Result<T, D::Error>
+fn object_or_empty_array<'de, D, T>(deserializer: D) -> Result<T, D::Error>
 where
     D: Deserializer<'de>,
     T: Default + serde::de::DeserializeOwned,
 {
     match Value::deserialize(deserializer)? {
         Value::Array(items) if items.is_empty() => Ok(T::default()),
-        Value::Null => Ok(T::default()),
         value => serde_json::from_value(value).map_err(serde::de::Error::custom),
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used, reason = "Tests assert synthetic model decoding")]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn brand_modes_decode_known_unknown_and_missing_values() {
+        for (wire, expected) in [
+            (json!("account"), Some(BrandMode::Account)),
+            (json!("custom"), Some(BrandMode::Custom)),
+            (json!("future"), Some(BrandMode::Other("future".into()))),
+            (Value::Null, None),
+        ] {
+            let brand: Brand = serde_json::from_value(json!({"mode": wire})).unwrap();
+            assert_eq!(brand.mode, expected);
+        }
+        let brand: Brand = serde_json::from_value(json!({})).unwrap();
+        assert_eq!(brand.mode, None);
+        assert!(serde_json::from_value::<Brand>(json!({"mode": 42})).is_err());
+    }
+    #[test]
+    fn an_other_value_equals_the_known_variant_with_the_same_value() {
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+
+        fn hash(value: &BlockType) -> u64 {
+            let mut hasher: DefaultHasher = DefaultHasher::new();
+            value.hash(&mut hasher);
+            hasher.finish()
+        }
+
+        let other: BlockType = BlockType::Other("paragraph".to_string());
+        assert_eq!(other, BlockType::Paragraph);
+        assert_eq!(hash(&other), hash(&BlockType::Paragraph));
+        assert_ne!(
+            BlockType::Other("countdown".to_string()),
+            BlockType::Paragraph
+        );
+        assert_eq!(Position::Other("end".to_string()), Position::End);
+        assert!(matches!(
+            BlockType::from("paragraph".to_string()),
+            BlockType::Paragraph
+        ));
+    }
+    #[test]
+    fn style_choices_preserve_known_and_unknown_wire_values() {
+        // Wire values from nebula-front/dist/contracts/settings-schema.json,
+        // mapped to API fields by InlineEmailSettingsResource (revision above).
+        assert_eq!(
+            serde_json::to_value(WidthMode::Default).unwrap(),
+            json!("default")
+        );
+        assert_eq!(
+            serde_json::from_value::<WidthMode>(json!("default")).unwrap(),
+            WidthMode::Default
+        );
+        assert_eq!(
+            serde_json::to_value(WidthMode::Full).unwrap(),
+            json!("full")
+        );
+        assert_eq!(
+            serde_json::from_value::<WidthMode>(json!("full")).unwrap(),
+            WidthMode::Full
+        );
+        assert_eq!(
+            serde_json::from_value::<WidthMode>(json!("future")).unwrap(),
+            WidthMode::Other("future".into())
+        );
+        assert_eq!(
+            serde_json::to_value(LayoutAlignment::Left).unwrap(),
+            json!("left")
+        );
+        assert_eq!(
+            serde_json::from_value::<LayoutAlignment>(json!("left")).unwrap(),
+            LayoutAlignment::Left
+        );
+        assert_eq!(
+            serde_json::to_value(LayoutAlignment::Center).unwrap(),
+            json!("center")
+        );
+        assert_eq!(
+            serde_json::from_value::<LayoutAlignment>(json!("center")).unwrap(),
+            LayoutAlignment::Center
+        );
+        assert_eq!(
+            serde_json::from_value::<LayoutAlignment>(json!("future")).unwrap(),
+            LayoutAlignment::Other("future".into())
+        );
+        assert_eq!(
+            serde_json::to_value(FontWeight::Light).unwrap(),
+            json!("300")
+        );
+        assert_eq!(
+            serde_json::from_value::<FontWeight>(json!("300")).unwrap(),
+            FontWeight::Light
+        );
+        assert_eq!(
+            serde_json::to_value(FontWeight::Normal).unwrap(),
+            json!("400")
+        );
+        assert_eq!(
+            serde_json::from_value::<FontWeight>(json!("400")).unwrap(),
+            FontWeight::Normal
+        );
+        assert_eq!(
+            serde_json::to_value(FontWeight::Medium).unwrap(),
+            json!("500")
+        );
+        assert_eq!(
+            serde_json::from_value::<FontWeight>(json!("500")).unwrap(),
+            FontWeight::Medium
+        );
+        assert_eq!(
+            serde_json::to_value(FontWeight::SemiBold).unwrap(),
+            json!("600")
+        );
+        assert_eq!(
+            serde_json::from_value::<FontWeight>(json!("600")).unwrap(),
+            FontWeight::SemiBold
+        );
+        assert_eq!(
+            serde_json::to_value(FontWeight::Bold).unwrap(),
+            json!("700")
+        );
+        assert_eq!(
+            serde_json::from_value::<FontWeight>(json!("700")).unwrap(),
+            FontWeight::Bold
+        );
+        assert_eq!(
+            serde_json::from_value::<FontWeight>(json!("future")).unwrap(),
+            FontWeight::Other("future".into())
+        );
+        assert_eq!(
+            serde_json::to_value(LineHeight::Percent100).unwrap(),
+            json!("100%")
+        );
+        assert_eq!(
+            serde_json::from_value::<LineHeight>(json!("100%")).unwrap(),
+            LineHeight::Percent100
+        );
+        assert_eq!(
+            serde_json::to_value(LineHeight::Percent137).unwrap(),
+            json!("137%")
+        );
+        assert_eq!(
+            serde_json::from_value::<LineHeight>(json!("137%")).unwrap(),
+            LineHeight::Percent137
+        );
+        assert_eq!(
+            serde_json::to_value(LineHeight::Percent150).unwrap(),
+            json!("150%")
+        );
+        assert_eq!(
+            serde_json::from_value::<LineHeight>(json!("150%")).unwrap(),
+            LineHeight::Percent150
+        );
+        assert_eq!(
+            serde_json::to_value(LineHeight::Percent165).unwrap(),
+            json!("165%")
+        );
+        assert_eq!(
+            serde_json::from_value::<LineHeight>(json!("165%")).unwrap(),
+            LineHeight::Percent165
+        );
+        assert_eq!(
+            serde_json::to_value(LineHeight::Percent200).unwrap(),
+            json!("200%")
+        );
+        assert_eq!(
+            serde_json::from_value::<LineHeight>(json!("200%")).unwrap(),
+            LineHeight::Percent200
+        );
+        assert_eq!(
+            serde_json::from_value::<LineHeight>(json!("future")).unwrap(),
+            LineHeight::Other("future".into())
+        );
+        assert_eq!(
+            serde_json::to_value(LetterSpacing::Tightest).unwrap(),
+            json!("-0.05")
+        );
+        assert_eq!(
+            serde_json::from_value::<LetterSpacing>(json!("-0.05")).unwrap(),
+            LetterSpacing::Tightest
+        );
+        assert_eq!(
+            serde_json::to_value(LetterSpacing::Tight).unwrap(),
+            json!("-0.025")
+        );
+        assert_eq!(
+            serde_json::from_value::<LetterSpacing>(json!("-0.025")).unwrap(),
+            LetterSpacing::Tight
+        );
+        assert_eq!(
+            serde_json::to_value(LetterSpacing::Normal).unwrap(),
+            json!("0")
+        );
+        assert_eq!(
+            serde_json::from_value::<LetterSpacing>(json!("0")).unwrap(),
+            LetterSpacing::Normal
+        );
+        assert_eq!(
+            serde_json::to_value(LetterSpacing::Wide).unwrap(),
+            json!("0.025")
+        );
+        assert_eq!(
+            serde_json::from_value::<LetterSpacing>(json!("0.025")).unwrap(),
+            LetterSpacing::Wide
+        );
+        assert_eq!(
+            serde_json::to_value(LetterSpacing::Widest).unwrap(),
+            json!("0.05")
+        );
+        assert_eq!(
+            serde_json::from_value::<LetterSpacing>(json!("0.05")).unwrap(),
+            LetterSpacing::Widest
+        );
+        assert_eq!(
+            serde_json::from_value::<LetterSpacing>(json!("future")).unwrap(),
+            LetterSpacing::Other("future".into())
+        );
+    }
+    #[test]
+    fn open_enums_keep_unknown_values() {
+        assert_eq!(
+            BlockType::from("paragraph".to_string()),
+            BlockType::Paragraph
+        );
+        assert_eq!(
+            BlockType::from("countdown".to_string()),
+            BlockType::Other("countdown".to_string())
+        );
+        assert_eq!(String::from(BlockType::BulletedList), "bulleted_list");
+        assert_eq!(String::from(BlockType::Other("x".to_string())), "x");
+        assert_eq!(
+            serde_json::to_value(Position::After).unwrap(),
+            json!("after")
+        );
+        assert_eq!(
+            serde_json::from_value::<BrandMode>(json!("custom")).unwrap(),
+            BrandMode::Custom
+        );
+        assert_eq!(BrandMode::Account.to_string(), "account");
+    }
+    #[test]
+    fn object_fields_accept_empty_php_arrays_but_reject_malformed_values() {
+        // InlineEmailBlockResource emits objects; PHP empty maps can also be [].
+        // Neither block content nor validation-error maps have null semantics.
+        for wire in [json!({}), json!([])] {
+            let text: EditorText = serde_json::from_value(json!({"editor_content": wire})).unwrap();
+            assert!(text.editor_content.is_empty());
+            let validation: Validation = serde_json::from_value(json!({
+                "valid": true, "errors": wire, "schema": {"version": null, "hash": null}
+            }))
+            .unwrap();
+            assert!(validation.errors.is_empty());
+        }
+        for wire in [
+            Value::Null,
+            json!(true),
+            json!(7),
+            json!("bad"),
+            json!([{}]),
+        ] {
+            assert!(serde_json::from_value::<EditorText>(json!({"editor_content": wire})).is_err());
+            assert!(
+                serde_json::from_value::<EmailBlock>(json!({
+                    "id": "1", "type": "paragraph", "editor_content": wire
+                }))
+                .is_err()
+            );
+            assert!(
+                serde_json::from_value::<Validation>(json!({
+                    "valid": true, "errors": wire, "schema": {"version": null, "hash": null}
+                }))
+                .is_err()
+            );
+        }
     }
 }

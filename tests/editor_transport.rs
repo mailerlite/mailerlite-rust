@@ -96,3 +96,37 @@ async fn conflict_details_are_accessible_but_redacted() {
     assert!(error.is_version_conflict());
     assert_eq!(error.etag(), Some("private-etag"));
 }
+
+#[test]
+fn published_response_literals_and_mapping_remain_compatible() {
+    use mailerlite_rs::models::emails::{EmailResponse, EmailResponseMetadata};
+    use mailerlite_rs::{Response, ResponseMetadata, StatusCode};
+
+    // Keep the complete 2.0 struct literal: adding even a private field breaks it.
+    let response: Response<u8> = Response {
+        data: 7,
+        metadata: ResponseMetadata {
+            status: StatusCode::OK,
+            rate_limit: Some(120),
+            rate_remaining: Some(119),
+            retry_after: None,
+            request_id: Some("test-request".into()),
+        },
+    };
+    let response: Response<u16> = response.map(u16::from);
+    assert_eq!(response.data, 7);
+    assert_eq!(response.metadata.rate_remaining, Some(119));
+
+    let email: EmailResponse<u16> = Response {
+        data: response.data,
+        metadata: EmailResponseMetadata {
+            http: response.metadata,
+            idempotent_replayed: true,
+        },
+    };
+    let mapped = email.map(|value| value.to_string());
+    assert_eq!(mapped.data, "7");
+    assert_eq!(mapped.metadata.status, StatusCode::OK);
+    assert_eq!(mapped.metadata.request_id.as_deref(), Some("test-request"));
+    assert!(mapped.metadata.is_idempotent_replay());
+}

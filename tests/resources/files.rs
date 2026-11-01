@@ -99,30 +99,3 @@ async fn get_sends_an_empty_filter_and_an_unknown_type() {
 
     mock.assert_async().await;
 }
-
-#[test]
-fn file_sort_values_match_the_api() {
-    let sorts: Vec<String> = [
-        FileSort::CreatedAt,
-        FileSort::CreatedAtDesc,
-        FileSort::Name,
-        FileSort::NameDesc,
-        FileSort::Size,
-        FileSort::SizeDesc,
-    ]
-    .into_iter()
-    .map(String::from)
-    .collect();
-
-    assert_eq!(
-        sorts,
-        vec![
-            "created_at",
-            "-created_at",
-            "name",
-            "-name",
-            "size",
-            "-size"
-        ]
-    );
-}

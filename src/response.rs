@@ -2,16 +2,19 @@
 use serde::Deserialize;
 use std::time::Duration;
 /// A decoded API result with its HTTP metadata.
+///
+/// Metadata defaults to [`ResponseMetadata`]. New endpoint families can provide
+/// additional typed metadata without changing existing response construction.
 #[derive(Debug, Clone)]
-pub struct Response<T> {
+pub struct Response<T, M = ResponseMetadata> {
     /// Endpoint-specific response data.
     pub data: T,
     /// HTTP status and rate-limit information.
-    pub metadata: ResponseMetadata,
+    pub metadata: M,
 }
-impl<T> Response<T> {
+impl<T, M> Response<T, M> {
     /// Transform response data, retaining metadata.
-    pub fn map<U>(self, f: impl FnOnce(T) -> U) -> Response<U> {
+    pub fn map<U>(self, f: impl FnOnce(T) -> U) -> Response<U, M> {
         Response {
             data: f(self.data),
             metadata: self.metadata,
@@ -21,8 +24,6 @@ impl<T> Response<T> {
 /// Selected response headers.
 #[derive(Debug, Clone)]
 pub struct ResponseMetadata {
-    /// Whether the server replayed a stored idempotent response.
-    pub idempotent_replayed: bool,
     /// HTTP status.
     pub status: reqwest::StatusCode,
     /// Server-reported limit.
@@ -35,10 +36,6 @@ pub struct ResponseMetadata {
     pub request_id: Option<String>,
 }
 impl ResponseMetadata {
-    /// Whether the server returned a stored response for the supplied idempotency key.
-    pub fn is_idempotent_replay(&self) -> bool {
-        self.idempotent_replayed
-    }
     /// Server-directed retry delay.
     pub fn retry_after(&self) -> Option<Duration> {
         self.retry_after

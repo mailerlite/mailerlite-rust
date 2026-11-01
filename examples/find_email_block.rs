@@ -1,5 +1,8 @@
-//! Find email block. Requires MAILERLITE_API_TOKEN.
-use mailerlite_rs::{MailerLite, Response, models::emails::EmailBlock, models::emails::WithEtag};
+//! Find email block.
+//!
+//! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_EMAIL_ID`, `MAILERLITE_BLOCK_ID`.
+use mailerlite_rs::models::emails::EmailResponse;
+use mailerlite_rs::{MailerLite, models::emails::EmailBlock, models::emails::WithEtag};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -11,7 +14,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let block_id: String = std::env::var("MAILERLITE_BLOCK_ID")?;
 
-    let response: Response<WithEtag<EmailBlock>> =
+    let response: EmailResponse<WithEtag<EmailBlock>> =
         mailerlite.emails().get_block(email_id, block_id).await?;
 
     println!("{:#?}", response.data.data);

@@ -21,7 +21,12 @@ async fn create_sends_simple_editor_and_template_as_json() {
     let mock = expect_request(&mut server,"POST","/campaigns",Some(json!({"name":"Simple editor campaign","type":"regular","emails":[{"subject":"Hello","from_name":"Sender","from":"sender@example.com","editor":"simple","template_id":"42"}]})),201,&fixture("campaign_simple_editor")).await;
     let response = mailerlite(&server)
         .campaigns()
-        .create(draft().simple_editor_template("42"))
+        .create(
+            draft()
+                .simple_editor()
+                .simple_editor_template("old")
+                .simple_editor_template("42"),
+        )
         .await
         .unwrap();
     mock.assert_async().await;
@@ -56,4 +61,22 @@ async fn simple_editor_rejects_html_before_dispatch() {
         Err(Error::Config(_))
     ));
     assert_no_request(&mocks).await;
+}
+
+#[tokio::test]
+async fn simple_editor_clears_a_previous_template_selection() {
+    let mut server = Server::new_async().await;
+    let mock = expect_request(
+        &mut server, "POST", "/campaigns",
+        Some(json!({"name":"Simple editor campaign","type":"regular","emails":[{"subject":"Hello","from_name":"Sender","from":"sender@example.com","editor":"simple"}]})),
+        201, &fixture("campaign_simple_editor"),
+    ).await;
+
+    mailerlite(&server)
+        .campaigns()
+        .create(draft().simple_editor_template("42").simple_editor())
+        .await
+        .unwrap();
+
+    mock.assert_async().await;
 }

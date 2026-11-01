@@ -1,9 +1,5 @@
 //! Shared mockito helpers for the migrated editor contract scenarios.
-#![allow(
-    clippy::expect_used,
-    clippy::unwrap_used,
-    reason = "Tests assert fixture outcomes"
-)]
+#![allow(clippy::unwrap_used, reason = "Tests assert fixture outcomes")]
 
 use mailerlite_rs::MailerLite;
 use mockito::{Matcher, Mock, ServerGuard};
@@ -11,6 +7,7 @@ use serde_json::Value;
 
 pub const BAD_IDS: [&str; 4] = ["123/html", "123%2Fhtml", "123\n", "²"];
 
+#[allow(clippy::expect_used, reason = "The named sanitized fixture must exist")]
 pub fn fixture(name: &str) -> String {
     std::fs::read_to_string(format!(
         "{}/tests/fixtures/{name}.json",

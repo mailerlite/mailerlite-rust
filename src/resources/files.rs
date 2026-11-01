@@ -35,6 +35,19 @@ impl<'a> Files<'a> {
     }
 
     /// Construct a lazy media-library listing request.
+    ///
+    /// Call [`ListFiles::send`] to execute it and see its error contract.
+    ///
+    /// # Examples
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(client: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = client.files().list().name("banner").limit(25).send().await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
     pub fn list(&self) -> ListFiles<'a> {
         ListFiles {
             mailerlite: self.mailerlite,
@@ -81,6 +94,16 @@ impl ListFiles<'_> {
         self
     }
     /// Fetch one numbered page of media-library files.
+    ///
+    /// # Examples
+    /// ```no_run
+    /// use mailerlite_rs::MailerLite;
+    ///
+    /// # async fn example(client: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let response = client.files().list().name("banner").limit(25).send().await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     ///
     /// # Errors
     /// Returns local configuration errors before dispatch, or shared transport, API,

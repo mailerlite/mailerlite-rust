@@ -2,7 +2,10 @@
 use super::validation as validate;
 use crate::{
     Error,
-    models::emails::{BlockType, EditorText, Position},
+    models::emails::{
+        BlockType, BrandMode, EditorText, FontWeight, LayoutAlignment, LetterSpacing, LineHeight,
+        Position, WidthMode,
+    },
 };
 use serde::Serialize;
 use serde_json::{Map, Value};
@@ -18,6 +21,26 @@ pub struct NewBlock {
     /// Where to put the block. Without a placement, the API puts the block at the end of the email.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub placement: Option<Placement>,
+}
+
+impl NewBlock {
+    /// Create a block with its required type and editor document.
+    ///
+    /// Content remains an open JSON object so editor-specific camelCase keys and
+    /// future document nodes are preserved. The API validates the document.
+    pub fn new(block_type: BlockType, editor_content: Map<String, Value>) -> Self {
+        Self {
+            block_type,
+            editor_content,
+            placement: None,
+        }
+    }
+
+    /// Replace the placement; omission appends the block to the email.
+    pub fn placement(mut self, placement: Placement) -> Self {
+        self.placement = Some(placement);
+        self
+    }
 }
 
 /// Where to put a block. The positions `Before` and `After` need the `block_id` of a block at the same
@@ -84,22 +107,24 @@ pub(super) struct MoveBody<'a> {
     pub(super) etag: &'a str,
 }
 
-/// A change to the design settings of an email, for `Emails::update_settings` and `Emails::validate_settings`.
+/// Changes to an email's design settings, for [`super::Emails::update_settings`]
+/// and [`super::Emails::validate_settings`].
 ///
-/// Each value has three states:
-/// - `None`: the SDK does not send the key, and the value does not change;
-/// - `Some(value)`: the API stores the value;
-/// - `Some(String::new())`: an empty value. Only the brand colors accept it: `brand.background_color`,
-///   `brand.text_color` and `brand.border_color`. For them, the API removes the value, and the email uses
-///   the color of the account again. Other colors, the sizes and `brand.style` do not accept an empty value.
-///   For them, the API gives a `422` error.
+/// `None` omits a field; `Some(value)` sends it. Typed choices preserve their wire
+/// strings, and scalar sizes remain strings such as `"16"`. The API validates
+/// values and combinations, including conflicts with an inherited brand mode.
 ///
-/// To remove a footer text, send an empty editor document: `EditorText::default()` (`{}`) or
-/// `{"content": []}`. Then the email uses the text of the account again.
+/// Empty strings in `brand.font_family`, `brand.background_color`,
+/// `brand.text_color`, and `brand.border_color` restore account inheritance.
+/// Other colors, sizes, and `brand.style` reject empty strings with HTTP 422.
+/// Empty footer link labels also restore inherited labels. To clear a footer
+/// editor document, use [`EditorText::default`] (which sends
+/// `{"editor_content": {}}`) or an editor document with `"content": []`.
 ///
-/// Set only the values to change. The API stores each value that you send, also a value that is the same as
-/// the value of the account. Then the email no longer follows the account for that value. For this reason,
-/// the SDK has no conversion from `EmailSettings`. Send all style values as strings, for example `"16"`.
+/// Send only intended changes. Explicit overrides can stop a value following
+/// the account, while brand mode changes select an inherited or custom palette.
+/// There is deliberately no automatic conversion from response settings to a
+/// request. Social links replace the complete list when supplied.
 #[derive(Debug, Clone, Default, Serialize)]
 pub struct EmailSettingsUpdate {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -118,7 +143,7 @@ pub struct EmailSettingsUpdate {
     /// Footer content and display settings.
     pub footer: Option<FooterUpdate>,
     /// Keys that this version of the SDK does not know. The SDK sends them as they are. A key must not be
-    /// the JSON name of a typed field of this struct (`Error::DuplicateSettingsKey`).
+    /// the JSON name of a typed field of this struct ([`Error::Config`]).
     #[serde(flatten)]
     pub extra: Map<String, Value>,
 }
@@ -126,11 +151,12 @@ pub struct EmailSettingsUpdate {
 #[derive(Debug, Clone, Default, Serialize)]
 /// Optional changes to brand; omitted fields are not sent.
 pub struct BrandUpdate {
-    /// One of the `BrandMode` values, for example `Some(BrandMode::Custom.into())`.
+    /// One of the `BrandMode` values, for example `Some(BrandMode::Custom)`.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub mode: Option<String>,
-    /// The `identifier` of a palette from `BrandStyle::get`. The API applies the palette. The API does not
-    /// return this value.
+    pub mode: Option<BrandMode>,
+    /// Palette identifier from
+    /// [`crate::resources::brand_styles::BrandStylesResource::get`].
+    /// The API applies the palette but does not return this write-only value.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub style: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -146,7 +172,7 @@ pub struct BrandUpdate {
     /// Border color in the API color format.
     pub border_color: Option<String>,
     /// Keys that this version of the SDK does not know. The SDK sends them as they are. A key must not be
-    /// the JSON name of a typed field of this struct (`Error::DuplicateSettingsKey`).
+    /// the JSON name of a typed field of this struct ([`Error::Config`]).
     #[serde(flatten)]
     pub extra: Map<String, Value>,
 }
@@ -156,12 +182,12 @@ pub struct BrandUpdate {
 pub struct LayoutUpdate {
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Width preset understood by the editor.
-    pub width_mode: Option<String>,
+    pub width_mode: Option<WidthMode>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Horizontal alignment understood by the editor.
-    pub alignment: Option<String>,
+    pub alignment: Option<LayoutAlignment>,
     /// Keys that this version of the SDK does not know. The SDK sends them as they are. A key must not be
-    /// the JSON name of a typed field of this struct (`Error::DuplicateSettingsKey`).
+    /// the JSON name of a typed field of this struct ([`Error::Config`]).
     #[serde(flatten)]
     pub extra: Map<String, Value>,
 }
@@ -179,7 +205,7 @@ pub struct TypographyUpdate {
     /// Styles shared by paragraphs.
     pub paragraph: Option<ParagraphStyleUpdate>,
     /// Keys that this version of the SDK does not know. The SDK sends them as they are. A key must not be
-    /// the JSON name of a typed field of this struct (`Error::DuplicateSettingsKey`).
+    /// the JSON name of a typed field of this struct ([`Error::Config`]).
     #[serde(flatten)]
     pub extra: Map<String, Value>,
 }
@@ -191,7 +217,7 @@ pub struct LinkStyleUpdate {
     /// Text color in the API color format.
     pub color: Option<String>,
     /// Keys that this version of the SDK does not know. The SDK sends them as they are. A key must not be
-    /// the JSON name of a typed field of this struct (`Error::DuplicateSettingsKey`).
+    /// the JSON name of a typed field of this struct ([`Error::Config`]).
     #[serde(flatten)]
     pub extra: Map<String, Value>,
 }
@@ -204,13 +230,13 @@ pub struct HeadingStyleUpdate {
     pub font_family: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Font weight as a CSS string.
-    pub font_weight: Option<String>,
+    pub font_weight: Option<FontWeight>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Line height as a CSS string.
-    pub line_height: Option<String>,
+    pub line_height: Option<LineHeight>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Letter spacing as a CSS string.
-    pub letter_spacing: Option<String>,
+    pub letter_spacing: Option<LetterSpacing>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Styles for first-level headings.
     pub h1: Option<TextStyleUpdate>,
@@ -221,7 +247,7 @@ pub struct HeadingStyleUpdate {
     /// Styles for third-level headings.
     pub h3: Option<TextStyleUpdate>,
     /// Keys that this version of the SDK does not know. The SDK sends them as they are. A key must not be
-    /// the JSON name of a typed field of this struct (`Error::DuplicateSettingsKey`).
+    /// the JSON name of a typed field of this struct ([`Error::Config`]).
     #[serde(flatten)]
     pub extra: Map<String, Value>,
 }
@@ -234,18 +260,18 @@ pub struct ParagraphStyleUpdate {
     pub font_family: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Font weight as a CSS string.
-    pub font_weight: Option<String>,
+    pub font_weight: Option<FontWeight>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Line height as a CSS string.
-    pub line_height: Option<String>,
+    pub line_height: Option<LineHeight>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Letter spacing as a CSS string.
-    pub letter_spacing: Option<String>,
+    pub letter_spacing: Option<LetterSpacing>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Styles for the default paragraph level.
     pub p1: Option<TextStyleUpdate>,
     /// Keys that this version of the SDK does not know. The SDK sends them as they are. A key must not be
-    /// the JSON name of a typed field of this struct (`Error::DuplicateSettingsKey`).
+    /// the JSON name of a typed field of this struct ([`Error::Config`]).
     #[serde(flatten)]
     pub extra: Map<String, Value>,
 }
@@ -260,7 +286,7 @@ pub struct TextStyleUpdate {
     /// Font size as a CSS string.
     pub size: Option<String>,
     /// Keys that this version of the SDK does not know. The SDK sends them as they are. A key must not be
-    /// the JSON name of a typed field of this struct (`Error::DuplicateSettingsKey`).
+    /// the JSON name of a typed field of this struct ([`Error::Config`]).
     #[serde(flatten)]
     pub extra: Map<String, Value>,
 }
@@ -273,10 +299,10 @@ pub struct ButtonUpdate {
     pub font_family: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Font weight as a CSS string.
-    pub font_weight: Option<String>,
+    pub font_weight: Option<FontWeight>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Letter spacing as a CSS string.
-    pub letter_spacing: Option<String>,
+    pub letter_spacing: Option<LetterSpacing>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Background color in the API color format.
     pub background_color: Option<String>,
@@ -287,7 +313,7 @@ pub struct ButtonUpdate {
     /// Corner radius as a CSS string.
     pub border_radius: Option<String>,
     /// Keys that this version of the SDK does not know. The SDK sends them as they are. A key must not be
-    /// the JSON name of a typed field of this struct (`Error::DuplicateSettingsKey`).
+    /// the JSON name of a typed field of this struct ([`Error::Config`]).
     #[serde(flatten)]
     pub extra: Map<String, Value>,
 }
@@ -317,7 +343,7 @@ pub struct FooterUpdate {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub social_links: Option<Vec<SocialLinkUpdate>>,
     /// Keys that this version of the SDK does not know. The SDK sends them as they are. A key must not be
-    /// the JSON name of a typed field of this struct (`Error::DuplicateSettingsKey`).
+    /// the JSON name of a typed field of this struct ([`Error::Config`]).
     #[serde(flatten)]
     pub extra: Map<String, Value>,
 }
@@ -339,9 +365,34 @@ pub struct SocialLinkUpdate {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub link_id: Option<u64>,
     /// Keys that this version of the SDK does not know. The SDK sends them as they are. A key must not be
-    /// the JSON name of a typed field of this struct (`Error::DuplicateSettingsKey`).
+    /// the JSON name of a typed field of this struct ([`Error::Config`]).
     #[serde(flatten)]
     pub extra: Map<String, Value>,
+}
+
+impl SocialLinkUpdate {
+    /// Create a replacement social link with its required URL, type, and label.
+    ///
+    /// Link types remain strings because the editor schema does not enumerate
+    /// them. The API sanitizes the URL and validates the supplied values.
+    pub fn new(
+        url: impl Into<String>,
+        link_type: impl Into<String>,
+        label: impl Into<String>,
+    ) -> Self {
+        Self {
+            url: Some(url.into()),
+            link_type: Some(link_type.into()),
+            label: Some(label.into()),
+            ..Self::default()
+        }
+    }
+
+    /// Retain an existing link's identifier and click history.
+    pub fn link_id(mut self, link_id: u64) -> Self {
+        self.link_id = Some(link_id);
+        self
+    }
 }
 
 /// A unit test compares each `FIELDS` list with the serialized fields.
@@ -509,8 +560,64 @@ pub struct ListVersionsOptions {
 #[allow(clippy::unwrap_used, reason = "Tests assert fixture outcomes")]
 mod tests {
     use super::*;
-    use crate::models::emails::BrandMode;
     use serde_json::json;
+
+    #[test]
+    fn typed_brand_modes_preserve_wire_values_and_omission() {
+        for mode in [
+            BrandMode::Account,
+            BrandMode::Custom,
+            BrandMode::Other("future".into()),
+        ] {
+            let expected = mode.as_str().to_owned();
+            let update = BrandUpdate {
+                mode: Some(mode),
+                ..Default::default()
+            };
+            assert_eq!(
+                serde_json::to_value(update).unwrap(),
+                json!({"mode": expected})
+            );
+        }
+        assert_eq!(
+            serde_json::to_value(BrandUpdate::default()).unwrap(),
+            json!({})
+        );
+    }
+
+    #[test]
+    fn new_block_preserves_content_and_replaces_placement() {
+        let content = Map::from_iter([("textAlign".into(), json!("left"))]);
+        let block = NewBlock::new(BlockType::Paragraph, content)
+            .placement(Placement::before("00123"))
+            .placement(Placement::after("00456"));
+        assert_eq!(
+            serde_json::to_value(block).unwrap(),
+            json!({
+                "type": "paragraph", "editor_content": {"textAlign": "left"},
+                "placement": {"position": "after", "block_id": "00456"}
+            })
+        );
+        let block = NewBlock::new(BlockType::Divider, Map::new());
+        assert_eq!(
+            serde_json::to_value(block).unwrap(),
+            json!({"type": "divider", "editor_content": {}})
+        );
+    }
+
+    #[test]
+    fn social_link_constructor_supplies_required_fields_and_preserves_id() {
+        let link = SocialLinkUpdate::new("https://example.test", "future", "Example")
+            .link_id(1)
+            .link_id(u64::MAX);
+        assert_eq!(
+            serde_json::to_value(link).unwrap(),
+            json!({
+                "url": "https://example.test", "type": "future", "label": "Example",
+                "link_id": u64::MAX
+            })
+        );
+    }
 
     fn set<T: Default>() -> Option<T> {
         Some(T::default())
@@ -544,7 +651,7 @@ mod tests {
             extra: extra(),
         });
         keys(BrandUpdate {
-            mode: set(),
+            mode: Some(BrandMode::Custom),
             style: set(),
             font_family: set(),
             background_color: set(),
@@ -553,8 +660,8 @@ mod tests {
             extra: extra(),
         });
         keys(LayoutUpdate {
-            width_mode: set(),
-            alignment: set(),
+            width_mode: Some(WidthMode::Default),
+            alignment: Some(LayoutAlignment::Left),
             extra: extra(),
         });
         keys(TypographyUpdate {
@@ -569,9 +676,9 @@ mod tests {
         });
         keys(HeadingStyleUpdate {
             font_family: set(),
-            font_weight: set(),
-            line_height: set(),
-            letter_spacing: set(),
+            font_weight: Some(FontWeight::Normal),
+            line_height: Some(LineHeight::Percent150),
+            letter_spacing: Some(LetterSpacing::Normal),
             h1: set(),
             h2: set(),
             h3: set(),
@@ -579,9 +686,9 @@ mod tests {
         });
         keys(ParagraphStyleUpdate {
             font_family: set(),
-            font_weight: set(),
-            line_height: set(),
-            letter_spacing: set(),
+            font_weight: Some(FontWeight::Normal),
+            line_height: Some(LineHeight::Percent150),
+            letter_spacing: Some(LetterSpacing::Normal),
             p1: set(),
             extra: extra(),
         });
@@ -592,8 +699,8 @@ mod tests {
         });
         keys(ButtonUpdate {
             font_family: set(),
-            font_weight: set(),
-            letter_spacing: set(),
+            font_weight: Some(FontWeight::Normal),
+            letter_spacing: Some(LetterSpacing::Normal),
             background_color: set(),
             text_color: set(),
             border_radius: set(),
@@ -616,28 +723,5 @@ mod tests {
             link_id: set(),
             extra: extra(),
         });
-    }
-
-    #[test]
-    fn open_enums_keep_unknown_values() {
-        assert_eq!(
-            BlockType::from("paragraph".to_string()),
-            BlockType::Paragraph
-        );
-        assert_eq!(
-            BlockType::from("countdown".to_string()),
-            BlockType::Other("countdown".to_string())
-        );
-        assert_eq!(String::from(BlockType::BulletedList), "bulleted_list");
-        assert_eq!(String::from(BlockType::Other("x".to_string())), "x");
-        assert_eq!(
-            serde_json::to_value(Position::After).unwrap(),
-            json!("after")
-        );
-        assert_eq!(
-            serde_json::from_value::<BrandMode>(json!("custom")).unwrap(),
-            BrandMode::Custom
-        );
-        assert_eq!(BrandMode::Account.to_string(), "account");
     }
 }
