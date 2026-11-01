@@ -55,6 +55,13 @@ impl<'a> Emails<'a> {
     /// require investigation instead of replaying the write. An in-progress 409
     /// ([`crate::ApiError::is_idempotency_in_progress`]) requires waiting before a
     /// retry of the original request; it is not a stale-etag conflict.
+    /// Detection depends on the server's current message; an unrecognized 409
+    /// does not prove the original write stopped. An interrupted 409 body can
+    /// retry with the same key without being classified as in progress.
+    ///
+    /// If the next retry delay cannot fit within the operation deadline, the
+    /// client returns the last error, which may be an API error rather than
+    /// [`Error::Timeout`]. Retain the original request after any uncertain outcome.
     ///
     /// - Only these methods send the key: `create_block`, `update_block`, `delete_block`, `move_block`,
     ///   `update_settings`, `create_template`, `create_version` and `restore_version`. The read methods and

@@ -293,14 +293,21 @@ To opt into retries, import `mailerlite_rs::RetryPolicy` and add
 `.retry_policy(RetryPolicy::safe_reads().max_retries(2))`. Reviewed reads can then
 retry with bounded exponential backoff and jitter. A valid `Retry-After` is a
 minimum delay; the SDK will not retry early to fit an operation deadline.
+If a retry delay cannot fit, the last error is returned; `Error::Timeout` means
+the operation deadline actually expired. A terminal API or decoding error can
+still leave a dispatched write's outcome uncertain.
 
 To also retry email writes carrying an idempotency key, use
 `.retry_policy(RetryPolicy::safe_reads().with_idempotent_writes())`. Attempts keep
 the same serialized body, key, and etag and share one operation deadline. Transient
 transport failures, incomplete bodies, retryable HTTP errors, and recognized
-in-progress conflicts can retry; size limits, unexpected success statuses, and
-schema errors cannot. In-progress conflicts wait at least one second. Keep the
-original request until its outcome is known, and reconcile before retrying after
+in-progress conflicts can retry; size limits, unexpected success statuses,
+schema errors, and empty success bodies cannot. Nonempty JSON EOF failures can
+retry for both safe reads and opted-in keyed writes. In-progress conflicts and
+interrupted conflict bodies wait at least one second. In-progress detection
+requires the API's current message because it provides no stable error code;
+an unrecognized conflict does not establish that the original write stopped.
+Keep the original request until its outcome is known, and reconcile before retrying after
 the API's 24-hour key retention expires.
 
 Unkeyed writes and batches are never automatically replayed by the SDK.

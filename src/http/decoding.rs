@@ -1,6 +1,9 @@
 //! Typed JSON and empty-response decoding.
-use super::{OperationPolicy, RequestBody, RequestOptions, deadline::Deadline, execution::execute};
-use crate::{Error, MailerLite, Response, Result, error::DecodeError};
+use super::{
+    OperationPolicy, RequestBody, RequestOptions, deadline::Deadline, execution::execute,
+    request::Request,
+};
+use crate::{Error, MailerLite, Response, ResponseMetadata, Result, error::DecodeError};
 use reqwest::Method;
 use serde::de::DeserializeOwned;
 
@@ -36,26 +39,19 @@ pub(crate) async fn request_with_metadata<T: DeserializeOwned, M>(
     let deadline = Deadline::new(client.inner.operation_timeout)?;
     deadline
         .run(async {
-            let (metadata, bytes, replayed) =
-                execute(client, method, path, query, body, options, deadline).await?;
-            deadline.check()?;
-            let mut deserializer = serde_json::Deserializer::from_slice(&bytes);
-            let data = serde_path_to_error::deserialize(&mut deserializer).map_err(|error| {
-                Error::Decode(DecodeError::json(
-                    metadata.clone(),
-                    &bytes,
-                    error.to_string(),
-                    error.into_inner(),
-                ))
-            })?;
-            deserializer.end().map_err(|error| {
-                Error::Decode(DecodeError::json(
-                    metadata.clone(),
-                    &bytes,
-                    error.to_string(),
-                    error,
-                ))
-            })?;
+            let (metadata, data, replayed) = execute(
+                client,
+                Request {
+                    method,
+                    path,
+                    query,
+                    body,
+                    options,
+                },
+                deadline,
+                decode_json::<T>,
+            )
+            .await?;
             Ok(Response {
                 data,
                 metadata: map_metadata(metadata, replayed),
@@ -75,26 +71,55 @@ pub(crate) async fn empty(
     let deadline = Deadline::new(client.inner.operation_timeout)?;
     deadline
         .run(async {
-            let (metadata, bytes, _) = execute(
+            let (metadata, (), _) = execute(
                 client,
-                method,
-                path,
-                query,
-                body,
-                policy.with_success_statuses(&[204]).into(),
+                Request {
+                    method,
+                    path,
+                    query,
+                    body,
+                    options: policy.with_success_statuses(&[204]).into(),
+                },
                 deadline,
+                decode_empty,
             )
             .await?;
-            if !bytes.is_empty() {
-                return Err(Error::Decode(DecodeError::new(
-                    metadata,
-                    &bytes,
-                    "expected an empty response body".into(),
-                )));
-            }
             Ok(Response { data: (), metadata })
         })
         .await
+}
+
+fn decode_json<T: DeserializeOwned>(metadata: &ResponseMetadata, bytes: &[u8]) -> Result<T> {
+    let mut deserializer = serde_json::Deserializer::from_slice(bytes);
+    let data = serde_path_to_error::deserialize(&mut deserializer).map_err(|error| {
+        Error::Decode(DecodeError::json(
+            metadata.clone(),
+            bytes,
+            error.to_string(),
+            error.into_inner(),
+        ))
+    })?;
+    deserializer.end().map_err(|error| {
+        Error::Decode(DecodeError::json(
+            metadata.clone(),
+            bytes,
+            error.to_string(),
+            error,
+        ))
+    })?;
+    Ok(data)
+}
+
+fn decode_empty(metadata: &ResponseMetadata, bytes: &[u8]) -> Result<()> {
+    if bytes.is_empty() {
+        Ok(())
+    } else {
+        Err(Error::Decode(DecodeError::new(
+            metadata.clone(),
+            bytes,
+            "expected an empty response body".into(),
+        )))
+    }
 }
 
 #[cfg(test)]
@@ -177,6 +202,19 @@ mod tests {
             }
         }
 
+        thread_local! {
+            static DECODE_ATTEMPTS: Cell<usize> = const { Cell::new(0) };
+        }
+        struct CountedResponse(bool);
+        impl<'de> Deserialize<'de> for CountedResponse {
+            fn deserialize<D: Deserializer<'de>>(
+                deserializer: D,
+            ) -> std::result::Result<Self, D::Error> {
+                DECODE_ATTEMPTS.set(DECODE_ATTEMPTS.get() + 1);
+                bool::deserialize(deserializer).map(Self)
+            }
+        }
+
         for (verb, options) in [
             (Method::GET, OperationPolicy::READ.into()),
             (
@@ -193,12 +231,11 @@ mod tests {
             Mock::given(method(verb.as_str()))
                 .and(body_string(r#""same payload on every attempt""#))
                 .respond_with(move |_: &wiremock::Request| {
-                    let status = if received.fetch_add(1, Ordering::SeqCst) < 2 {
-                        503
-                    } else {
-                        200
-                    };
-                    ResponseTemplate::new(status).set_body_json(true)
+                    match received.fetch_add(1, Ordering::SeqCst) {
+                        0 => ResponseTemplate::new(503),
+                        1 => ResponseTemplate::new(200).set_body_string("tru"),
+                        _ => ResponseTemplate::new(200).set_body_json(true),
+                    }
                 })
                 .expect(3)
                 .mount(&server)
@@ -214,7 +251,8 @@ mod tests {
                 .build()
                 .unwrap();
             let payload = CountedPayload(AtomicUsize::new(0));
-            let response = request_with_metadata::<bool, _>(
+            DECODE_ATTEMPTS.set(0);
+            let response = request_with_metadata::<CountedResponse, _>(
                 &client,
                 verb,
                 &["test"],
@@ -226,7 +264,12 @@ mod tests {
             .await
             .unwrap();
 
-            assert!(response.data);
+            assert!(response.data.0);
+            assert_eq!(
+                DECODE_ATTEMPTS.get(),
+                2,
+                "one typed decode per success-status body, including the EOF failure"
+            );
             assert_eq!(payload.0.load(Ordering::SeqCst), 1);
             assert_eq!(attempts.load(Ordering::SeqCst), 3);
         }

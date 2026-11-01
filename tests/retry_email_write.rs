@@ -295,6 +295,11 @@ async fn conflicts_are_classified_conservatively_and_not_retried() {
         ),
         (
             409,
+            serde_json::json!({"message": "This idempotency request is still being processed"}),
+            false,
+        ),
+        (
+            409,
             serde_json::json!({"code": "other", "message": IN_PROGRESS}),
             false,
         ),
@@ -348,6 +353,9 @@ async fn retry_after_is_not_shortened_to_fit_the_deadline() {
 #[tokio::test]
 async fn complete_invalid_responses_are_not_retried() {
     for (status, body) in [
+        (201, ""),
+        (201, " \t\r\n"),
+        (201, "null"),
         (201, r#"{"data":{"id":123},"etag":"43"}"#),
         (201, r#"{"data":no}"#),
         (201, r#"{} {}"#),
@@ -441,12 +449,36 @@ async fn opting_into_keyed_writes_does_not_retry_unkeyed_writes() {
 
 #[tokio::test]
 async fn interrupted_http_body_retries_the_original_write() {
+    assert_interrupted_body(201, r#"{"data":"#, 2).await;
+}
+
+#[tokio::test]
+async fn interrupted_conflict_body_retries_without_guessing_its_message() {
+    assert_interrupted_body(409, r#"{"message":"A request with this Idempotency-Key"#, 2).await;
+}
+
+#[tokio::test]
+async fn interrupted_permanent_errors_and_unexpected_statuses_are_not_retried() {
+    for (status, body) in [
+        (
+            409,
+            r#"{"code":"version_conflict","message":"Changed","etag":"43"}"#,
+        ),
+        (409, r#"{"code":"other","message":"Conflict"}"#),
+        (422, r#"{"message":"#),
+        (200, r#"{"data":"#),
+    ] {
+        assert_interrupted_body(status, body, 1).await;
+    }
+}
+
+async fn assert_interrupted_body(status: u16, partial: &'static str, attempts: usize) {
     use std::io::{BufRead, Read, Write};
     let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
     let address = listener.local_addr().unwrap();
     let server = std::thread::spawn(move || {
         let mut bodies = Vec::new();
-        for attempt in 0..2 {
+        for attempt in 0..attempts {
             let (mut socket, _) = listener.accept().unwrap();
             socket.set_read_timeout(Some(TIMEOUT)).unwrap();
             let mut reader = std::io::BufReader::new(&mut socket);
@@ -473,14 +505,16 @@ async fn interrupted_http_body_retries_the_original_write() {
             bodies.push(body);
             if attempt == 0 {
                 // Advertise more bytes than are sent, then close the connection.
-                socket.write_all(b"HTTP/1.1 201 Created\r\nContent-Length: 1000\r\nConnection: close\r\n\r\n{\"data\":").unwrap();
+                write!(socket, "HTTP/1.1 {status} Test\r\nContent-Length: 1000\r\nConnection: close\r\n\r\n{partial}").unwrap();
             } else {
                 let body =
                     r#"{"data":{"id":"456","type":"divider","editor_content":{}},"etag":"43"}"#;
                 write!(socket, "HTTP/1.1 201 Created\r\nContent-Length: {}\r\nIdempotent-Replayed: true\r\nConnection: close\r\n\r\n{body}", body.len()).unwrap();
             }
         }
-        assert_eq!(bodies[0], bodies[1]);
+        if attempts == 2 {
+            assert_eq!(bodies[0], bodies[1]);
+        }
     });
     let client = MailerLite::builder("test-token")
         .base_url(format!("http://{address}"))
@@ -488,8 +522,142 @@ async fn interrupted_http_body_retries_the_original_write() {
         .rate_limit_intervals(Duration::ZERO, Duration::ZERO)
         .build()
         .unwrap();
-    let response = create(&client).await.unwrap();
-    assert_eq!(response.data.data.id, "456");
-    assert!(response.metadata.is_idempotent_replay());
+    let started = std::time::Instant::now();
+    let result = create(&client).await;
+    if attempts == 2 {
+        let response = result.unwrap();
+        assert_eq!(response.data.data.id, "456");
+        assert!(response.metadata.is_idempotent_replay());
+        if status == 409 {
+            assert!(started.elapsed() >= Duration::from_secs(1));
+        }
+    } else {
+        let Error::Decode(error) = result.unwrap_err() else {
+            panic!("expected interrupted body diagnostics")
+        };
+        assert_eq!(error.status().as_u16(), status);
+        assert_eq!(error.body(), partial.as_bytes());
+    }
     server.join().unwrap();
+}
+
+#[tokio::test]
+async fn safe_reads_retry_nonempty_json_eof_only_when_enabled() {
+    for policy in [
+        RetryPolicy::none(),
+        RetryPolicy::safe_reads()
+            .max_retries(1)
+            .initial_delay(Duration::ZERO),
+    ] {
+        let enabled = policy.retry_limit() > 0;
+        let server = MockServer::start().await;
+        let attempts = AtomicUsize::new(0);
+        Mock::given(method("GET"))
+            .and(path("/emails/123/blocks/456"))
+            .respond_with(move |_: &wiremock::Request| {
+                if attempts.fetch_add(1, Ordering::SeqCst) == 0 {
+                    ResponseTemplate::new(200).set_body_string(r#"{"data":"#)
+                } else {
+                    ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                        "data": {"id":"456", "type":"divider", "editor_content":{}}, "etag":"43"
+                    }))
+                }
+            })
+            .expect(if enabled { 2 } else { 1 })
+            .mount(&server)
+            .await;
+        let client = MailerLite::builder("test-token")
+            .base_url(server.uri())
+            .retry_policy(policy)
+            .build()
+            .unwrap();
+        let result = client.emails().get_block("123", "456").await;
+        if enabled {
+            assert_eq!(result.unwrap().data.data.id, "456");
+        } else {
+            assert!(
+                matches!(result, Err(Error::Decode(ref error)) if error.json_error().is_some_and(serde_json::Error::is_eof))
+            );
+        }
+    }
+}
+
+#[tokio::test]
+async fn safe_reads_do_not_retry_empty_or_permanently_invalid_json() {
+    for (status, body) in [
+        (200, ""),
+        (200, " \t\r\n"),
+        (200, "null"),
+        (200, r#"{"data":null,"etag":"43"}"#),
+        (200, r#"{"data":invalid}"#),
+        (200, "{} {}"),
+        (201, r#"{"data":"#),
+    ] {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .respond_with(ResponseTemplate::new(status).set_body_string(body))
+            .expect(1)
+            .mount(&server)
+            .await;
+        let client = MailerLite::builder("test-token")
+            .base_url(server.uri())
+            .retry_policy(RetryPolicy::safe_reads().initial_delay(Duration::ZERO))
+            .build()
+            .unwrap();
+        let Error::Decode(error) = client.emails().get_block("123", "456").await.unwrap_err()
+        else {
+            panic!("expected decoding error")
+        };
+        assert_eq!(error.body(), body.as_bytes());
+        assert_eq!(error.status().as_u16(), status);
+    }
+}
+
+#[tokio::test]
+async fn json_eof_and_http_failures_share_the_retry_limit() {
+    let server = MockServer::start().await;
+    let attempts = AtomicUsize::new(0);
+    write_mock()
+        .respond_with(
+            move |_: &wiremock::Request| match attempts.fetch_add(1, Ordering::SeqCst) {
+                0 => ResponseTemplate::new(503),
+                1 => ResponseTemplate::new(201).set_body_string(r#"{"data":"#),
+                _ => success(true),
+            },
+        )
+        .expect(2)
+        .mount(&server)
+        .await;
+    let error = create(&client(&server, TIMEOUT, TIMEOUT * 2))
+        .await
+        .unwrap_err();
+    assert!(
+        matches!(error, Error::Decode(ref error) if error.json_error().is_some_and(serde_json::Error::is_eof))
+    );
+    assert_same_write(&server).await;
+}
+
+#[tokio::test]
+async fn json_eof_keeps_the_last_error_when_retry_delay_will_not_fit() {
+    let server = MockServer::start().await;
+    write_mock()
+        .respond_with(
+            ResponseTemplate::new(201)
+                .insert_header("Retry-After", "120")
+                .set_body_string(r#"{"data":"#),
+        )
+        .expect(1)
+        .mount(&server)
+        .await;
+    let Error::Decode(error) = create(&client(&server, TIMEOUT, TIMEOUT * 2))
+        .await
+        .unwrap_err()
+    else {
+        panic!("expected last decode error, not operation timeout")
+    };
+    assert!(error.json_error().unwrap().is_eof());
+    assert_eq!(
+        error.metadata().retry_after(),
+        Some(Duration::from_secs(120))
+    );
 }

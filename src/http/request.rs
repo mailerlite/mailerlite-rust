@@ -1,6 +1,6 @@
 //! Internal operation classification and request serialization.
 use crate::{Error, Result};
-use reqwest::header::HeaderValue;
+use reqwest::{Method, header::HeaderValue};
 
 /// Retry and local rate-limit policy attached to an operation.
 #[derive(Debug, Clone, Copy)]
@@ -21,7 +21,7 @@ impl OperationPolicy {
         import: false,
         success_statuses: &[200],
     };
-    /// Write operation that must never be replayed automatically.
+    /// Write operation; replay requires an idempotency key and explicit opt-in.
     pub const WRITE: Self = Self {
         read_only: false,
         import: false,
@@ -49,6 +49,15 @@ impl From<OperationPolicy> for RequestOptions {
             idempotency_key: None,
         }
     }
+}
+
+/// Borrowed inputs shared by all attempts of one HTTP operation.
+pub(super) struct Request<'a> {
+    pub method: Method,
+    pub path: &'a [&'a str],
+    pub query: &'a [(String, String)],
+    pub body: Option<&'a dyn RequestBody>,
+    pub options: RequestOptions,
 }
 
 /// Borrow a typed payload until serialization inside the operation deadline.

@@ -132,6 +132,10 @@ impl ApiError {
     ///
     /// The API supplies no error code for this condition, so this recognizes only
     /// its specific HTTP 409 message without a code. Other conflicts remain unclassified.
+    /// A reworded or translated message returns `false`; this is a conservative
+    /// check, not proof that the request is no longer running. Do not infer a
+    /// version conflict or start a new keyed write from `false` alone. Reliable
+    /// classification across message changes requires a stable server error code.
     /// Wait before retrying the same key, body, and etag; do not start a new write
     /// while the original outcome is uncertain.
     pub fn is_idempotency_in_progress(&self) -> bool {

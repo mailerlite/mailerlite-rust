@@ -22,6 +22,8 @@ impl Default for RetryPolicy {
 }
 impl RetryPolicy {
     /// Retry safe reads at most twice, with 500 ms initial and 8 s capped backoff.
+    /// Nonempty JSON responses ending prematurely may retry; complete empty bodies and
+    /// schema mismatches do not. All attempts share one operation deadline.
     pub fn safe_reads() -> Self {
         Self {
             max_retries: 2,
@@ -42,10 +44,21 @@ impl RetryPolicy {
     ///
     /// Retries cover transient transport failures, incomplete response bodies,
     /// HTTP 408/429/500/502/503/504, and the API's recognized idempotency-in-progress
-    /// 409. An in-progress response waits at least one second before retrying.
-    /// Version conflicts, response size limits, unexpected success statuses, and
-    /// complete responses with invalid JSON or incompatible schemas are not retried.
-    /// Exhausting the operation deadline returns [`crate::Error::Timeout`].
+    /// 409. An interrupted 409 body may also retry when no complete error code
+    /// was received. Both conflict cases wait at least one second before retrying.
+    /// Recognized version conflicts, complete empty or whitespace-only success bodies,
+    /// response size limits, unexpected success statuses, and complete responses
+    /// with invalid JSON or incompatible schemas are not retried.
+    ///
+    /// Expiry of the operation deadline returns [`crate::Error::Timeout`]. If a
+    /// retry delay will not fit in the remaining budget, the SDK stops early and
+    /// returns the last API, transport, or decoding error instead. Reaching the
+    /// retry limit also returns the last error. None of these outcomes proves
+    /// that a dispatched write failed on the server; retain its key and request.
+    ///
+    /// In-progress detection currently relies on the API's exact message because
+    /// it supplies no stable error code. Unrecognized complete conflicts are not
+    /// retried; see [`crate::ApiError::is_idempotency_in_progress`].
     ///
     /// Retain the key and original request until the outcome is known. The API
     /// retains keys for 24 hours; reconcile an uncertain write before retrying
