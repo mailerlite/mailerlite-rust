@@ -1,9 +1,9 @@
-//! Shared mockito helpers for simple-editor HTTP contract scenarios.
+//! Shared wiremock helpers for simple-editor HTTP contract scenarios.
 #![allow(clippy::unwrap_used, reason = "Tests assert fixture outcomes")]
 
 use mailerlite_rs::MailerLite;
-use mockito::{Matcher, Mock, ServerGuard};
 use serde_json::Value;
+use wiremock::{Mock, MockGuard, MockServer, Request, ResponseTemplate, matchers};
 
 pub const BAD_IDS: [&str; 4] = ["123/html", "123%2Fhtml", "123\n", "²"];
 
@@ -16,58 +16,48 @@ pub fn fixture(name: &str) -> String {
     .expect("the fixture exists")
 }
 
-pub fn mailerlite(server: &ServerGuard) -> MailerLite {
+pub fn mailerlite(server: &MockServer) -> MailerLite {
     MailerLite::builder("api_key")
-        .base_url(server.url())
+        .base_url(server.uri())
         .rate_limit_intervals(std::time::Duration::ZERO, std::time::Duration::ZERO)
         .build()
         .unwrap()
 }
 
 pub async fn expect_request(
-    server: &mut ServerGuard,
-    method: &str,
+    server: &MockServer,
+    verb: &str,
     path_and_query: &str,
     body: Option<Value>,
-    status: usize,
+    status: u16,
     response: &str,
-) -> Mock {
-    let mock: Mock = server
-        .mock(method, path_and_query)
-        .match_header("Authorization", "Bearer api_key")
-        .match_header("Accept", "application/json")
-        .match_header("Content-Type", "application/json");
-    let mock: Mock = match body {
-        Some(body) => mock.match_body(Matcher::Json(body)),
-        None => mock.match_request(|request| request.body().is_ok_and(|body| body.is_empty())),
+) -> MockGuard {
+    let (path, query) = match path_and_query.split_once('?') {
+        Some((path, query)) => (path.to_owned(), Some(query.to_owned())),
+        None => (path_and_query.to_owned(), None),
     };
-
-    mock.with_status(status)
-        .with_header("Content-Type", "application/json")
-        .with_body(response)
-        .expect(1)
-        .create_async()
-        .await
+    let mock = Mock::given(matchers::method(verb))
+        .and(move |request: &Request| {
+            request.url.path() == path && request.url.query() == query.as_deref()
+        })
+        .and(matchers::header("Authorization", "Bearer api_key"))
+        .and(matchers::header("Accept", "application/json"))
+        .and(matchers::header("Content-Type", "application/json"));
+    let mock = match body {
+        Some(body) => mock.and(matchers::body_json(body)),
+        None => mock.and(|request: &Request| request.body.is_empty()),
+    };
+    mock.respond_with(
+        ResponseTemplate::new(status)
+            .insert_header("Content-Type", "application/json")
+            .set_body_string(response),
+    )
+    .expect(1)
+    .named(format!("{verb} {path_and_query}"))
+    .mount_as_scoped(server)
+    .await
 }
 
-/// Check the mocks with `assert_no_request`.
-pub async fn expect_no_request(server: &mut ServerGuard) -> Vec<Mock> {
-    let mut mocks: Vec<Mock> = Vec::new();
-    for method in ["GET", "POST", "PUT", "PATCH", "DELETE"] {
-        mocks.push(
-            server
-                .mock(method, Matcher::Any)
-                .expect(0)
-                .create_async()
-                .await,
-        );
-    }
-
-    mocks
-}
-
-pub async fn assert_no_request(mocks: &[Mock]) {
-    for mock in mocks {
-        mock.assert_async().await;
-    }
+pub async fn assert_no_request(server: &MockServer) {
+    assert!(server.received_requests().await.unwrap().is_empty());
 }

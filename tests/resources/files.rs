@@ -8,13 +8,13 @@ use mailerlite_rs::{
     pagination::NumberedPage,
     resources::files::ListFilesOptions,
 };
-use mockito::{Mock, Server, ServerGuard};
+use wiremock::{MockGuard, MockServer};
 
 #[tokio::test]
 async fn get_sends_the_filters_and_decodes_the_files() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mock: Mock = expect_request(
-        &mut server,
+    let server: MockServer = MockServer::start().await;
+    let mock: MockGuard = expect_request(
+        &server,
         "GET",
         "/files?filter%5Bname%5D=summer+sale&filter%5Btype%5D=image&sort=-size&page=1&limit=25",
         None,
@@ -38,7 +38,7 @@ async fn get_sends_the_filters_and_decodes_the_files() {
         .await
         .unwrap();
 
-    mock.assert_async().await;
+    assert_eq!(mock.received_requests().await.len(), 1);
     let image: &MediaFile = &response.data.data[0];
     assert_eq!(image.id, "301");
     assert_eq!(image.file_type, FileType::Image);
@@ -61,20 +61,20 @@ async fn get_sends_the_filters_and_decodes_the_files() {
 
 #[tokio::test]
 async fn get_sends_no_query_without_options() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mock: Mock =
-        expect_request(&mut server, "GET", "/files", None, 200, &fixture("files")).await;
+    let server: MockServer = MockServer::start().await;
+    let mock: MockGuard =
+        expect_request(&server, "GET", "/files", None, 200, &fixture("files")).await;
 
     mailerlite(&server).files().list().send().await.unwrap();
 
-    mock.assert_async().await;
+    assert_eq!(mock.received_requests().await.len(), 1);
 }
 
 #[tokio::test]
 async fn get_sends_an_empty_filter_and_an_unknown_type() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mock: Mock = expect_request(
-        &mut server,
+    let server: MockServer = MockServer::start().await;
+    let mock: MockGuard = expect_request(
+        &server,
         "GET",
         "/files?filter%5Bname%5D=&filter%5Btype%5D=docx&sort=name",
         None,
@@ -97,5 +97,5 @@ async fn get_sends_an_empty_filter_and_an_unknown_type() {
         .await
         .unwrap();
 
-    mock.assert_async().await;
+    assert_eq!(mock.received_requests().await.len(), 1);
 }

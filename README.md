@@ -149,19 +149,22 @@ Create a typed paragraph with `NewBlock::new(BlockContent::paragraph("Hello"))`.
 the same types through `block.content`. Call `update_block` with a block ID and
 etag; the server validates the replacement document against the stored block kind.
 Optional editor fields use `Patch` to preserve omitted values and explicit nulls.
+Use `Placement::before(id)` or `Placement::after(id)` for relative placement;
+`Placement::Start` and `Placement::End` carry no adjacent block ID.
 Unknown variants and extension fields preserve their JSON; list-item content and
 open editor attributes retain the flexibility of the API schema.
 
 Email operations return `Response<T, EmailResponseMetadata>`, with metadata
 from `models::emails`. Versioned operations return
 `Response<WithEtag<T>, EmailResponseMetadata>`: HTTP metadata is in
-`response.metadata`, the current version is `response.data.etag`, and the
+`response.metadata.http`, the current version is `response.data.etag`, and the
 resource is `response.data.data`. Pass the latest etag to the next write.
 For HTTP 409 conflicts, inspect `ApiError::is_version_conflict()` and `etag()`;
 refetch and reconcile before attempting another write.
 
-Set `client.emails().with_idempotency_key(key)` for an explicit write. Use one
-key per logical operation and reuse it only when resubmitting that same request.
+Keep the configured handle with `let emails = client.emails().with_idempotency_key(key);`
+and send the write through `emails`. Use one key per logical operation and reuse
+it only when resubmitting that same request.
 Writes are never automatically retried. Read and validation methods ignore the
 key. `response.metadata.is_idempotent_replay()` reports server-side replay.
 

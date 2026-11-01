@@ -7,7 +7,7 @@ use crate::{
         LetterSpacing, LineHeight, Position, SocialLinkType, WidthMode,
     },
 };
-use serde::Serialize;
+use serde::{Serialize, Serializer};
 use serde_json::{Map, Value};
 /// A new block for `Emails::create_block` and `Emails::validate_block`.
 #[derive(Debug, Clone, Serialize)]
@@ -39,53 +39,122 @@ impl NewBlock {
     }
 }
 
-/// Where to put a block. The positions `Before` and `After` need the `block_id` of a block at the same
-/// level. The SDK sends the placement as you give it.
-#[derive(Debug, Clone, Serialize)]
-pub struct Placement {
-    /// Relative position at the current nesting level.
-    pub position: Position,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    /// Adjacent block identifier for before or after placement.
-    pub block_id: Option<String>,
+/// Placement of a block at its current nesting level.
+///
+/// Relative placements carry their required adjacent block ID. The API checks
+/// that the ID names a block at the same nesting level.
+///
+/// # Examples
+/// ```
+/// use mailerlite_rs::resources::emails::Placement;
+/// let placement = Placement::before("123");
+/// assert_eq!(serde_json::to_value(placement)?,
+///     serde_json::json!({"position": "before", "block_id": "123"}));
+/// # Ok::<(), serde_json::Error>(())
+/// ```
+///
+/// A relative placement cannot omit its adjacent block ID:
+/// ```compile_fail
+/// use mailerlite_rs::resources::emails::Placement;
+/// let placement = Placement::Before {};
+/// ```
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum Placement {
+    /// First at the current nesting level.
+    Start,
+    /// Last at the current nesting level.
+    End,
+    /// Immediately before an adjacent block.
+    Before {
+        /// Identifier of the adjacent block.
+        block_id: String,
+    },
+    /// Immediately after an adjacent block.
+    After {
+        /// Identifier of the adjacent block.
+        block_id: String,
+    },
+    /// A future position, passed through to the API.
+    /// Known positions must use their typed variants; serialization rejects them here.
+    Other {
+        /// Unrecognized position discriminator.
+        position: String,
+        /// Adjacent block ID, if required by the future position.
+        block_id: Option<String>,
+    },
 }
 
 impl Placement {
     /// Place the block first at its current nesting level.
     pub fn start() -> Self {
-        Self {
-            position: Position::Start,
-            block_id: None,
-        }
+        Self::Start
     }
 
     /// Place the block last at its current nesting level.
     pub fn end() -> Self {
-        Self {
-            position: Position::End,
-            block_id: None,
-        }
+        Self::End
     }
 
     /// Place the block immediately before the supplied block ID.
     pub fn before(block_id: impl Into<String>) -> Self {
-        Self {
-            position: Position::Before,
-            block_id: Some(block_id.into()),
+        Self::Before {
+            block_id: block_id.into(),
         }
     }
 
     /// Place the block immediately after the supplied block ID.
     pub fn after(block_id: impl Into<String>) -> Self {
-        Self {
-            position: Position::After,
-            block_id: Some(block_id.into()),
+        Self::After {
+            block_id: block_id.into(),
         }
     }
 }
 
+impl Serialize for Placement {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        #[derive(Serialize)]
+        struct WirePlacement<'a> {
+            position: &'a str,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            block_id: Option<&'a str>,
+        }
+        let (position, block_id) = match self {
+            Self::Start => (Position::Start, None),
+            Self::End => (Position::End, None),
+            Self::Before { block_id } => (Position::Before, Some(block_id.as_str())),
+            Self::After { block_id } => (Position::After, Some(block_id.as_str())),
+            Self::Other { position, block_id } => {
+                if [
+                    Position::Start,
+                    Position::End,
+                    Position::Before,
+                    Position::After,
+                ]
+                .iter()
+                .any(|known| known.as_str() == position)
+                {
+                    return Err(serde::ser::Error::custom(
+                        "known positions must use typed placement",
+                    ));
+                }
+                return WirePlacement {
+                    position,
+                    block_id: block_id.as_deref(),
+                }
+                .serialize(serializer);
+            }
+        };
+        WirePlacement {
+            position: position.as_str(),
+            block_id,
+        }
+        .serialize(serializer)
+    }
+}
+
 #[derive(Serialize)]
-pub(super) struct EtagBody<'a, T: Serialize> {
+pub(super) struct EtagBody<'a, T> {
     #[serde(flatten)]
     pub(super) body: &'a T,
     pub(super) etag: &'a str,

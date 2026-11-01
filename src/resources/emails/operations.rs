@@ -56,6 +56,28 @@ impl<'a> Emails<'a> {
     ///
     /// Warning: use a new key for each write. Do not use an `Emails` value that has a key for a different
     /// write. The API keeps a key for 24 hours, and it rejects the same key with a different request.
+    ///
+    /// # Examples
+    /// Retain the returned handle and use it for the write:
+    /// ```no_run
+    /// # use mailerlite_rs::MailerLite;
+    /// # async fn example(client: &MailerLite) -> mailerlite_rs::Result<()> {
+    /// let emails = client.emails().with_idempotency_key("unique-operation-key");
+    /// let response = emails.create_version("123").await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// Discarding this handle does not configure the client. The compiler warns
+    /// about the unused result:
+    /// ```compile_fail
+    /// #![deny(unused_must_use)]
+    /// # use mailerlite_rs::MailerLite;
+    /// # fn configure(client: &MailerLite) {
+    /// client.emails().with_idempotency_key("unique-operation-key");
+    /// # }
+    /// ```
+    #[must_use = "use the returned Emails handle to send writes with this idempotency key"]
     pub fn with_idempotency_key(mut self, key: impl Into<String>) -> Self {
         self.idempotency_key = Some(key.into());
 
@@ -601,7 +623,7 @@ impl<'a> Emails<'a> {
     }
 
     /// Saves the email as a new version. The request has no body. If nothing changed after the last
-    /// version, the API saves no new version and returns the last version: then `response.metadata.status` is `200`,
+    /// version, the API saves no new version and returns the last version: then `response.metadata.http.status` is `200`,
     /// not `201`.
     ///
     /// # Examples

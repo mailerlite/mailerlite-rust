@@ -4,7 +4,12 @@ use std::time::Duration;
 /// A decoded API result with its HTTP metadata.
 ///
 /// Metadata defaults to [`ResponseMetadata`]. New endpoint families can provide
-/// additional typed metadata without changing existing response construction.
+/// additional typed metadata while `Response<T>` continues to name the standard metadata type.
+///
+/// When constructing a response with a conversion such as `metadata.into()`, give
+/// the response an explicit type (`let response: Response<T> = ...`). The metadata
+/// type cannot always be inferred from an unannotated struct literal; the default
+/// type parameter does not resolve an otherwise ambiguous conversion.
 #[derive(Debug, Clone)]
 pub struct Response<T, M = ResponseMetadata> {
     /// Endpoint-specific response data.

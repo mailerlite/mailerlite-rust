@@ -17,7 +17,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let response: Response<EmailVersion, EmailResponseMetadata> =
         mailerlite.emails().create_version(email_id).await?;
 
-    let is_new: bool = response.metadata.status == 201;
+    let is_new: bool = response.metadata.http.status == 201;
 
     println!("Version ID: {}, new: {}", response.data.id, is_new);
 

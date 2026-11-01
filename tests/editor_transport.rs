@@ -125,7 +125,41 @@ fn published_response_literals_and_mapping_remain_compatible() {
     };
     let mapped = email.map(|value| value.to_string());
     assert_eq!(mapped.data, "7");
-    assert_eq!(mapped.metadata.status, StatusCode::OK);
-    assert_eq!(mapped.metadata.request_id.as_deref(), Some("test-request"));
+    assert_eq!(mapped.metadata.http.status, StatusCode::OK);
+    assert_eq!(
+        mapped.metadata.http.request_id.as_deref(),
+        Some("test-request")
+    );
     assert!(mapped.metadata.is_idempotent_replay());
+}
+
+#[test]
+fn annotated_response_literals_accept_application_metadata_conversions() {
+    use mailerlite_rs::{Response, ResponseMetadata, StatusCode};
+
+    struct AppMetadata(ResponseMetadata);
+    impl From<AppMetadata> for ResponseMetadata {
+        fn from(value: AppMetadata) -> Self {
+            value.0
+        }
+    }
+    let metadata = AppMetadata(ResponseMetadata {
+        status: StatusCode::CREATED,
+        rate_limit: None,
+        rate_remaining: None,
+        retry_after: None,
+        request_id: Some("converted-request".into()),
+    });
+    // The annotation supplies the target of `.into()` even with generic metadata.
+    let response: Response<u8> = Response {
+        data: 7,
+        metadata: metadata.into(),
+    };
+    let mapped = response.map(u16::from);
+    assert_eq!(mapped.data, 7);
+    assert_eq!(mapped.metadata.status, StatusCode::CREATED);
+    assert_eq!(
+        mapped.metadata.request_id.as_deref(),
+        Some("converted-request")
+    );
 }

@@ -1,17 +1,15 @@
 //! HTTP contracts for simple-editor email operations.
 #![allow(clippy::unwrap_used, reason = "Tests assert fixture outcomes")]
 
-use crate::editor_support::{
-    BAD_IDS, assert_no_request, expect_no_request, expect_request, fixture, mailerlite,
-};
+use crate::editor_support::{BAD_IDS, assert_no_request, expect_request, fixture, mailerlite};
 use mailerlite_rs::{
     Error, Response,
     models::common::Patch,
     models::emails::{
         BlockContent, BlockType, BrandMode, EditorText, EmailBlock, EmailDocument, EmailHtml,
         EmailOwnerType, EmailResponseMetadata, EmailTemplate, EmailTemplateType, EmailType,
-        EmailVersion, EtagOnly, Position, SettingsResult, SocialLinkType, VERSION_CONFLICT,
-        Validation, WithEtag,
+        EmailVersion, EtagOnly, SettingsResult, SocialLinkType, VERSION_CONFLICT, Validation,
+        WithEtag,
     },
     pagination::NumberedPage,
     resources::emails::{
@@ -20,27 +18,20 @@ use mailerlite_rs::{
         TextStyleUpdate, TypographyUpdate,
     },
 };
-use mockito::{Matcher, Mock, Server, ServerGuard};
 use serde_json::json;
+use wiremock::{Mock, MockGuard, MockServer, ResponseTemplate, matchers};
 
 #[tokio::test]
 async fn find_gets_the_email() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mock: Mock = expect_request(
-        &mut server,
-        "GET",
-        "/emails/123",
-        None,
-        200,
-        &fixture("email"),
-    )
-    .await;
+    let server: MockServer = MockServer::start().await;
+    let mock: MockGuard =
+        expect_request(&server, "GET", "/emails/123", None, 200, &fixture("email")).await;
 
     let response: Response<WithEtag<EmailDocument>, EmailResponseMetadata> =
         mailerlite(&server).emails().get("123").await.unwrap();
 
-    mock.assert_async().await;
-    assert_eq!(response.metadata.status, 200);
+    assert_eq!(mock.received_requests().await.len(), 1);
+    assert_eq!(response.metadata.http.status, 200);
     assert_eq!(response.data.etag, "42");
 
     let email: &EmailDocument = &response.data.data;
@@ -109,7 +100,7 @@ async fn find_gets_the_email() {
 
 #[tokio::test]
 async fn find_decodes_null_values_and_keeps_unknown_keys() {
-    let mut server: ServerGuard = Server::new_async().await;
+    let server: MockServer = MockServer::start().await;
     let body: String = json!({
         "data": {
             "id": "123",
@@ -126,7 +117,7 @@ async fn find_decodes_null_values_and_keeps_unknown_keys() {
         "etag": "42"
     })
     .to_string();
-    expect_request(&mut server, "GET", "/emails/123", None, 200, &body).await;
+    let _mock = expect_request(&server, "GET", "/emails/123", None, 200, &body).await;
 
     let response: Response<WithEtag<EmailDocument>, EmailResponseMetadata> =
         mailerlite(&server).emails().get("123").await.unwrap();
@@ -156,8 +147,8 @@ async fn find_decodes_null_values_and_keeps_unknown_keys() {
 
 #[tokio::test]
 async fn find_rejects_bad_ids_without_a_request() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
+    let server: MockServer = MockServer::start().await;
+
     let mailerlite = mailerlite(&server);
 
     assert!(matches!(
@@ -171,14 +162,14 @@ async fn find_rejects_bad_ids_without_a_request() {
         ));
     }
 
-    assert_no_request(&mocks).await;
+    assert_no_request(&server).await;
 }
 
 #[tokio::test]
 async fn html_gets_the_html() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mock: Mock = expect_request(
-        &mut server,
+    let server: MockServer = MockServer::start().await;
+    let mock: MockGuard = expect_request(
+        &server,
         "GET",
         "/emails/123/html",
         None,
@@ -190,7 +181,7 @@ async fn html_gets_the_html() {
     let response: Response<WithEtag<EmailHtml>, EmailResponseMetadata> =
         mailerlite(&server).emails().html("123").await.unwrap();
 
-    mock.assert_async().await;
+    assert_eq!(mock.received_requests().await.len(), 1);
     assert_eq!(
         response.data.data.html,
         "<!doctype html><html><body><p>Hello</p></body></html>"
@@ -200,13 +191,17 @@ async fn html_gets_the_html() {
 
 #[tokio::test]
 async fn html_gives_an_api_error_for_a_503_with_an_html_body() {
-    let mut server: ServerGuard = Server::new_async().await;
-    server
-        .mock("GET", "/emails/123/html")
-        .with_status(503)
-        .with_header("Content-Type", "text/html")
-        .with_body("<html><body>Service Unavailable</body></html>")
-        .create_async()
+    let server: MockServer = MockServer::start().await;
+    let _mock = Mock::given(matchers::method("GET"))
+        .and(matchers::path("/emails/123/html"))
+        .and(|request: &wiremock::Request| request.url.query().is_none())
+        .respond_with(
+            ResponseTemplate::new(503)
+                .insert_header("Content-Type", "text/html")
+                .set_body_string("<html><body>Service Unavailable</body></html>"),
+        )
+        .expect(1)
+        .mount_as_scoped(&server)
         .await;
 
     let error: Error = mailerlite(&server).emails().html("123").await.unwrap_err();
@@ -227,8 +222,8 @@ async fn html_gives_an_api_error_for_a_503_with_an_html_body() {
 
 #[tokio::test]
 async fn html_rejects_bad_ids_without_a_request() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
+    let server: MockServer = MockServer::start().await;
+
     let mailerlite = mailerlite(&server);
 
     assert!(matches!(
@@ -242,14 +237,14 @@ async fn html_rejects_bad_ids_without_a_request() {
         ));
     }
 
-    assert_no_request(&mocks).await;
+    assert_no_request(&server).await;
 }
 
 #[tokio::test]
 async fn find_block_gets_the_block_and_its_placement() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mock: Mock = expect_request(
-        &mut server,
+    let server: MockServer = MockServer::start().await;
+    let mock: MockGuard = expect_request(
+        &server,
         "GET",
         "/emails/123/blocks/57",
         None,
@@ -264,7 +259,7 @@ async fn find_block_gets_the_block_and_its_placement() {
         .await
         .unwrap();
 
-    mock.assert_async().await;
+    assert_eq!(mock.received_requests().await.len(), 1);
     assert_eq!(response.data.etag, "43");
     assert_eq!(response.data.data.id, "57");
     assert_eq!(
@@ -283,8 +278,8 @@ async fn find_block_gets_the_block_and_its_placement() {
 
 #[tokio::test]
 async fn find_block_rejects_bad_ids_without_a_request() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
+    let server: MockServer = MockServer::start().await;
+
     let mailerlite = mailerlite(&server);
 
     assert!(matches!(
@@ -306,7 +301,7 @@ async fn find_block_rejects_bad_ids_without_a_request() {
         ));
     }
 
-    assert_no_request(&mocks).await;
+    assert_no_request(&server).await;
 }
 
 fn new_paragraph(placement: Option<Placement>) -> NewBlock {
@@ -318,9 +313,9 @@ fn new_paragraph(placement: Option<Placement>) -> NewBlock {
 
 #[tokio::test]
 async fn create_block_sends_the_block_and_the_etag() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mock: Mock = expect_request(
-        &mut server,
+    let server: MockServer = MockServer::start().await;
+    let mock: MockGuard = expect_request(
+        &server,
         "POST",
         "/emails/123/blocks",
         Some(json!({
@@ -340,8 +335,8 @@ async fn create_block_sends_the_block_and_the_etag() {
         .await
         .unwrap();
 
-    mock.assert_async().await;
-    assert_eq!(response.metadata.status, 201);
+    assert_eq!(mock.received_requests().await.len(), 1);
+    assert_eq!(response.metadata.http.status, 201);
     assert_eq!(response.data.etag, "43");
     assert_eq!(response.data.data.id, "58");
     let placement = response.data.data.placement.as_ref().unwrap();
@@ -351,9 +346,9 @@ async fn create_block_sends_the_block_and_the_etag() {
 
 #[tokio::test]
 async fn create_block_sends_no_placement_when_there_is_none() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mock: Mock = expect_request(
-        &mut server,
+    let server: MockServer = MockServer::start().await;
+    let mock: MockGuard = expect_request(
+        &server,
         "POST",
         "/emails/123/blocks",
         Some(json!({"type": "divider", "editor_content": {}, "etag": "42"})),
@@ -372,7 +367,7 @@ async fn create_block_sends_no_placement_when_there_is_none() {
         .await
         .unwrap();
 
-    mock.assert_async().await;
+    assert_eq!(mock.received_requests().await.len(), 1);
 }
 
 #[test]
@@ -397,8 +392,8 @@ fn placement_constructors_give_the_position_and_the_block_id() {
 
 #[tokio::test]
 async fn create_block_rejects_bad_ids_without_a_request() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
+    let server: MockServer = MockServer::start().await;
+
     let client = mailerlite(&server);
     let email = client.emails();
 
@@ -413,7 +408,7 @@ async fn create_block_rejects_bad_ids_without_a_request() {
         ));
     }
 
-    assert_no_request(&mocks).await;
+    assert_no_request(&server).await;
 }
 
 fn invalid_placement() -> String {
@@ -429,51 +424,42 @@ fn invalid_placement() -> String {
 }
 
 #[tokio::test]
-async fn create_block_sends_an_after_placement_without_a_block_id_and_gives_the_api_error() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mock: Mock = expect_request(
-        &mut server,
-        "POST",
-        "/emails/123/blocks",
-        Some(json!({
-            "type": "paragraph",
-            "editor_content": {"attrs": {"textAlign": "center"}, "content": [{"type": "text", "text": "Hi"}]},
-            "placement": {"position": "after"},
-            "etag": "42"
-        })),
-        422,
-        &invalid_placement(),
-    )
-    .await;
+async fn known_positions_cannot_bypass_typed_placement() {
+    let server = MockServer::start().await;
 
-    let after: Placement = Placement {
-        position: Position::After,
-        block_id: None,
-    };
-    let error: Error = mailerlite(&server)
-        .emails()
-        .create_block("123", "42", &new_paragraph(Some(after)))
-        .await
-        .unwrap_err();
-
-    mock.assert_async().await;
-    match error {
-        Error::Api(error) => {
-            assert_eq!(error.status(), 422);
-            assert!(error.validation_errors().contains_key("placement.block_id"));
-        }
-        other => panic!("expected Error::Api, got {other:?}"),
+    for position in ["start", "end", "before", "after"] {
+        let placement = Placement::Other {
+            position: position.into(),
+            block_id: None,
+        };
+        let result = mailerlite(&server)
+            .emails()
+            .create_block("123", "42", &new_paragraph(Some(placement.clone())))
+            .await;
+        assert!(
+            matches!(result, Err(Error::Serialize(_))),
+            "accepted {position}"
+        );
+        let result = mailerlite(&server)
+            .emails()
+            .move_block("123", "57", "42", &placement)
+            .await;
+        assert!(
+            matches!(result, Err(Error::Serialize(_))),
+            "accepted {position}"
+        );
     }
+    assert_no_request(&server).await;
 }
 
 #[tokio::test]
 async fn create_block_sends_the_placement_block_id_as_given() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mut mocks: Vec<Mock> = Vec::new();
+    let server: MockServer = MockServer::start().await;
+    let mut mocks: Vec<MockGuard> = Vec::new();
     for block_id in ["", "1/2"] {
         mocks.push(
             expect_request(
-                &mut server,
+                &server,
                 "POST",
                 "/emails/123/blocks",
                 Some(json!({
@@ -506,7 +492,7 @@ async fn create_block_sends_the_placement_block_id_as_given() {
     }
 
     for mock in mocks {
-        mock.assert_async().await;
+        assert_eq!(mock.received_requests().await.len(), 1);
     }
 }
 
@@ -516,9 +502,9 @@ fn hello_again() -> BlockContent {
 
 #[tokio::test]
 async fn update_block_patches_the_content() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mock: Mock = expect_request(
-        &mut server,
+    let server: MockServer = MockServer::start().await;
+    let mock: MockGuard = expect_request(
+        &server,
         "PATCH",
         "/emails/123/blocks/57",
         Some(json!({
@@ -536,7 +522,7 @@ async fn update_block_patches_the_content() {
         .await
         .unwrap();
 
-    mock.assert_async().await;
+    assert_eq!(mock.received_requests().await.len(), 1);
     assert_eq!(response.data.etag, "44");
     assert_eq!(
         serde_json::to_value(&response.data.data.content).unwrap()["editor_content"]["content"][0]
@@ -550,13 +536,16 @@ async fn update_block_patches_the_content() {
 
 #[tokio::test]
 async fn update_block_gives_the_version_conflict() {
-    let mut server: ServerGuard = Server::new_async().await;
-    server
-        .mock("PATCH", "/emails/123/blocks/57")
-        .with_status(409)
-        .with_header("Content-Type", "application/json")
-        .with_body(r#"{"message": "The email was changed by another request.", "code": "version_conflict", "etag": "50"}"#)
-        .create_async()
+    let server: MockServer = MockServer::start().await;
+    let response = ResponseTemplate::new(409)
+        .insert_header("Content-Type", "application/json")
+        .set_body_string(r#"{"message": "The email was changed by another request.", "code": "version_conflict", "etag": "50"}"#);
+    let _mock = Mock::given(matchers::method("PATCH"))
+        .and(matchers::path("/emails/123/blocks/57"))
+        .and(|request: &wiremock::Request| request.url.query().is_none())
+        .respond_with(response)
+        .expect(1)
+        .mount_as_scoped(&server)
         .await;
 
     let error: Error = mailerlite(&server)
@@ -582,13 +571,16 @@ async fn update_block_gives_the_version_conflict() {
 
 #[tokio::test]
 async fn update_block_gives_the_field_errors() {
-    let mut server: ServerGuard = Server::new_async().await;
-    server
-        .mock("PATCH", "/emails/123/blocks/57")
-        .with_status(422)
-        .with_header("Content-Type", "application/json")
-        .with_body(r#"{"message": "The editor content is invalid.", "errors": {"editor_content.content": ["The editor content is invalid."]}}"#)
-        .create_async()
+    let server: MockServer = MockServer::start().await;
+    let response = ResponseTemplate::new(422)
+        .insert_header("Content-Type", "application/json")
+        .set_body_string(r#"{"message": "The editor content is invalid.", "errors": {"editor_content.content": ["The editor content is invalid."]}}"#);
+    let _mock = Mock::given(matchers::method("PATCH"))
+        .and(matchers::path("/emails/123/blocks/57"))
+        .and(|request: &wiremock::Request| request.url.query().is_none())
+        .respond_with(response)
+        .expect(1)
+        .mount_as_scoped(&server)
         .await;
 
     let error: Error = mailerlite(&server)
@@ -612,8 +604,8 @@ async fn update_block_gives_the_field_errors() {
 
 #[tokio::test]
 async fn update_block_rejects_bad_ids_without_a_request() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
+    let server: MockServer = MockServer::start().await;
+
     let client = mailerlite(&server);
     let email = client.emails();
 
@@ -636,14 +628,14 @@ async fn update_block_rejects_bad_ids_without_a_request() {
         ));
     }
 
-    assert_no_request(&mocks).await;
+    assert_no_request(&server).await;
 }
 
 #[tokio::test]
 async fn delete_block_sends_the_etag_in_the_body() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mock: Mock = expect_request(
-        &mut server,
+    let server: MockServer = MockServer::start().await;
+    let mock: MockGuard = expect_request(
+        &server,
         "DELETE",
         "/emails/123/blocks/57",
         Some(json!({"etag": "44"})),
@@ -658,15 +650,15 @@ async fn delete_block_sends_the_etag_in_the_body() {
         .await
         .unwrap();
 
-    mock.assert_async().await;
-    assert_eq!(response.metadata.status, 200);
+    assert_eq!(mock.received_requests().await.len(), 1);
+    assert_eq!(response.metadata.http.status, 200);
     assert_eq!(response.data.etag, "45");
 }
 
 #[tokio::test]
 async fn delete_block_rejects_bad_ids_without_a_request() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
+    let server: MockServer = MockServer::start().await;
+
     let client = mailerlite(&server);
     let email = client.emails();
 
@@ -689,14 +681,14 @@ async fn delete_block_rejects_bad_ids_without_a_request() {
         ));
     }
 
-    assert_no_request(&mocks).await;
+    assert_no_request(&server).await;
 }
 
 #[tokio::test]
 async fn move_block_sends_the_placement_and_the_etag() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mock: Mock = expect_request(
-        &mut server,
+    let server: MockServer = MockServer::start().await;
+    let mock: MockGuard = expect_request(
+        &server,
         "POST",
         "/emails/123/blocks/57/move",
         Some(json!({"placement": {"position": "before", "block_id": "1"}, "etag": "45"})),
@@ -711,7 +703,7 @@ async fn move_block_sends_the_placement_and_the_etag() {
         .await
         .unwrap();
 
-    mock.assert_async().await;
+    assert_eq!(mock.received_requests().await.len(), 1);
     assert_eq!(response.data.etag, "46");
     let placement = response.data.data.placement.as_ref().unwrap();
     assert_eq!(placement.after, None);
@@ -720,8 +712,8 @@ async fn move_block_sends_the_placement_and_the_etag() {
 
 #[tokio::test]
 async fn move_block_rejects_bad_ids_without_a_request() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
+    let server: MockServer = MockServer::start().await;
+
     let client = mailerlite(&server);
     let email = client.emails();
 
@@ -744,29 +736,29 @@ async fn move_block_rejects_bad_ids_without_a_request() {
         ));
     }
 
-    assert_no_request(&mocks).await;
+    assert_no_request(&server).await;
 }
 
 #[tokio::test]
-async fn placement_at_start_or_end_sends_the_block_id_as_given() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let at_end: Mock = expect_request(
-        &mut server,
+async fn placement_at_start_or_end_omits_the_adjacent_block_id() {
+    let server: MockServer = MockServer::start().await;
+    let at_end: MockGuard = expect_request(
+        &server,
         "POST",
         "/emails/123/blocks/57/move",
-        Some(json!({"placement": {"position": "end", "block_id": ""}, "etag": "45"})),
+        Some(json!({"placement": {"position": "end"}, "etag": "45"})),
         200,
         &fixture("email_block_moved"),
     )
     .await;
-    let at_start: Mock = expect_request(
-        &mut server,
+    let at_start: MockGuard = expect_request(
+        &server,
         "POST",
         "/emails/123/blocks",
         Some(json!({
             "type": "paragraph",
             "editor_content": {"attrs": {"textAlign": "center"}, "content": [{"type": "text", "text": "Hi"}]},
-            "placement": {"position": "start", "block_id": "1/2"},
+            "placement": {"position": "start"},
             "etag": "42"
         })),
         201,
@@ -776,43 +768,34 @@ async fn placement_at_start_or_end_sends_the_block_id_as_given() {
     let client = mailerlite(&server);
     let email = client.emails();
 
-    let end: Placement = Placement {
-        position: Position::End,
-        block_id: Some(String::new()),
-    };
+    let end = Placement::End;
     email.move_block("123", "57", "45", &end).await.unwrap();
 
-    let start: Placement = Placement {
-        position: Position::Start,
-        block_id: Some("1/2".to_string()),
-    };
+    let start = Placement::Start;
     email
         .create_block("123", "42", &new_paragraph(Some(start)))
         .await
         .unwrap();
 
-    at_end.assert_async().await;
-    at_start.assert_async().await;
+    assert_eq!(at_end.received_requests().await.len(), 1);
+    assert_eq!(at_start.received_requests().await.len(), 1);
 }
 
 #[tokio::test]
 async fn move_block_sends_the_placement_as_given_and_gives_the_api_error() {
-    let mut server: ServerGuard = Server::new_async().await;
+    let server: MockServer = MockServer::start().await;
     let placements: [(Placement, serde_json::Value); 3] = [
         (
-            Placement {
-                position: Position::After,
-                block_id: None,
-            },
-            json!({"position": "after"}),
+            Placement::after(""),
+            json!({"position": "after", "block_id": ""}),
         ),
         (
             Placement::before("1/2"),
             json!({"position": "before", "block_id": "1/2"}),
         ),
         (
-            Placement {
-                position: Position::Other("next_to".to_string()),
+            Placement::Other {
+                position: "next_to".to_string(),
                 block_id: Some("1/2".to_string()),
             },
             json!({"position": "next_to", "block_id": "1/2"}),
@@ -822,8 +805,8 @@ async fn move_block_sends_the_placement_as_given_and_gives_the_api_error() {
     let email = client.emails();
 
     for (placement, sent) in placements {
-        let mock: Mock = expect_request(
-            &mut server,
+        let mock: MockGuard = expect_request(
+            &server,
             "POST",
             "/emails/123/blocks/57/move",
             Some(json!({"placement": sent, "etag": "45"})),
@@ -834,20 +817,20 @@ async fn move_block_sends_the_placement_as_given_and_gives_the_api_error() {
 
         let result = email.move_block("123", "57", "45", &placement).await;
 
-        mock.assert_async().await;
+        assert_eq!(mock.received_requests().await.len(), 1);
         assert!(
             matches!(&result, Err(Error::Api(error)) if error.status() == 422),
             "expected Error::Api for {placement:?}, got {result:?}"
         );
-        mock.remove_async().await;
+        drop(mock);
     }
 }
 
 #[tokio::test]
 async fn placement_with_an_unknown_position_sends_its_block_id() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mock: Mock = expect_request(
-        &mut server,
+    let server: MockServer = MockServer::start().await;
+    let mock: MockGuard = expect_request(
+        &server,
         "POST",
         "/emails/123/blocks/57/move",
         Some(json!({"placement": {"position": "next_to", "block_id": "1"}, "etag": "45"})),
@@ -856,8 +839,8 @@ async fn placement_with_an_unknown_position_sends_its_block_id() {
     )
     .await;
 
-    let other: Placement = Placement {
-        position: Position::Other("next_to".to_string()),
+    let other: Placement = Placement::Other {
+        position: "next_to".to_string(),
         block_id: Some("1".to_string()),
     };
     mailerlite(&server)
@@ -866,14 +849,14 @@ async fn placement_with_an_unknown_position_sends_its_block_id() {
         .await
         .unwrap();
 
-    mock.assert_async().await;
+    assert_eq!(mock.received_requests().await.len(), 1);
 }
 
 #[tokio::test]
 async fn validate_block_sends_the_block_without_an_etag() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mock: Mock = expect_request(
-        &mut server,
+    let server: MockServer = MockServer::start().await;
+    let mock: MockGuard = expect_request(
+        &server,
         "POST",
         "/emails/blocks/validate",
         Some(json!({"type": "divider", "editor_content": {}})),
@@ -892,7 +875,7 @@ async fn validate_block_sends_the_block_without_an_etag() {
         .await
         .unwrap();
 
-    mock.assert_async().await;
+    assert_eq!(mock.received_requests().await.len(), 1);
     assert!(response.data.valid);
     assert!(response.data.errors.is_empty());
     assert_eq!(response.data.schema.version.as_deref(), Some("2.73.2"));
@@ -902,9 +885,9 @@ async fn validate_block_sends_the_block_without_an_etag() {
 
 #[tokio::test]
 async fn validate_block_gives_the_errors_of_an_invalid_block() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mock: Mock = expect_request(
-        &mut server,
+    let server: MockServer = MockServer::start().await;
+    let mock: MockGuard = expect_request(
+        &server,
         "POST",
         "/emails/blocks/validate",
         Some(json!({"type": "countdown", "editor_content": {}})),
@@ -926,7 +909,7 @@ async fn validate_block_gives_the_errors_of_an_invalid_block() {
         .await
         .unwrap();
 
-    mock.assert_async().await;
+    assert_eq!(mock.received_requests().await.len(), 1);
     assert!(!response.data.valid);
     assert_eq!(
         response.data.errors["type"],
@@ -936,9 +919,9 @@ async fn validate_block_gives_the_errors_of_an_invalid_block() {
 
 #[tokio::test]
 async fn validate_block_accepts_an_empty_array_for_the_errors() {
-    let mut server: ServerGuard = Server::new_async().await;
-    expect_request(
-        &mut server,
+    let server: MockServer = MockServer::start().await;
+    let _mock = expect_request(
+        &server,
         "POST",
         "/emails/blocks/validate",
         Some(json!({"type": "divider", "editor_content": {}})),
@@ -963,9 +946,9 @@ async fn validate_block_accepts_an_empty_array_for_the_errors() {
 
 #[tokio::test]
 async fn validate_block_sends_a_bad_placement_and_gives_the_errors() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mock: Mock = expect_request(
-        &mut server,
+    let server: MockServer = MockServer::start().await;
+    let mock: MockGuard = expect_request(
+        &server,
         "POST",
         "/emails/blocks/validate",
         Some(json!({
@@ -985,7 +968,7 @@ async fn validate_block_sends_a_bad_placement_and_gives_the_errors() {
         .await
         .unwrap();
 
-    mock.assert_async().await;
+    assert_eq!(mock.received_requests().await.len(), 1);
     assert!(!response.data.valid);
 }
 
@@ -1050,11 +1033,11 @@ fn settings_update_json() -> serde_json::Value {
 
 #[tokio::test]
 async fn update_settings_sends_only_the_keys_that_are_set() {
-    let mut server: ServerGuard = Server::new_async().await;
+    let server: MockServer = MockServer::start().await;
     let mut body: serde_json::Value = settings_update_json();
     body["etag"] = json!("46");
-    let mock: Mock = expect_request(
-        &mut server,
+    let mock: MockGuard = expect_request(
+        &server,
         "PATCH",
         "/emails/123/settings",
         Some(body),
@@ -1069,7 +1052,7 @@ async fn update_settings_sends_only_the_keys_that_are_set() {
         .await
         .unwrap();
 
-    mock.assert_async().await;
+    assert_eq!(mock.received_requests().await.len(), 1);
     assert_eq!(response.data.etag, "47");
     let brand = response.data.data.brand.as_ref().unwrap();
     assert_eq!(brand.mode, Some(BrandMode::Custom));
@@ -1081,9 +1064,9 @@ async fn update_settings_sends_only_the_keys_that_are_set() {
 
 #[tokio::test]
 async fn update_settings_sends_an_empty_object_for_empty_settings() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mock: Mock = expect_request(
-        &mut server,
+    let server: MockServer = MockServer::start().await;
+    let mock: MockGuard = expect_request(
+        &server,
         "PATCH",
         "/emails/123/settings",
         Some(json!({"etag": "46"})),
@@ -1098,13 +1081,13 @@ async fn update_settings_sends_an_empty_object_for_empty_settings() {
         .await
         .unwrap();
 
-    mock.assert_async().await;
+    assert_eq!(mock.received_requests().await.len(), 1);
 }
 
 #[tokio::test]
 async fn update_settings_checks_the_input_without_a_request() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
+    let server: MockServer = MockServer::start().await;
+
     let client = mailerlite(&server);
     let email = client.emails();
 
@@ -1125,14 +1108,14 @@ async fn update_settings_checks_the_input_without_a_request() {
         ));
     }
 
-    assert_no_request(&mocks).await;
+    assert_no_request(&server).await;
 }
 
 #[tokio::test]
 async fn validate_settings_sends_the_settings_without_an_etag() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mock: Mock = expect_request(
-        &mut server,
+    let server: MockServer = MockServer::start().await;
+    let mock: MockGuard = expect_request(
+        &server,
         "POST",
         "/emails/123/settings/validate",
         Some(settings_update_json()),
@@ -1147,7 +1130,7 @@ async fn validate_settings_sends_the_settings_without_an_etag() {
         .await
         .unwrap();
 
-    mock.assert_async().await;
+    assert_eq!(mock.received_requests().await.len(), 1);
     assert!(!response.data.valid);
     assert_eq!(
         response.data.errors["layout.width"],
@@ -1162,11 +1145,11 @@ async fn validate_settings_sends_the_settings_without_an_etag() {
 
 #[tokio::test]
 async fn validate_settings_sends_an_etag_key_of_the_extra_map() {
-    let mut server: ServerGuard = Server::new_async().await;
+    let server: MockServer = MockServer::start().await;
     let mut sent: serde_json::Value = settings_update_json();
     sent["etag"] = json!("1");
-    let mock: Mock = expect_request(
-        &mut server,
+    let mock: MockGuard = expect_request(
+        &server,
         "POST",
         "/emails/123/settings/validate",
         Some(sent),
@@ -1183,13 +1166,13 @@ async fn validate_settings_sends_an_etag_key_of_the_extra_map() {
         .await
         .unwrap();
 
-    mock.assert_async().await;
+    assert_eq!(mock.received_requests().await.len(), 1);
 }
 
 #[tokio::test]
 async fn validate_settings_rejects_bad_ids_without_a_request() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
+    let server: MockServer = MockServer::start().await;
+
     let client = mailerlite(&server);
     let email = client.emails();
 
@@ -1204,14 +1187,14 @@ async fn validate_settings_rejects_bad_ids_without_a_request() {
         ));
     }
 
-    assert_no_request(&mocks).await;
+    assert_no_request(&server).await;
 }
 
 #[tokio::test]
 async fn create_template_sends_the_name() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mock: Mock = expect_request(
-        &mut server,
+    let server: MockServer = MockServer::start().await;
+    let mock: MockGuard = expect_request(
+        &server,
         "POST",
         "/emails/123/templates",
         Some(json!({"name": "Newsletter"})),
@@ -1226,8 +1209,8 @@ async fn create_template_sends_the_name() {
         .await
         .unwrap();
 
-    mock.assert_async().await;
-    assert_eq!(response.metadata.status, 201);
+    assert_eq!(mock.received_requests().await.len(), 1);
+    assert_eq!(response.metadata.http.status, 201);
     assert_eq!(response.data.id, "789");
     assert_eq!(response.data.name, "Newsletter");
     assert_eq!(response.data.template_type, EmailTemplateType::Email);
@@ -1236,8 +1219,8 @@ async fn create_template_sends_the_name() {
 
 #[tokio::test]
 async fn create_template_rejects_bad_ids_without_a_request() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
+    let server: MockServer = MockServer::start().await;
+
     let client = mailerlite(&server);
     let email = client.emails();
 
@@ -1252,14 +1235,14 @@ async fn create_template_rejects_bad_ids_without_a_request() {
         ));
     }
 
-    assert_no_request(&mocks).await;
+    assert_no_request(&server).await;
 }
 
 #[tokio::test]
 async fn versions_lists_the_versions_with_the_page_options() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mock: Mock = expect_request(
-        &mut server,
+    let server: MockServer = MockServer::start().await;
+    let mock: MockGuard = expect_request(
+        &server,
         "GET",
         "/emails/123/versions?page=2&limit=10",
         None,
@@ -1278,7 +1261,7 @@ async fn versions_lists_the_versions_with_the_page_options() {
         .await
         .unwrap();
 
-    mock.assert_async().await;
+    assert_eq!(mock.received_requests().await.len(), 1);
     assert_eq!(response.data.data.len(), 2);
     assert_eq!(response.data.data[0].id, "902");
     assert_eq!(response.data.data[0].created_at, "2026-10-28 12:05:00");
@@ -1293,9 +1276,9 @@ async fn versions_lists_the_versions_with_the_page_options() {
 
 #[tokio::test]
 async fn versions_sends_no_query_without_options() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mock: Mock = expect_request(
-        &mut server,
+    let server: MockServer = MockServer::start().await;
+    let mock: MockGuard = expect_request(
+        &server,
         "GET",
         "/emails/123/versions",
         None,
@@ -1310,13 +1293,13 @@ async fn versions_sends_no_query_without_options() {
         .await
         .unwrap();
 
-    mock.assert_async().await;
+    assert_eq!(mock.received_requests().await.len(), 1);
 }
 
 #[tokio::test]
 async fn versions_rejects_bad_ids_without_a_request() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
+    let server: MockServer = MockServer::start().await;
+
     let client = mailerlite(&server);
     let email = client.emails();
 
@@ -1331,15 +1314,15 @@ async fn versions_rejects_bad_ids_without_a_request() {
         ));
     }
 
-    assert_no_request(&mocks).await;
+    assert_no_request(&server).await;
 }
 
 #[tokio::test]
 async fn create_version_sends_no_body_and_gives_the_status_code() {
     for status in [201, 200] {
-        let mut server: ServerGuard = Server::new_async().await;
-        let mock: Mock = expect_request(
-            &mut server,
+        let server: MockServer = MockServer::start().await;
+        let mock: MockGuard = expect_request(
+            &server,
             "POST",
             "/emails/123/versions",
             None,
@@ -1354,8 +1337,8 @@ async fn create_version_sends_no_body_and_gives_the_status_code() {
             .await
             .unwrap();
 
-        mock.assert_async().await;
-        assert_eq!(response.metadata.status.as_u16() as usize, status);
+        assert_eq!(mock.received_requests().await.len(), 1);
+        assert_eq!(response.metadata.http.status.as_u16(), status);
         assert_eq!(response.data.id, "903");
         assert!(response.data.current);
     }
@@ -1363,8 +1346,8 @@ async fn create_version_sends_no_body_and_gives_the_status_code() {
 
 #[tokio::test]
 async fn create_version_rejects_bad_ids_without_a_request() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
+    let server: MockServer = MockServer::start().await;
+
     let client = mailerlite(&server);
     let email = client.emails();
 
@@ -1379,14 +1362,14 @@ async fn create_version_rejects_bad_ids_without_a_request() {
         ));
     }
 
-    assert_no_request(&mocks).await;
+    assert_no_request(&server).await;
 }
 
 #[tokio::test]
 async fn restore_version_sends_the_etag_and_gives_the_email() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mock: Mock = expect_request(
-        &mut server,
+    let server: MockServer = MockServer::start().await;
+    let mock: MockGuard = expect_request(
+        &server,
         "POST",
         "/emails/123/versions/901/restore",
         Some(json!({"etag": "41"})),
@@ -1401,7 +1384,7 @@ async fn restore_version_sends_the_etag_and_gives_the_email() {
         .await
         .unwrap();
 
-    mock.assert_async().await;
+    assert_eq!(mock.received_requests().await.len(), 1);
     assert_eq!(response.data.etag, "42");
     assert_eq!(response.data.data.id, "123");
     assert_eq!(response.data.data.blocks.len(), 2);
@@ -1409,8 +1392,8 @@ async fn restore_version_sends_the_etag_and_gives_the_email() {
 
 #[tokio::test]
 async fn restore_version_rejects_bad_ids_without_a_request() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
+    let server: MockServer = MockServer::start().await;
+
     let client = mailerlite(&server);
     let email = client.emails();
 
@@ -1433,12 +1416,12 @@ async fn restore_version_rejects_bad_ids_without_a_request() {
         ));
     }
 
-    assert_no_request(&mocks).await;
+    assert_no_request(&server).await;
 }
 
 #[tokio::test]
 async fn the_6_writes_with_an_etag_send_an_empty_etag_and_give_the_api_error() {
-    let mut server: ServerGuard = Server::new_async().await;
+    let server: MockServer = MockServer::start().await;
     let writes: [(&str, &str); 6] = [
         ("POST", "/emails/123/blocks"),
         ("PATCH", "/emails/123/blocks/57"),
@@ -1447,19 +1430,21 @@ async fn the_6_writes_with_an_etag_send_an_empty_etag_and_give_the_api_error() {
         ("PATCH", "/emails/123/settings"),
         ("POST", "/emails/123/versions/901/restore"),
     ];
-    let mut mocks: Vec<Mock> = Vec::new();
+    let mut mocks: Vec<MockGuard> = Vec::new();
+    let response = ResponseTemplate::new(422).set_body_json(json!({
+        "message": "The etag field is required.",
+        "errors": {"etag": ["The etag field is required."]}
+    }));
     for (method, path) in writes {
-        mocks.push(
-            server
-                .mock(method, path)
-                .match_body(Matcher::PartialJson(json!({"etag": ""})))
-                .with_status(422)
-                .with_header("Content-Type", "application/json")
-                .with_body(r#"{"message": "The etag field is required.", "errors": {"etag": ["The etag field is required."]}}"#)
-                .expect(1)
-                .create_async()
-                .await,
-        );
+        let mock = Mock::given(matchers::method(method))
+            .and(matchers::path(path))
+            .and(|request: &wiremock::Request| request.url.query().is_none())
+            .and(matchers::body_partial_json(json!({"etag": ""})))
+            .respond_with(response.clone())
+            .expect(1)
+            .mount_as_scoped(&server)
+            .await;
+        mocks.push(mock);
     }
     let client = mailerlite(&server);
     let email = client.emails();
@@ -1486,7 +1471,7 @@ async fn the_6_writes_with_an_etag_send_an_empty_etag_and_give_the_api_error() {
     ];
 
     for mock in mocks {
-        mock.assert_async().await;
+        assert_eq!(mock.received_requests().await.len(), 1);
     }
     for result in results {
         match result {
@@ -1523,7 +1508,7 @@ async fn send_all_writes(email: &Emails<'_>) -> Vec<Result<(), Error>> {
     ]
 }
 
-async fn mock_all_writes(server: &mut ServerGuard, key: Matcher) -> Vec<Mock> {
+async fn mock_all_writes(server: &MockServer, key: Option<&str>) -> Vec<MockGuard> {
     let writes: [(&str, &str, &str); 8] = [
         ("POST", "/emails/123/blocks", "email_block_created"),
         ("PATCH", "/emails/123/blocks/57", "email_block_updated"),
@@ -1534,22 +1519,34 @@ async fn mock_all_writes(server: &mut ServerGuard, key: Matcher) -> Vec<Mock> {
         ("POST", "/emails/123/versions", "email_version"),
         ("POST", "/emails/123/versions/901/restore", "email"),
     ];
-    let mut mocks: Vec<Mock> = Vec::new();
+    let mut mocks: Vec<MockGuard> = Vec::new();
     for (method, path, response) in writes {
         mocks.push(
-            server
-                .mock(method, path)
-                .match_header("Idempotency-Key", key.clone())
-                .with_status(
-                    if path.ends_with("/blocks") || path.ends_with("/templates") {
-                        201
-                    } else {
-                        200
-                    },
+            Mock::given(matchers::method(method))
+                .and(matchers::path(path))
+                .and(|request: &wiremock::Request| request.url.query().is_none())
+                .and({
+                    let expected = key.map(str::to_owned);
+                    move |request: &wiremock::Request| {
+                        request
+                            .headers
+                            .get("Idempotency-Key")
+                            .and_then(|value| value.to_str().ok())
+                            == expected.as_deref()
+                    }
+                })
+                .respond_with(
+                    ResponseTemplate::new(
+                        if path.ends_with("/blocks") || path.ends_with("/templates") {
+                            201
+                        } else {
+                            200
+                        },
+                    )
+                    .set_body_string(fixture(response)),
                 )
-                .with_body(fixture(response))
                 .expect(1)
-                .create_async()
+                .mount_as_scoped(server)
                 .await,
         );
     }
@@ -1559,8 +1556,8 @@ async fn mock_all_writes(server: &mut ServerGuard, key: Matcher) -> Vec<Mock> {
 
 #[tokio::test]
 async fn the_8_writes_send_the_idempotency_key() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mocks: Vec<Mock> = mock_all_writes(&mut server, Matcher::Exact("key-1".to_string())).await;
+    let server: MockServer = MockServer::start().await;
+    let mocks: Vec<MockGuard> = mock_all_writes(&server, Some("key-1")).await;
     let client = mailerlite(&server);
     let email: Emails = client.emails().with_idempotency_key("key-1");
 
@@ -1569,14 +1566,14 @@ async fn the_8_writes_send_the_idempotency_key() {
     }
 
     for mock in mocks {
-        mock.assert_async().await;
+        assert_eq!(mock.received_requests().await.len(), 1);
     }
 }
 
 #[tokio::test]
 async fn the_8_writes_send_no_idempotency_key_without_a_key() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mocks: Vec<Mock> = mock_all_writes(&mut server, Matcher::Missing).await;
+    let server: MockServer = MockServer::start().await;
+    let mocks: Vec<MockGuard> = mock_all_writes(&server, None).await;
     let client = mailerlite(&server);
     let email: Emails = client.emails();
 
@@ -1585,13 +1582,13 @@ async fn the_8_writes_send_no_idempotency_key_without_a_key() {
     }
 
     for mock in mocks {
-        mock.assert_async().await;
+        assert_eq!(mock.received_requests().await.len(), 1);
     }
 }
 
 #[tokio::test]
 async fn reads_and_validations_ignore_the_idempotency_key() {
-    let mut server: ServerGuard = Server::new_async().await;
+    let server: MockServer = MockServer::start().await;
     let reads: [(&str, &str, &str); 6] = [
         ("GET", "/emails/123", "email"),
         ("GET", "/emails/123/html", "email_html"),
@@ -1608,16 +1605,16 @@ async fn reads_and_validations_ignore_the_idempotency_key() {
             "email_settings_validation",
         ),
     ];
-    let mut mocks: Vec<Mock> = Vec::new();
+    let mut mocks: Vec<MockGuard> = Vec::new();
     for (method, path, response) in reads {
         mocks.push(
-            server
-                .mock(method, path)
-                .match_header("Idempotency-Key", Matcher::Missing)
-                .with_status(200)
-                .with_body(fixture(response))
+            Mock::given(matchers::method(method))
+                .and(matchers::path(path))
+                .and(|request: &wiremock::Request| request.url.query().is_none())
+                .and(|request: &wiremock::Request| !request.headers.contains_key("Idempotency-Key"))
+                .respond_with(ResponseTemplate::new(200).set_body_string(fixture(response)))
                 .expect(1)
-                .create_async()
+                .mount_as_scoped(&server)
                 .await,
         );
     }
@@ -1635,13 +1632,13 @@ async fn reads_and_validations_ignore_the_idempotency_key() {
         .unwrap();
 
     for mock in mocks {
-        mock.assert_async().await;
+        assert_eq!(mock.received_requests().await.len(), 1);
     }
 }
 
 #[tokio::test]
 async fn the_8_writes_send_the_idempotency_key_as_given() {
-    let mut server: ServerGuard = Server::new_async().await;
+    let server: MockServer = MockServer::start().await;
     let too_long: String = "k".repeat(256);
 
     // HTTP removes a space at the start or the end of a header value, so the API gets "key".
@@ -1652,8 +1649,7 @@ async fn the_8_writes_send_the_idempotency_key_as_given() {
         (" key", "key"),
         ("key ", "key"),
     ] {
-        let mocks: Vec<Mock> =
-            mock_all_writes(&mut server, Matcher::Exact(received.to_string())).await;
+        let mocks: Vec<MockGuard> = mock_all_writes(&server, Some(received)).await;
         let client = mailerlite(&server);
         let email: Emails = client.emails().with_idempotency_key(key);
 
@@ -1664,16 +1660,15 @@ async fn the_8_writes_send_the_idempotency_key_as_given() {
             );
         }
         for mock in mocks {
-            mock.assert_async().await;
-            mock.remove_async().await;
+            assert_eq!(mock.received_requests().await.len(), 1);
+            drop(mock);
         }
     }
 }
 
 #[tokio::test]
 async fn a_key_that_http_cannot_carry_stops_the_writes_without_a_request() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
+    let server: MockServer = MockServer::start().await;
 
     for key in ["key\n", "key\r", "key\x7f"] {
         let client = mailerlite(&server);
@@ -1686,19 +1681,20 @@ async fn a_key_that_http_cannot_carry_stops_the_writes_without_a_request() {
         }
     }
 
-    assert_no_request(&mocks).await;
+    assert_no_request(&server).await;
 }
 
 #[tokio::test]
 async fn a_255_character_key_is_sent() {
-    let mut server: ServerGuard = Server::new_async().await;
+    let server: MockServer = MockServer::start().await;
     let key: String = "k".repeat(255);
-    let mock: Mock = server
-        .mock("POST", "/emails/123/versions")
-        .match_header("Idempotency-Key", key.as_str())
-        .with_status(201)
-        .with_body(fixture("email_version"))
-        .create_async()
+    let mock: MockGuard = Mock::given(matchers::method("POST"))
+        .and(matchers::path("/emails/123/versions"))
+        .and(|request: &wiremock::Request| request.url.query().is_none())
+        .and(matchers::header("Idempotency-Key", key.as_str()))
+        .respond_with(ResponseTemplate::new(201).set_body_string(fixture("email_version")))
+        .expect(1)
+        .mount_as_scoped(&server)
         .await;
 
     mailerlite(&server)
@@ -1708,19 +1704,23 @@ async fn a_255_character_key_is_sent() {
         .await
         .unwrap();
 
-    mock.assert_async().await;
+    assert_eq!(mock.received_requests().await.len(), 1);
 }
 
 #[tokio::test]
 async fn a_replayed_write_has_the_replay_flag() {
-    let mut server: ServerGuard = Server::new_async().await;
-    server
-        .mock("POST", "/emails/123/versions")
-        .match_header("Idempotency-Key", "key-1")
-        .with_status(201)
-        .with_header("Idempotent-Replayed", "True")
-        .with_body(fixture("email_version"))
-        .create_async()
+    let server: MockServer = MockServer::start().await;
+    let _mock = Mock::given(matchers::method("POST"))
+        .and(matchers::path("/emails/123/versions"))
+        .and(|request: &wiremock::Request| request.url.query().is_none())
+        .and(matchers::header("Idempotency-Key", "key-1"))
+        .respond_with(
+            ResponseTemplate::new(201)
+                .insert_header("Idempotent-Replayed", "True")
+                .set_body_string(fixture("email_version")),
+        )
+        .expect(1)
+        .mount_as_scoped(&server)
         .await;
 
     let response: Response<EmailVersion, EmailResponseMetadata> = mailerlite(&server)
@@ -1731,14 +1731,14 @@ async fn a_replayed_write_has_the_replay_flag() {
         .unwrap();
 
     assert!(response.metadata.is_idempotent_replay());
-    assert_eq!(response.metadata.status, 201);
+    assert_eq!(response.metadata.http.status, 201);
 }
 
 #[tokio::test]
 async fn validate_block_decodes_a_null_schema() {
-    let mut server: ServerGuard = Server::new_async().await;
-    expect_request(
-        &mut server,
+    let server: MockServer = MockServer::start().await;
+    let _mock = expect_request(
+        &server,
         "POST",
         "/emails/blocks/validate",
         Some(json!({"type": "divider", "editor_content": {}})),
@@ -1768,8 +1768,8 @@ async fn validate_block_decodes_a_null_schema() {
 
 #[tokio::test]
 async fn settings_with_an_extra_key_that_is_also_a_field_send_no_request() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mocks: Vec<Mock> = expect_no_request(&mut server).await;
+    let server: MockServer = MockServer::start().await;
+
     let client = mailerlite(&server);
     let email = client.emails();
 
@@ -1824,52 +1824,47 @@ async fn settings_with_an_extra_key_that_is_also_a_field_send_no_request() {
         Err(Error::Config(_))
     ));
 
-    assert_no_request(&mocks).await;
+    assert_no_request(&server).await;
 }
 
 #[tokio::test]
 async fn update_block_by_id_leaves_stored_kind_validation_to_the_server() {
-    let mut server = Server::new_async().await;
-    let get = server
-        .mock("GET", "/emails/123/blocks/57")
+    let server = MockServer::start().await;
+    let get = Mock::given(matchers::method("GET"))
+        .and(matchers::path("/emails/123/blocks/57"))
+        .and(|request: &wiremock::Request| request.url.query().is_none())
+        .respond_with(ResponseTemplate::new(200))
         .expect(0)
-        .create_async()
+        .mount_as_scoped(&server)
         .await;
     let patch = expect_request(
-        &mut server, "PATCH", "/emails/123/blocks/57",
+        &server, "PATCH", "/emails/123/blocks/57",
         Some(json!({"editor_content":{"content":[{"type":"text","text":"Wrong kind"}]},"etag":"43"})),
         422,
         r#"{"message":"Invalid content for the stored block type.","errors":{"editor_content":["Invalid content for the stored block type."]}}"#,
-    ).await;
+    )
+        .await;
     let error = mailerlite(&server)
         .emails()
         .update_block("123", "57", "43", &BlockContent::paragraph("Wrong kind"))
         .await
         .unwrap_err();
     assert!(matches!(&error, Error::Api(error) if error.status().as_u16() == 422));
-    get.assert_async().await;
-    patch.assert_async().await;
+    assert!(get.received_requests().await.is_empty());
+    assert_eq!(patch.received_requests().await.len(), 1);
 }
 
 #[tokio::test]
 async fn placeholder_images_decode_on_reads_and_writes() {
-    let mut server = Server::new_async().await;
+    let server = MockServer::start().await;
     let image = json!({"id":"57","type":"image","editor_content":{
         "attrs":{"src":null,"url":null,"alt":null,"caption":null,"linkType":null,"width":300.5,"height":150.25},
         "content":null,"mobile":null,"visibility":null
     }});
     let body = json!({"data":image,"etag":"43"}).to_string();
-    let get = expect_request(
-        &mut server,
-        "GET",
-        "/emails/123/blocks/57",
-        None,
-        200,
-        &body,
-    )
-    .await;
+    let get = expect_request(&server, "GET", "/emails/123/blocks/57", None, 200, &body).await;
     let create = expect_request(
-        &mut server,
+        &server,
         "POST",
         "/emails/123/blocks",
         Some(json!({"type":"image","editor_content":{},"etag":"42"})),
@@ -1878,7 +1873,7 @@ async fn placeholder_images_decode_on_reads_and_writes() {
     )
     .await;
     let update = expect_request(
-        &mut server,
+        &server,
         "PATCH",
         "/emails/123/blocks/57",
         Some(json!({"editor_content":image["editor_content"],"etag":"43"})),
@@ -1917,9 +1912,9 @@ async fn placeholder_images_decode_on_reads_and_writes() {
         assert_eq!(serde_json::to_value(attrs.width).unwrap(), json!(300.5));
         assert_eq!(serde_json::to_value(attrs.height).unwrap(), json!(150.25));
     }
-    get.assert_async().await;
-    create.assert_async().await;
-    update.assert_async().await;
+    assert_eq!(get.received_requests().await.len(), 1);
+    assert_eq!(create.received_requests().await.len(), 1);
+    assert_eq!(update.received_requests().await.len(), 1);
 
     let mut document: serde_json::Value = serde_json::from_str(&fixture("email")).unwrap();
     document["data"]["blocks"] = json!([
@@ -1928,7 +1923,7 @@ async fn placeholder_images_decode_on_reads_and_writes() {
         {"id":"3","type":"paragraph","editor_content":null,"children":null}
     ]);
     let get = expect_request(
-        &mut server,
+        &server,
         "GET",
         "/emails/123",
         None,
@@ -1943,12 +1938,12 @@ async fn placeholder_images_decode_on_reads_and_writes() {
         BlockContent::Null(BlockType::Paragraph)
     );
     assert!(response.data.data.blocks[2].children.is_empty());
-    get.assert_async().await;
+    assert_eq!(get.received_requests().await.len(), 1);
 }
 
 #[tokio::test]
 async fn decoding_errors_identify_the_nested_block_and_attribute() {
-    let mut server = Server::new_async().await;
+    let server = MockServer::start().await;
     let mut document: serde_json::Value = serde_json::from_str(&fixture("email")).unwrap();
     document["data"]["blocks"] = json!([
         {"id":"1","type":"paragraph","editor_content":{}},
@@ -1956,13 +1951,17 @@ async fn decoding_errors_identify_the_nested_block_and_attribute() {
             {"id":"bad-image-57","type":"image","editor_content":{"attrs":{"width":"private-width-marker"}}}
         ]}
     ]);
-    let mock = server
-        .mock("GET", "/emails/123")
-        .with_status(200)
-        .with_header("content-type", "application/json")
-        .with_header("x-request-id", "decode-review")
-        .with_body(document.to_string())
-        .create_async()
+    let mock = Mock::given(matchers::method("GET"))
+        .and(matchers::path("/emails/123"))
+        .and(|request: &wiremock::Request| request.url.query().is_none())
+        .respond_with(
+            ResponseTemplate::new(200)
+                .insert_header("content-type", "application/json")
+                .insert_header("x-request-id", "decode-review")
+                .set_body_string(document.to_string()),
+        )
+        .expect(1)
+        .mount_as_scoped(&server)
         .await;
     let error = mailerlite(&server).emails().get("123").await.unwrap_err();
     let Error::Decode(detail) = &error else {
@@ -1989,17 +1988,17 @@ async fn decoding_errors_identify_the_nested_block_and_attribute() {
         assert!(!redacted.contains("private-width-marker"));
         assert!(!redacted.contains("bad-image-57"));
     }
-    mock.assert_async().await;
+    assert_eq!(mock.received_requests().await.len(), 1);
 }
 
 #[tokio::test]
 async fn decoding_errors_keep_inline_node_and_mark_paths() {
-    let mut server = Server::new_async().await;
+    let server = MockServer::start().await;
     let body = json!({"data":{"id":"57","type":"paragraph","editor_content":{"content":[
         {"type":"text","text":"Hello","marks":[{"type":"link","attrs":{"href":false}}]}
     ]}},"etag":"43"});
     let mock = expect_request(
-        &mut server,
+        &server,
         "GET",
         "/emails/123/blocks/57",
         None,
@@ -2028,18 +2027,18 @@ async fn decoding_errors_keep_inline_node_and_mark_paths() {
             detail.detail()
         );
     }
-    mock.assert_async().await;
+    assert_eq!(mock.received_requests().await.len(), 1);
 }
 
 #[tokio::test]
 async fn update_block_accepts_unknown_content_by_id() {
-    let mut server = Server::new_async().await;
+    let server = MockServer::start().await;
     let content = BlockContent::Other {
         kind: "future_block".into(),
         fields: serde_json::from_value(json!({"value":2})).unwrap(),
     };
     let mock = expect_request(
-        &mut server,
+        &server,
         "PATCH",
         "/emails/123/blocks/57",
         Some(json!({"editor_content":{"value":2},"etag":"43"})),
@@ -2054,5 +2053,5 @@ async fn update_block_accepts_unknown_content_by_id() {
         .await
         .unwrap();
     assert_eq!(response.data.data.content, content);
-    mock.assert_async().await;
+    assert_eq!(mock.received_requests().await.len(), 1);
 }

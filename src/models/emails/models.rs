@@ -8,6 +8,9 @@ use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{Map, Value};
 use std::collections::BTreeMap;
 /// HTTP metadata for the simple-editor endpoints.
+///
+/// Access standard headers explicitly through [`Self::http`], for example
+/// `response.metadata.http.status`. Replay information belongs to this metadata type.
 #[derive(Debug, Clone)]
 pub struct EmailResponseMetadata {
     /// Standard status, rate-limit, and correlation metadata.
@@ -20,14 +23,6 @@ impl EmailResponseMetadata {
     /// Whether this response replayed a previously completed write.
     pub fn is_idempotent_replay(&self) -> bool {
         self.idempotent_replayed
-    }
-}
-
-impl std::ops::Deref for EmailResponseMetadata {
-    type Target = crate::ResponseMetadata;
-
-    fn deref(&self) -> &Self::Target {
-        &self.http
     }
 }
 

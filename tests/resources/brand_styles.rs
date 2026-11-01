@@ -3,13 +3,13 @@
 
 use crate::editor_support::{expect_request, fixture, mailerlite};
 use mailerlite_rs::{Response, models::brand_styles::BrandStyles};
-use mockito::{Mock, Server, ServerGuard};
+use wiremock::{MockGuard, MockServer};
 
 #[tokio::test]
 async fn get_gets_the_brand_styles() {
-    let mut server: ServerGuard = Server::new_async().await;
-    let mock: Mock = expect_request(
-        &mut server,
+    let server: MockServer = MockServer::start().await;
+    let mock: MockGuard = expect_request(
+        &server,
         "GET",
         "/brand-styles",
         None,
@@ -20,7 +20,7 @@ async fn get_gets_the_brand_styles() {
 
     let response: Response<BrandStyles> = mailerlite(&server).brand_styles().get().await.unwrap();
 
-    mock.assert_async().await;
+    assert_eq!(mock.received_requests().await.len(), 1);
     let styles: &BrandStyles = &response.data;
     let brand = styles.brand.as_ref().unwrap();
     assert_eq!(brand.identifier, "account");
@@ -36,11 +36,11 @@ async fn get_gets_the_brand_styles() {
 
 #[tokio::test]
 async fn get_decodes_a_null_brand() {
-    let mut server: ServerGuard = Server::new_async().await;
+    let server: MockServer = MockServer::start().await;
     let mut body: serde_json::Value = serde_json::from_str(&fixture("brand_styles")).unwrap();
     body["data"]["brand"] = serde_json::Value::Null;
-    expect_request(
-        &mut server,
+    let _mock = expect_request(
+        &server,
         "GET",
         "/brand-styles",
         None,
