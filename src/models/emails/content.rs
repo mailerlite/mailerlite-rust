@@ -1,4 +1,4 @@
-//! Typed block documents and inline nodes shared by requests and responses.
+//! Optional typed editor helpers. API requests and responses use free-form JSON.
 use super::attributes::{
     BlockquoteAttributes, ButtonAttributes, CodeAttributes, DividerAttributes, HeadingAttributes,
     ImageAttributes, LinkMarkAttributes, ParagraphAttributes, SocialIconAttributes,
@@ -609,8 +609,9 @@ macro_rules! block_content {
 }
 
 block_content! {
-    /// Block content selected by the API block discriminator.
-    /// Known variants reject malformed fields; unknown variants retain their JSON object.
+    /// Optional typed helpers for a particular editor schema.
+    /// Known variants require that schema's field types; unknown variants retain their JSON object.
+    /// API reads and writes use free-form JSON and never require these helpers.
     ///
     /// # Examples
     /// ```
@@ -626,7 +627,7 @@ block_content! {
     ///     }),
     ///     ..BlockData::text("Hello")
     /// });
-    /// let block = NewBlock::new(content);
+    /// let block = NewBlock::new(content.block_type(), content.editor_content()?);
     /// assert_eq!(serde_json::to_value(block)?["type"], "paragraph");
     /// # Ok::<(), serde_json::Error>(())
     /// ```
@@ -657,6 +658,12 @@ impl InlineNode {
     }
 }
 impl BlockContent {
+    /// Encode this optional typed helper as a document for a block write.
+    /// API reads and writes do not require conversion through these helpers.
+    pub fn editor_content(&self) -> Result<Value, serde_json::Error> {
+        serde_json::to_value(ContentRef(self))
+    }
+
     /// Construct a paragraph with one plain text node.
     pub fn paragraph(text: impl Into<String>) -> Self {
         Self::Paragraph(BlockData::text(text))
@@ -683,14 +690,15 @@ mod tests {
             assert!(block.is_ok(), "{kind}: {block:?}");
             let block = block.unwrap();
             assert!(block.children.is_empty());
-            assert_eq!(block.content, content.unwrap());
+            let content = content.unwrap();
+            assert_eq!(block.editor_content, Value::Null);
             assert_eq!(
-                serde_json::to_value(ContentRef(&block.content)).unwrap(),
+                serde_json::to_value(ContentRef(&content)).unwrap(),
                 Value::Null
             );
-            assert_eq!(block.content.block_type().as_str(), kind);
+            assert_eq!(block.block_type.as_str(), kind);
             assert_eq!(
-                serde_json::to_value(block.content).unwrap(),
+                serde_json::to_value(content).unwrap(),
                 json!({"type":kind,"editor_content":null})
             );
         }
@@ -748,8 +756,7 @@ mod tests {
             assert!(result.is_ok(), "{result:?}");
             if attrs.get("width").is_some() {
                 assert_eq!(
-                    serde_json::to_value(result.unwrap().content).unwrap()["editor_content"]["attrs"]
-                        ["width"],
+                    result.unwrap().editor_content["attrs"]["width"],
                     json!(300.5)
                 );
             }
@@ -835,7 +842,11 @@ mod tests {
     fn real_document_shape_exposes_typed_fields() {
         let email: WithEtag<EmailDocument> =
             serde_json::from_str(include_str!("../../../tests/fixtures/email.json")).unwrap();
-        let BlockContent::Paragraph(data) = &email.data.blocks[0].content else {
+        let block = &email.data.blocks[0];
+        let typed =
+            BlockContent::from_document(block.block_type.as_str(), block.editor_content.clone())
+                .unwrap();
+        let BlockContent::Paragraph(data) = &typed else {
             panic!("expected paragraph")
         };
         let Patch::Value(attrs) = &data.attrs else {
@@ -907,10 +918,7 @@ mod tests {
                 let parsed: EmailBlock =
                     serde_json::from_value(json!({"id":"001","type":kind,"editor_content":empty}))
                         .unwrap();
-                assert_eq!(
-                    serde_json::to_value(parsed.content).unwrap(),
-                    json!({"type":kind,"editor_content":{}})
-                );
+                assert_eq!(parsed.editor_content, empty);
             }
         }
         let wire = json!({"type":"future_block","editor_content":{"opaque":[null,{"x":42}]}});

@@ -3,7 +3,7 @@
 //! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_EMAIL_ID`.
 use mailerlite_rs::{
     MailerLite, Response,
-    models::emails::{BlockContent, EmailBlock, EmailDocument, EmailResponseMetadata, WithEtag},
+    models::emails::{BlockType, EmailBlock, EmailDocument, EmailResponseMetadata, WithEtag},
     resources::emails::{NewBlock, Placement},
 };
 
@@ -18,7 +18,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let email: Response<WithEtag<EmailDocument>, EmailResponseMetadata> =
         mailerlite.emails().get(&email_id).await?;
 
-    let block = NewBlock::new(BlockContent::paragraph("Hello")).placement(Placement::start());
+    let block = NewBlock::new(
+        BlockType::Paragraph,
+        serde_json::json!({"content": [{"type":"text", "text":"Hello"}]}),
+    )
+    .placement(Placement::start());
 
     let response: Response<WithEtag<EmailBlock>, EmailResponseMetadata> = mailerlite
         .emails()

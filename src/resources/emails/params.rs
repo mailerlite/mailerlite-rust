@@ -3,31 +3,35 @@ use super::validation as validate;
 use crate::{
     Error,
     models::emails::{
-        BlockContent, BrandMode, ContentRef, EditorText, FontWeight, LayoutAlignment,
-        LetterSpacing, LineHeight, Position, SocialLinkType, WidthMode,
+        BlockType, BrandMode, EditorText, FontWeight, LayoutAlignment, LetterSpacing, LineHeight,
+        Position, SocialLinkType, WidthMode,
     },
 };
-use serde::{Serialize, Serializer};
+use serde::Serialize;
 use serde_json::{Map, Value};
 /// A new block for `Emails::create_block` and `Emails::validate_block`.
 #[derive(Debug, Clone, Serialize)]
 pub struct NewBlock {
-    /// Typed document; its variant determines the API block type.
-    #[serde(flatten)]
-    pub content: BlockContent,
+    #[serde(rename = "type")]
+    /// Editor block discriminator.
+    pub block_type: BlockType,
+    /// Free-form editor document with camelCase keys. Use an empty JSON object
+    /// for a block with no content, for example a divider. The API validates it.
+    pub editor_content: Value,
     /// Where to put the block. Without a placement, the API puts the block at the end of the email.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub placement: Option<Placement>,
 }
 
 impl NewBlock {
-    /// Create a block with its typed document.
+    /// Create a block with its required type and editor document.
     ///
-    /// The content variant supplies the block type, preventing mismatches between
-    /// known block types and their attributes. The API validates values and links.
-    pub fn new(content: BlockContent) -> Self {
+    /// Content remains free-form JSON so editor-specific camelCase keys and
+    /// future document nodes are preserved. The API validates the document, including its shape.
+    pub fn new(block_type: BlockType, editor_content: Value) -> Self {
         Self {
-            content,
+            block_type,
+            editor_content,
             placement: None,
         }
     }
@@ -39,117 +43,49 @@ impl NewBlock {
     }
 }
 
-/// Placement of a block at its current nesting level.
-///
-/// Relative placements carry their required adjacent block ID. The API checks
-/// that the ID names a block at the same nesting level.
-///
-/// # Examples
-/// ```
-/// use mailerlite_rs::resources::emails::Placement;
-/// let placement = Placement::before("123");
-/// assert_eq!(serde_json::to_value(placement)?,
-///     serde_json::json!({"position": "before", "block_id": "123"}));
-/// # Ok::<(), serde_json::Error>(())
-/// ```
-///
-/// A relative placement cannot omit its adjacent block ID:
-/// ```compile_fail
-/// use mailerlite_rs::resources::emails::Placement;
-/// let placement = Placement::Before {};
-/// ```
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[non_exhaustive]
-pub enum Placement {
-    /// First at the current nesting level.
-    Start,
-    /// Last at the current nesting level.
-    End,
-    /// Immediately before an adjacent block.
-    Before {
-        /// Identifier of the adjacent block.
-        block_id: String,
-    },
-    /// Immediately after an adjacent block.
-    After {
-        /// Identifier of the adjacent block.
-        block_id: String,
-    },
-    /// A future position, passed through to the API.
-    /// Known positions must use their typed variants; serialization rejects them here.
-    Other {
-        /// Unrecognized position discriminator.
-        position: String,
-        /// Adjacent block ID, if required by the future position.
-        block_id: Option<String>,
-    },
+/// Where to put a block. The API currently requires an adjacent `block_id` for
+/// `Before` and `After`. The SDK sends these fields unchanged and leaves their
+/// validation to the API.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
+pub struct Placement {
+    /// Relative position at the current nesting level.
+    pub position: Position,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    /// Adjacent block identifier for before or after placement.
+    pub block_id: Option<String>,
 }
 
 impl Placement {
     /// Place the block first at its current nesting level.
     pub fn start() -> Self {
-        Self::Start
+        Self {
+            position: Position::Start,
+            block_id: None,
+        }
     }
 
     /// Place the block last at its current nesting level.
     pub fn end() -> Self {
-        Self::End
+        Self {
+            position: Position::End,
+            block_id: None,
+        }
     }
 
     /// Place the block immediately before the supplied block ID.
     pub fn before(block_id: impl Into<String>) -> Self {
-        Self::Before {
-            block_id: block_id.into(),
+        Self {
+            position: Position::Before,
+            block_id: Some(block_id.into()),
         }
     }
 
     /// Place the block immediately after the supplied block ID.
     pub fn after(block_id: impl Into<String>) -> Self {
-        Self::After {
-            block_id: block_id.into(),
+        Self {
+            position: Position::After,
+            block_id: Some(block_id.into()),
         }
-    }
-}
-
-impl Serialize for Placement {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        #[derive(Serialize)]
-        struct WirePlacement<'a> {
-            position: &'a str,
-            #[serde(skip_serializing_if = "Option::is_none")]
-            block_id: Option<&'a str>,
-        }
-        let (position, block_id) = match self {
-            Self::Start => (Position::Start, None),
-            Self::End => (Position::End, None),
-            Self::Before { block_id } => (Position::Before, Some(block_id.as_str())),
-            Self::After { block_id } => (Position::After, Some(block_id.as_str())),
-            Self::Other { position, block_id } => {
-                if [
-                    Position::Start,
-                    Position::End,
-                    Position::Before,
-                    Position::After,
-                ]
-                .iter()
-                .any(|known| known.as_str() == position)
-                {
-                    return Err(serde::ser::Error::custom(
-                        "known positions must use typed placement",
-                    ));
-                }
-                return WirePlacement {
-                    position,
-                    block_id: block_id.as_deref(),
-                }
-                .serialize(serializer);
-            }
-        };
-        WirePlacement {
-            position: position.as_str(),
-            block_id,
-        }
-        .serialize(serializer)
     }
 }
 
@@ -162,7 +98,7 @@ pub(super) struct EtagBody<'a, T> {
 
 #[derive(Serialize)]
 pub(super) struct EditorContentBody<'a> {
-    pub(super) editor_content: ContentRef<'a>,
+    pub(super) editor_content: &'a Value,
     pub(super) etag: &'a str,
 }
 
@@ -652,11 +588,8 @@ mod tests {
 
     #[test]
     fn new_block_preserves_content_and_replaces_placement() {
-        let content = serde_json::from_value(
-            json!({"type":"paragraph","editor_content":{"attrs":{"textAlign":"left"}}}),
-        )
-        .unwrap();
-        let block = NewBlock::new(content)
+        let content = json!({"attrs":{"textAlign":"left"}});
+        let block = NewBlock::new(BlockType::Paragraph, content)
             .placement(Placement::before("00123"))
             .placement(Placement::after("00456"));
         assert_eq!(
@@ -666,7 +599,7 @@ mod tests {
                 "placement": {"position": "after", "block_id": "00456"}
             })
         );
-        let block = NewBlock::new(BlockContent::Divider(Default::default()));
+        let block = NewBlock::new(BlockType::Divider, json!({}));
         assert_eq!(
             serde_json::to_value(block).unwrap(),
             json!({"type": "divider", "editor_content": {}})

@@ -343,8 +343,8 @@ from `MAILERLITE_CAMPAIGN_NAME`, `MAILERLITE_SUBJECT`, `MAILERLITE_FROM_NAME`, a
 `MAILERLITE_FROM_EMAIL`.
 
 `update_email_block` requires the complete replacement block document in
-`MAILERLITE_EDITOR_CONTENT_JSON` as a typed block envelope, for example
-`{"type":"paragraph","editor_content":{"content":[{"type":"text","text":"Hello"}]}}`.
+`MAILERLITE_EDITOR_CONTENT_JSON` as free-form JSON, for example
+`{"content":[{"type":"text","text":"Hello"}]}`.
 The example sends one update using the supplied block ID and etag. It sends only
 `editor_content`; the server validates the document against the stored block kind.
 `update_email_settings` requires

@@ -6,7 +6,7 @@
 //! 24 hours; after that, reconcile the original write before retrying it.
 use mailerlite_rs::{
     Error, MailerLite, Response,
-    models::emails::{BlockContent, EmailBlock, EmailResponseMetadata, WithEtag},
+    models::emails::{BlockType, EmailBlock, EmailResponseMetadata, WithEtag},
     resources::emails::{Emails, NewBlock},
 };
 
@@ -24,7 +24,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // including later process runs if the outcome is still uncertain.
     let idempotency_key: String = std::env::var("MAILERLITE_IDEMPOTENCY_KEY")?;
 
-    let block: NewBlock = NewBlock::new(BlockContent::Divider(Default::default()));
+    let block: NewBlock = NewBlock::new(BlockType::Divider, serde_json::json!({}));
 
     let email: Emails = mailerlite.emails().with_idempotency_key(idempotency_key);
 

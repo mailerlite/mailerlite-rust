@@ -10,8 +10,8 @@ use crate::{
     Error, MailerLite, Response,
     http::{OperationPolicy, RequestOptions},
     models::emails::{
-        BlockContent, ContentRef, EmailBlock, EmailDocument, EmailHtml, EmailResponseMetadata,
-        EmailTemplate, EmailVersion, EtagOnly, SettingsResult, Validation, WithEtag,
+        EmailBlock, EmailDocument, EmailHtml, EmailResponseMetadata, EmailTemplate, EmailVersion,
+        EtagOnly, SettingsResult, Validation, WithEtag,
     },
     pagination::NumberedPage,
     resources::query::query_pairs,
@@ -207,10 +207,10 @@ impl<'a> Emails<'a> {
     /// # Examples
     /// ```no_run
     /// use mailerlite_rs::MailerLite;
-    /// use mailerlite_rs::{models::emails::BlockContent, resources::emails::NewBlock};
+    /// use mailerlite_rs::{models::emails::BlockType, resources::emails::NewBlock};
     ///
     /// # async fn example(client: &MailerLite) -> mailerlite_rs::Result<()> {
-    /// let block = NewBlock::new(BlockContent::Divider(Default::default()));
+    /// let block = NewBlock::new(BlockType::Divider, serde_json::json!({}));
     ///
     /// let response = client.emails().create_block("123", "current-etag", &block).await?;
     /// # Ok(())
@@ -249,16 +249,15 @@ impl<'a> Emails<'a> {
     }
 
     /// Replaces the content of a block. The API removes the keys that you do not send. The type and the
-    /// position of the block do not change. Only the document is sent; its variant selects
-    /// the SDK encoding, not a server-side type assertion. The server validates content
+    /// position of the block do not change. The document is sent unchanged. The server validates content
     /// against the stored block kind. No implicit read is performed. Returns the block and new etag.
     ///
     /// # Examples
     /// ```no_run
-    /// use mailerlite_rs::{MailerLite, models::emails::BlockContent};
+    /// use mailerlite_rs::MailerLite;
     ///
     /// # async fn example(client: &MailerLite) -> mailerlite_rs::Result<()> {
-    /// let content = BlockContent::paragraph("Updated text");
+    /// let content = serde_json::json!({"content": [{"type": "text", "text": "Updated text"}]});
     ///
     /// let response = client.emails().update_block("123", "456", "current-etag", &content).await?;
     /// # Ok(())
@@ -278,7 +277,7 @@ impl<'a> Emails<'a> {
         email_id: impl AsRef<str>,
         block_id: impl AsRef<str>,
         etag: impl AsRef<str>,
-        editor_content: &BlockContent,
+        editor_content: &Value,
     ) -> Result<Response<WithEtag<EmailBlock>, EmailResponseMetadata>, Error> {
         let (email_id, block_id, etag): (&str, &str, &str) =
             (email_id.as_ref(), block_id.as_ref(), etag.as_ref());
@@ -292,7 +291,7 @@ impl<'a> Emails<'a> {
             &["emails", email_id, "blocks", block_id],
             &[],
             Some(&EditorContentBody {
-                editor_content: ContentRef(editor_content),
+                editor_content,
                 etag,
             }),
             idempotency_key,
@@ -405,10 +404,10 @@ impl<'a> Emails<'a> {
     /// # Examples
     /// ```no_run
     /// use mailerlite_rs::MailerLite;
-    /// use mailerlite_rs::{models::emails::BlockContent, resources::emails::NewBlock};
+    /// use mailerlite_rs::{models::emails::BlockType, resources::emails::NewBlock};
     ///
     /// # async fn example(client: &MailerLite) -> mailerlite_rs::Result<()> {
-    /// let block = NewBlock::new(BlockContent::Divider(Default::default()));
+    /// let block = NewBlock::new(BlockType::Divider, serde_json::json!({}));
     ///
     /// let response = client.emails().validate_block(&block).await?;
     ///

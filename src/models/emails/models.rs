@@ -1,8 +1,5 @@
 //! Simple-editor email documents, design settings, and versioned response envelopes.
-use super::{
-    BlockContent, BlockData, EmailOwnerType, EmailTemplateType, EmailType, ParagraphAttributes,
-    SocialLinkType,
-};
+use super::{BlockType, EmailOwnerType, EmailTemplateType, EmailType, SocialLinkType};
 use crate::models::open_enum::open_enum;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{Map, Value};
@@ -120,34 +117,23 @@ pub struct EmailDocument {
     pub blocks: Vec<EmailBlock>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 /// One editor block with its content and nested children.
 pub struct EmailBlock {
     /// Opaque identifier, preserved as returned by the server.
     pub id: String,
-    /// Typed block document, selected by its wire discriminator.
-    pub content: BlockContent,
+    /// Editor block discriminator, preserving future block types.
+    #[serde(rename = "type")]
+    pub block_type: BlockType,
+    /// Stored editor document, preserved without schema validation or coercion.
+    #[serde(default = "super::wire::empty_object")]
+    pub editor_content: Value,
     /// The blocks in this block, for example the items of a list.
+    #[serde(default, deserialize_with = "super::wire::null_default")]
     pub children: Vec<EmailBlock>,
     /// The neighbors of the block. Only the responses for one block have it.
     pub placement: Option<BlockPlacement>,
-}
-
-impl<'de> Deserialize<'de> for EmailBlock {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let mut fields = super::wire::BlockEnvelope::deserialize(deserializer)?;
-        let content = fields.decode_content().map_err(serde::de::Error::custom)?;
-        let id = fields
-            .id
-            .ok_or_else(|| serde::de::Error::missing_field("id"))?;
-        Ok(Self {
-            id,
-            content,
-            children: fields.children,
-            placement: fields.placement,
-        })
-    }
 }
 
 /// The IDs of the blocks after which and before which a block is. `None` when there is no such block.
@@ -341,11 +327,19 @@ pub struct Footer {
 
 /// A footer text as an editor document. In an update, an empty document (`{}` or `{"content": []}`) removes
 /// the text, and the email uses the text of the account again.
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct EditorText {
-    #[serde(default, deserialize_with = "object_or_empty_array")]
+    #[serde(default = "super::wire::empty_object")]
     /// Editor document with the API camelCase property names.
-    pub editor_content: BlockData<ParagraphAttributes>,
+    pub editor_content: Value,
+}
+
+impl Default for EditorText {
+    fn default() -> Self {
+        Self {
+            editor_content: super::wire::empty_object(),
+        }
+    }
 }
 
 /// A social link of the footer. `link_id` keeps the click history of the link.
@@ -736,10 +730,10 @@ mod tests {
     #[test]
     fn object_fields_accept_empty_arrays_but_reject_malformed_values() {
         // Object fields also accept the API's alternate empty-array representation.
-        // Validation-error maps and footer text still require objects.
+        // Validation-error maps still require objects; editor documents remain opaque.
         for wire in [json!({}), json!([])] {
             let text: EditorText = serde_json::from_value(json!({"editor_content": wire})).unwrap();
-            assert_eq!(text.editor_content, BlockData::default());
+            assert_eq!(text.editor_content, wire);
             let validation: Validation = serde_json::from_value(json!({
                 "valid": true, "errors": wire, "schema": {"version": null, "hash": null}
             }))
@@ -753,13 +747,19 @@ mod tests {
             json!("bad"),
             json!([{}]),
         ] {
-            assert!(serde_json::from_value::<EditorText>(json!({"editor_content": wire})).is_err());
             assert_eq!(
-                serde_json::from_value::<EmailBlock>(json!({
-                    "id": "1", "type": "paragraph", "editor_content": wire
-                }))
-                .is_ok(),
-                wire.is_null()
+                serde_json::from_value::<EditorText>(json!({"editor_content": wire}))
+                    .unwrap()
+                    .editor_content,
+                wire
+            );
+            assert_eq!(
+                serde_json::from_value::<EmailBlock>(
+                    json!({"id":"1", "type":"paragraph", "editor_content":wire})
+                )
+                .unwrap()
+                .editor_content,
+                wire
             );
             assert!(
                 serde_json::from_value::<Validation>(json!({

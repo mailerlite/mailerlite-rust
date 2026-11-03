@@ -12,7 +12,7 @@ mod example;
 use example::create_block_with_retry;
 use mailerlite_rs::{
     Error, MailerLite, Response,
-    models::emails::{BlockContent, EmailBlock, EmailResponseMetadata, WithEtag},
+    models::emails::{BlockType, EmailBlock, EmailResponseMetadata, WithEtag},
     resources::emails::NewBlock,
 };
 use std::{
@@ -72,7 +72,7 @@ async fn create(
     client: &MailerLite,
 ) -> mailerlite_rs::Result<Response<WithEtag<EmailBlock>, EmailResponseMetadata>> {
     let email = client.emails().with_idempotency_key("same-write");
-    let block = NewBlock::new(BlockContent::Divider(Default::default()));
+    let block = NewBlock::new(BlockType::Divider, serde_json::json!({}));
     create_block_with_retry(&email, "123", "42", &block).await
 }
 

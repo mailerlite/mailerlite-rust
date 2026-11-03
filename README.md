@@ -143,16 +143,17 @@ deletion/movement, block and settings validation, settings updates, template
 creation, version listing/creation, and version restoration. Response models
 live in `models::emails`; write parameters live in `resources::emails`.
 
-Create a typed paragraph with `NewBlock::new(BlockContent::paragraph("Hello"))`.
-`BlockContent` selects the attributes for each block kind, and `InlineNode` and
-`TextMark` describe text, personalization, and formatting. Returned blocks expose
-the same types through `block.content`. Call `update_block` with a block ID and
-etag; the server validates the replacement document against the stored block kind.
-Optional editor fields use `Patch` to preserve omitted values and explicit nulls.
-Use `Placement::before(id)` or `Placement::after(id)` for relative placement;
-`Placement::Start` and `Placement::End` carry no adjacent block ID.
-Unknown variants and extension fields preserve their JSON; list-item content and
-open editor attributes retain the flexibility of the API schema.
+Create blocks with `NewBlock::new(BlockType::Paragraph, serde_json::json!({"content": [{"type": "text", "text": "Hello"}]}))`.
+Blocks expose `block_type` and free-form `editor_content: serde_json::Value`.
+Editor documents, including footer text, retain their JSON values unchanged,
+including nulls, unknown nodes, and schema-specific attribute types.
+Call `update_block` with a block ID, etag, and the replacement JSON document;
+the API validates it against the stored block kind. Optional `BlockContent`
+helpers can produce JSON through `editor_content()`, but are never required
+for reading or writing editor documents.
+Use `Placement::before(id)`, `after(id)`, `start()`, or `end()` for convenience,
+or construct `Placement { position, block_id }` directly. The SDK passes these
+fields through; the API validates their combination.
 
 Email operations return `Response<T, EmailResponseMetadata>`, with metadata
 from `models::emails`. Versioned operations return

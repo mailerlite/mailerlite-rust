@@ -4,12 +4,10 @@
 use crate::editor_support::{BAD_IDS, assert_no_request, expect_request, fixture, mailerlite};
 use mailerlite_rs::{
     Error, Response,
-    models::common::Patch,
     models::emails::{
-        BlockContent, BlockType, BrandMode, EditorText, EmailBlock, EmailDocument, EmailHtml,
-        EmailOwnerType, EmailResponseMetadata, EmailTemplate, EmailTemplateType, EmailType,
-        EmailVersion, EtagOnly, SettingsResult, SocialLinkType, VERSION_CONFLICT, Validation,
-        WithEtag,
+        BlockType, BrandMode, EditorText, EmailBlock, EmailDocument, EmailHtml, EmailOwnerType,
+        EmailResponseMetadata, EmailTemplate, EmailTemplateType, EmailType, EmailVersion, EtagOnly,
+        Position, SettingsResult, SocialLinkType, VERSION_CONFLICT, Validation, WithEtag,
     },
     pagination::NumberedPage,
     resources::emails::{
@@ -78,19 +76,17 @@ async fn find_gets_the_email() {
 
     assert_eq!(email.blocks.len(), 2);
     assert_eq!(email.blocks[0].id, "1");
-    assert_eq!(email.blocks[0].content.block_type(), BlockType::Paragraph);
+    assert_eq!(email.blocks[0].block_type, BlockType::Paragraph);
     assert_eq!(
-        serde_json::to_value(&email.blocks[0].content).unwrap()["editor_content"]["attrs"],
+        email.blocks[0].editor_content["attrs"],
         json!({"textAlign": "left"})
     );
     assert!(email.blocks[0].children.is_empty());
     assert!(email.blocks[0].placement.is_none());
-    assert_eq!(
-        email.blocks[1].content.block_type(),
-        BlockType::BulletedList
-    );
+    assert_eq!(email.blocks[1].block_type, BlockType::BulletedList);
     assert!(
-        serde_json::to_value(&email.blocks[1].content).unwrap()["editor_content"]
+        email.blocks[1]
+            .editor_content
             .as_object()
             .unwrap()
             .is_empty()
@@ -133,16 +129,8 @@ async fn find_decodes_null_values_and_keeps_unknown_keys() {
     assert_eq!(settings.extra["new_group"], json!({"a": 1}));
 
     let block = &response.data.data.blocks[0];
-    assert_eq!(
-        block.content.block_type(),
-        BlockType::Other("countdown".to_string())
-    );
-    assert!(
-        serde_json::to_value(&block.content).unwrap()["editor_content"]
-            .as_object()
-            .unwrap()
-            .is_empty()
-    );
+    assert_eq!(block.block_type, BlockType::Other("countdown".to_string()));
+    assert_eq!(block.editor_content, json!([]));
 }
 
 #[tokio::test]
@@ -262,13 +250,9 @@ async fn find_block_gets_the_block_and_its_placement() {
     assert_eq!(mock.received_requests().await.len(), 1);
     assert_eq!(response.data.etag, "43");
     assert_eq!(response.data.data.id, "57");
+    assert_eq!(response.data.data.block_type, BlockType::Paragraph);
     assert_eq!(
-        response.data.data.content.block_type(),
-        BlockType::Paragraph
-    );
-    assert_eq!(
-        serde_json::to_value(&response.data.data.content).unwrap()["editor_content"]["content"][0]
-            ["text"],
+        response.data.data.editor_content["content"][0]["text"],
         "Hello"
     );
     let placement = response.data.data.placement.as_ref().unwrap();
@@ -306,7 +290,8 @@ async fn find_block_rejects_bad_ids_without_a_request() {
 
 fn new_paragraph(placement: Option<Placement>) -> NewBlock {
     NewBlock {
-        content: serde_json::from_value(json!({"type":"paragraph","editor_content":{"attrs":{"textAlign":"center"},"content":[{"type":"text","text":"Hi"}]}})).unwrap(),
+        block_type: BlockType::Paragraph,
+        editor_content: json!({"attrs":{"textAlign":"center"},"content":[{"type":"text","text":"Hi"}]}),
         placement,
     }
 }
@@ -358,7 +343,8 @@ async fn create_block_sends_no_placement_when_there_is_none() {
     .await;
 
     let block: NewBlock = NewBlock {
-        content: BlockContent::Divider(Default::default()),
+        block_type: BlockType::Divider,
+        editor_content: json!({}),
         placement: None,
     };
     mailerlite(&server)
@@ -424,32 +410,67 @@ fn invalid_placement() -> String {
 }
 
 #[tokio::test]
-async fn known_positions_cannot_bypass_typed_placement() {
+async fn placement_combinations_are_validated_by_the_api() {
     let server = MockServer::start().await;
-
-    for position in ["start", "end", "before", "after"] {
-        let placement = Placement::Other {
-            position: position.into(),
-            block_id: None,
-        };
-        let result = mailerlite(&server)
-            .emails()
-            .create_block("123", "42", &new_paragraph(Some(placement.clone())))
-            .await;
+    for (position, block_id) in [
+        (Position::Before, None),
+        (Position::After, None),
+        (Position::Start, Some("57".into())),
+        (Position::End, Some("57".into())),
+        (Position::Other("before".into()), None),
+    ] {
+        let placement = Placement { position, block_id };
+        let sent = serde_json::to_value(&placement).unwrap();
+        let block = new_paragraph(Some(placement.clone()));
+        let mut body = serde_json::to_value(&block).unwrap();
+        body["etag"] = json!("42");
+        let create = expect_request(
+            &server,
+            "POST",
+            "/emails/123/blocks",
+            Some(body),
+            422,
+            &invalid_placement(),
+        )
+        .await;
+        let move_mock = expect_request(
+            &server,
+            "POST",
+            "/emails/123/blocks/57/move",
+            Some(json!({"placement":sent,"etag":"42"})),
+            422,
+            &invalid_placement(),
+        )
+        .await;
+        let validate = expect_request(
+            &server,
+            "POST",
+            "/emails/blocks/validate",
+            Some(serde_json::to_value(&block).unwrap()),
+            200,
+            &fixture("email_block_validation_invalid"),
+        )
+        .await;
+        let client = mailerlite(&server);
         assert!(
-            matches!(result, Err(Error::Serialize(_))),
-            "accepted {position}"
+            matches!(client.emails().create_block("123", "42", &block).await, Err(Error::Api(e)) if e.status()==422)
         );
-        let result = mailerlite(&server)
-            .emails()
-            .move_block("123", "57", "42", &placement)
-            .await;
         assert!(
-            matches!(result, Err(Error::Serialize(_))),
-            "accepted {position}"
+            matches!(client.emails().move_block("123", "57", "42", &placement).await, Err(Error::Api(e)) if e.status()==422)
         );
+        assert!(
+            !client
+                .emails()
+                .validate_block(&block)
+                .await
+                .unwrap()
+                .data
+                .valid
+        );
+        assert_eq!(create.received_requests().await.len(), 1);
+        assert_eq!(move_mock.received_requests().await.len(), 1);
+        assert_eq!(validate.received_requests().await.len(), 1);
     }
-    assert_no_request(&server).await;
 }
 
 #[tokio::test]
@@ -496,8 +517,8 @@ async fn create_block_sends_the_placement_block_id_as_given() {
     }
 }
 
-fn hello_again() -> BlockContent {
-    BlockContent::paragraph("Hello again")
+fn hello_again() -> serde_json::Value {
+    json!({"content": [{"type":"text", "text":"Hello again"}]})
 }
 
 #[tokio::test]
@@ -525,8 +546,7 @@ async fn update_block_patches_the_content() {
     assert_eq!(mock.received_requests().await.len(), 1);
     assert_eq!(response.data.etag, "44");
     assert_eq!(
-        serde_json::to_value(&response.data.data.content).unwrap()["editor_content"]["content"][0]
-            ["text"],
+        response.data.data.editor_content["content"][0]["text"],
         "Hello again"
     );
     let placement = response.data.data.placement.as_ref().unwrap();
@@ -768,10 +788,10 @@ async fn placement_at_start_or_end_omits_the_adjacent_block_id() {
     let client = mailerlite(&server);
     let email = client.emails();
 
-    let end = Placement::End;
+    let end = Placement::end();
     email.move_block("123", "57", "45", &end).await.unwrap();
 
-    let start = Placement::Start;
+    let start = Placement::start();
     email
         .create_block("123", "42", &new_paragraph(Some(start)))
         .await
@@ -794,8 +814,8 @@ async fn move_block_sends_the_placement_as_given_and_gives_the_api_error() {
             json!({"position": "before", "block_id": "1/2"}),
         ),
         (
-            Placement::Other {
-                position: "next_to".to_string(),
+            Placement {
+                position: Position::Other("next_to".to_string()),
                 block_id: Some("1/2".to_string()),
             },
             json!({"position": "next_to", "block_id": "1/2"}),
@@ -839,8 +859,8 @@ async fn placement_with_an_unknown_position_sends_its_block_id() {
     )
     .await;
 
-    let other: Placement = Placement::Other {
-        position: "next_to".to_string(),
+    let other: Placement = Placement {
+        position: Position::Other("next_to".to_string()),
         block_id: Some("1".to_string()),
     };
     mailerlite(&server)
@@ -866,7 +886,8 @@ async fn validate_block_sends_the_block_without_an_etag() {
     .await;
 
     let block: NewBlock = NewBlock {
-        content: BlockContent::Divider(Default::default()),
+        block_type: BlockType::Divider,
+        editor_content: json!({}),
         placement: None,
     };
     let response: Response<Validation, EmailResponseMetadata> = mailerlite(&server)
@@ -897,10 +918,8 @@ async fn validate_block_gives_the_errors_of_an_invalid_block() {
     .await;
 
     let block: NewBlock = NewBlock {
-        content: BlockContent::Other {
-            kind: "countdown".into(),
-            fields: Default::default(),
-        },
+        block_type: BlockType::Other("countdown".into()),
+        editor_content: json!({}),
         placement: None,
     };
     let response: Response<Validation, EmailResponseMetadata> = mailerlite(&server)
@@ -931,7 +950,8 @@ async fn validate_block_accepts_an_empty_array_for_the_errors() {
     .await;
 
     let block: NewBlock = NewBlock {
-        content: BlockContent::Divider(Default::default()),
+        block_type: BlockType::Divider,
+        editor_content: json!({}),
         placement: None,
     };
     let response: Response<Validation, EmailResponseMetadata> = mailerlite(&server)
@@ -1748,7 +1768,8 @@ async fn validate_block_decodes_a_null_schema() {
     .await;
 
     let block: NewBlock = NewBlock {
-        content: BlockContent::Divider(Default::default()),
+        block_type: BlockType::Divider,
+        editor_content: json!({}),
         placement: None,
     };
     let response: Response<Validation, EmailResponseMetadata> = mailerlite(&server)
@@ -1846,7 +1867,12 @@ async fn update_block_by_id_leaves_stored_kind_validation_to_the_server() {
         .await;
     let error = mailerlite(&server)
         .emails()
-        .update_block("123", "57", "43", &BlockContent::paragraph("Wrong kind"))
+        .update_block(
+            "123",
+            "57",
+            "43",
+            &json!({"content":[{"type":"text","text":"Wrong kind"}]}),
+        )
         .await
         .unwrap_err();
     assert!(matches!(&error, Error::Api(error) if error.status().as_u16() == 422));
@@ -1883,7 +1909,7 @@ async fn placeholder_images_decode_on_reads_and_writes() {
     .await;
     let client = mailerlite(&server);
     let fetched = client.emails().get_block("123", "57").await.unwrap();
-    let block = NewBlock::new(BlockContent::Image(Default::default()));
+    let block = NewBlock::new(BlockType::Image, json!({}));
     let created = client
         .emails()
         .create_block("123", "42", &block)
@@ -1895,22 +1921,13 @@ async fn placeholder_images_decode_on_reads_and_writes() {
             "123",
             &fetched.data.data.id,
             &fetched.data.etag,
-            &fetched.data.data.content,
+            &fetched.data.data.editor_content,
         )
         .await
         .unwrap();
     for response in [fetched, created, updated] {
-        let BlockContent::Image(data) = response.data.data.content else {
-            panic!("expected an image")
-        };
-        let Patch::Value(attrs) = data.attrs else {
-            panic!("expected image attributes")
-        };
-        assert_eq!(attrs.src, Patch::Null);
-        assert_eq!(attrs.url, Patch::Null);
-        assert_eq!(attrs.alt, Patch::Null);
-        assert_eq!(serde_json::to_value(attrs.width).unwrap(), json!(300.5));
-        assert_eq!(serde_json::to_value(attrs.height).unwrap(), json!(150.25));
+        assert_eq!(response.data.data.block_type, BlockType::Image);
+        assert_eq!(response.data.data.editor_content, image["editor_content"]);
     }
     assert_eq!(get.received_requests().await.len(), 1);
     assert_eq!(create.received_requests().await.len(), 1);
@@ -1934,23 +1951,25 @@ async fn placeholder_images_decode_on_reads_and_writes() {
     let response = client.emails().get("123").await.unwrap();
     assert_eq!(response.data.data.blocks[1].children[0].id, "57");
     assert_eq!(
-        response.data.data.blocks[2].content,
-        BlockContent::Null(BlockType::Paragraph)
+        response.data.data.blocks[2].editor_content,
+        serde_json::Value::Null
     );
     assert!(response.data.data.blocks[2].children.is_empty());
     assert_eq!(get.received_requests().await.len(), 1);
 }
 
 #[tokio::test]
-async fn decoding_errors_identify_the_nested_block_and_attribute() {
+async fn stored_string_widths_and_footer_documents_survive_email_reads() {
     let server = MockServer::start().await;
     let mut document: serde_json::Value = serde_json::from_str(&fixture("email")).unwrap();
     document["data"]["blocks"] = json!([
         {"id":"1","type":"paragraph","editor_content":{}},
         {"id":"2","type":"bulleted_list","editor_content":{},"children":[
-            {"id":"bad-image-57","type":"image","editor_content":{"attrs":{"width":"private-width-marker"}}}
+            {"id":"bad-image-57","type":"image","editor_content":{"attrs":{"width":"600","future":{"schema":99}}}}
         ]}
     ]);
+    document["data"]["settings"]["footer"]["info_text"] =
+        json!({"editor_content":{"content":[{"type":"future_node","text":42}]}});
     let mock = Mock::given(matchers::method("GET"))
         .and(matchers::path("/emails/123"))
         .and(|request: &wiremock::Request| request.url.query().is_none())
@@ -1963,36 +1982,28 @@ async fn decoding_errors_identify_the_nested_block_and_attribute() {
         .expect(1)
         .mount_as_scoped(&server)
         .await;
-    let error = mailerlite(&server).emails().get("123").await.unwrap_err();
-    let Error::Decode(detail) = &error else {
-        panic!("expected decode error")
-    };
-    assert_eq!(detail.status(), 200);
+    let response = mailerlite(&server).emails().get("123").await.unwrap();
     assert_eq!(
-        detail.metadata().request_id.as_deref(),
-        Some("decode-review")
+        response.data.data.blocks[1].children[0].editor_content,
+        document["data"]["blocks"][1]["children"][0]["editor_content"]
     );
-    for location in [
-        "data.blocks[1].children[0]",
-        "bad-image-57",
-        "image",
-        "editor_content.attrs.width",
-    ] {
-        assert!(
-            detail.detail().contains(location),
-            "missing {location}: {}",
-            detail.detail()
-        );
-    }
-    for redacted in [format!("{error}"), format!("{error:?}")] {
-        assert!(!redacted.contains("private-width-marker"));
-        assert!(!redacted.contains("bad-image-57"));
-    }
+    assert_eq!(
+        response
+            .data
+            .data
+            .settings
+            .footer
+            .unwrap()
+            .info_text
+            .unwrap()
+            .editor_content,
+        document["data"]["settings"]["footer"]["info_text"]["editor_content"]
+    );
     assert_eq!(mock.received_requests().await.len(), 1);
 }
 
 #[tokio::test]
-async fn decoding_errors_keep_inline_node_and_mark_paths() {
+async fn stored_inline_nodes_and_marks_are_not_validated_on_reads() {
     let server = MockServer::start().await;
     let body = json!({"data":{"id":"57","type":"paragraph","editor_content":{"content":[
         {"type":"text","text":"Hello","marks":[{"type":"link","attrs":{"href":false}}]}
@@ -2006,37 +2017,22 @@ async fn decoding_errors_keep_inline_node_and_mark_paths() {
         &body.to_string(),
     )
     .await;
-    let error = mailerlite(&server)
+    let response = mailerlite(&server)
         .emails()
         .get_block("123", "57")
         .await
-        .unwrap_err();
-    let Error::Decode(detail) = error else {
-        panic!("expected decode error")
-    };
-    for location in [
-        "57",
-        "paragraph",
-        "editor_content.content[0]",
-        "marks[0]",
-        "attrs.href",
-    ] {
-        assert!(
-            detail.detail().contains(location),
-            "missing {location}: {}",
-            detail.detail()
-        );
-    }
+        .unwrap();
+    assert_eq!(
+        response.data.data.editor_content,
+        body["data"]["editor_content"]
+    );
     assert_eq!(mock.received_requests().await.len(), 1);
 }
 
 #[tokio::test]
 async fn update_block_accepts_unknown_content_by_id() {
     let server = MockServer::start().await;
-    let content = BlockContent::Other {
-        kind: "future_block".into(),
-        fields: serde_json::from_value(json!({"value":2})).unwrap(),
-    };
+    let content = json!({"value":2});
     let mock = expect_request(
         &server,
         "PATCH",
@@ -2052,6 +2048,132 @@ async fn update_block_accepts_unknown_content_by_id() {
         .update_block("123", "57", "43", &content)
         .await
         .unwrap();
-    assert_eq!(response.data.data.content, content);
+    assert_eq!(response.data.data.editor_content, content);
     assert_eq!(mock.received_requests().await.len(), 1);
+}
+
+#[tokio::test]
+async fn editor_documents_pass_unchanged_through_create_validate_and_update() {
+    let server = MockServer::start().await;
+    let client = mailerlite(&server);
+    for content in [
+        json!({"attrs":{"width":"600","future":{"schema":99}},"content":[{"type":"future_node","marks":[{"type":"link","attrs":{"href":false}}]}]}),
+        serde_json::Value::Null,
+        json!([]),
+    ] {
+        let block = NewBlock::new(BlockType::Image, content.clone());
+        let response =
+            json!({"data":{"id":"57","type":"image","editor_content":content},"etag":"43"})
+                .to_string();
+        let create = expect_request(
+            &server,
+            "POST",
+            "/emails/123/blocks",
+            Some(json!({"type":"image","editor_content":content,"etag":"42"})),
+            201,
+            &response,
+        )
+        .await;
+        let validation = expect_request(
+            &server,
+            "POST",
+            "/emails/blocks/validate",
+            Some(json!({"type":"image","editor_content":content})),
+            200,
+            &fixture("email_block_validation_invalid"),
+        )
+        .await;
+        let update = expect_request(
+            &server,
+            "PATCH",
+            "/emails/123/blocks/57",
+            Some(json!({"editor_content":content,"etag":"43"})),
+            200,
+            &response,
+        )
+        .await;
+        assert_eq!(
+            client
+                .emails()
+                .create_block("123", "42", &block)
+                .await
+                .unwrap()
+                .data
+                .data
+                .editor_content,
+            content
+        );
+        assert!(
+            !client
+                .emails()
+                .validate_block(&block)
+                .await
+                .unwrap()
+                .data
+                .valid
+        );
+        assert_eq!(
+            client
+                .emails()
+                .update_block("123", "57", "43", &content)
+                .await
+                .unwrap()
+                .data
+                .data
+                .editor_content,
+            content
+        );
+        assert_eq!(create.received_requests().await.len(), 1);
+        assert_eq!(validation.received_requests().await.len(), 1);
+        assert_eq!(update.received_requests().await.len(), 1);
+    }
+}
+
+#[tokio::test]
+async fn footer_editor_documents_pass_unchanged_to_settings_endpoints() {
+    let server = MockServer::start().await;
+    let content =
+        json!({"attrs":{"future":[null,42]},"content":[{"type":"future_node","text":false}]});
+    let settings = EmailSettingsUpdate {
+        footer: Some(FooterUpdate {
+            info_text: Some(EditorText {
+                editor_content: content.clone(),
+            }),
+            ..Default::default()
+        }),
+        ..Default::default()
+    };
+    let validation = expect_request(
+        &server,
+        "POST",
+        "/emails/123/settings/validate",
+        Some(json!({"footer":{"info_text":{"editor_content":content}}})),
+        200,
+        &fixture("email_block_validation_invalid"),
+    )
+    .await;
+    let update = expect_request(
+        &server,
+        "PATCH",
+        "/emails/123/settings",
+        Some(json!({"footer":{"info_text":{"editor_content":content}},"etag":"42"})),
+        422,
+        r#"{"message":"Invalid document","errors":{"footer.info_text":["Invalid document"]}}"#,
+    )
+    .await;
+    let client = mailerlite(&server);
+    assert!(
+        !client
+            .emails()
+            .validate_settings("123", &settings)
+            .await
+            .unwrap()
+            .data
+            .valid
+    );
+    assert!(
+        matches!(client.emails().update_settings("123", "42", &settings).await, Err(Error::Api(e)) if e.status()==422)
+    );
+    assert_eq!(validation.received_requests().await.len(), 1);
+    assert_eq!(update.received_requests().await.len(), 1);
 }

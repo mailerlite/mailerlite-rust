@@ -359,20 +359,21 @@ mod streams {
 #[test]
 fn simple_editor_resource_futures_are_send() {
     use mailerlite_rs::{
-        models::emails::BlockContent,
+        models::emails::BlockType,
         resources::emails::{EmailSettingsUpdate, NewBlock},
     };
     let client = client();
     let emails = client.emails();
     let block = NewBlock {
-        content: BlockContent::Divider(Default::default()),
+        block_type: BlockType::Divider,
+        editor_content: serde_json::json!({}),
         placement: None,
     };
     let settings = EmailSettingsUpdate::default();
     assert_send_future(emails.get("123"));
     assert_send_future(emails.html("123"));
     assert_send_future(emails.get_block("123", "456"));
-    assert_send_future(emails.update_block("123", "456", "42", &block.content));
+    assert_send_future(emails.update_block("123", "456", "42", &block.editor_content));
     assert_send_future(emails.delete_block("123", "456", "42"));
     assert_send_future(emails.move_block(
         "123",

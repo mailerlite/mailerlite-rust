@@ -1,6 +1,5 @@
 //! Shared wire checks for typed editor documents.
 use super::content::BlockContent;
-use super::models::{BlockPlacement, EmailBlock};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::{Map, Value};
 
@@ -36,7 +35,7 @@ where
     Option::<T>::deserialize(deserializer).map(Option::unwrap_or_default)
 }
 
-// Keep the resource and standalone content envelope on the same decoding rules.
+// Envelope used only when callers explicitly decode an optional typed helper.
 #[derive(Deserialize)]
 pub(super) struct BlockEnvelope {
     #[serde(default)]
@@ -45,10 +44,6 @@ pub(super) struct BlockEnvelope {
     kind: String,
     #[serde(default = "empty_object")]
     editor_content: Value,
-    #[serde(default, deserialize_with = "null_default")]
-    pub(super) children: Vec<EmailBlock>,
-    #[serde(default)]
-    pub(super) placement: Option<BlockPlacement>,
 }
 
 impl BlockEnvelope {

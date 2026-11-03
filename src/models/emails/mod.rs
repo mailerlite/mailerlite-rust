@@ -1,4 +1,4 @@
-//! Simple-editor email documents, typed content, settings, and response envelopes.
+//! Simple-editor email documents, optional typed content helpers, settings, and response envelopes.
 mod attributes;
 mod choices;
 mod content;
@@ -15,7 +15,6 @@ pub use choices::{
     EmailOwnerType, EmailTemplateType, EmailType, FooterRole, SocialIconColor, SocialIconShape,
     SocialLinkType, TextAlignment, VideoPreview,
 };
-pub(crate) use content::ContentRef;
 pub use content::{
     BlockContent, BlockData, BlockType, EmptyNode, InlineNode, InlineText, LinkMark, ListBlockData,
     ListItem, ListItemType, MediaBlockData, MobileOverrides, OpenAttributes, TextMark,

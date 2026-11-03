@@ -3,10 +3,7 @@
 //! Requires `MAILERLITE_API_TOKEN`.
 use mailerlite_rs::{
     MailerLite, Response,
-    models::common::Patch,
-    models::emails::{
-        BlockContent, BlockData, ButtonAttributes, EmailResponseMetadata, Validation,
-    },
+    models::emails::{BlockType, EmailResponseMetadata, Validation},
     resources::emails::NewBlock,
 };
 
@@ -16,14 +13,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mailerlite: MailerLite = MailerLite::new(api_key)?;
 
-    let content = BlockData {
-        attrs: Patch::Value(ButtonAttributes {
-            url: Patch::Value("https://example.com".into()),
-            ..Default::default()
-        }),
-        ..BlockData::text("Buy now")
-    };
-    let block = NewBlock::new(BlockContent::Button(content));
+    let content = serde_json::json!({
+        "attrs": {"url": "https://example.com"},
+        "content": [{"type": "text", "text": "Buy now"}]
+    });
+    let block = NewBlock::new(BlockType::Button, content);
 
     let response: Response<Validation, EmailResponseMetadata> =
         mailerlite.emails().validate_block(&block).await?;
