@@ -160,15 +160,12 @@ from `models::emails`. Versioned operations return
 `response.metadata.http`, the current version is `response.data.etag`, and the
 resource is `response.data.data`. Pass the latest etag to the next write.
 For HTTP 409 conflicts, inspect `ApiError::is_version_conflict()` and `etag()`;
-refetch and reconcile before attempting another write. An
-`ApiError::is_idempotency_in_progress()` response means the original write is
-still running: wait before retrying that same key, body, and etag.
+refetch and reconcile before attempting another write.
 
 Keep the configured handle with `let emails = client.emails().with_idempotency_key(key);`
 and send the write through `emails`. Use one key per logical operation and reuse
 it only when resubmitting that same request.
-Keyed writes require `RetryPolicy::with_idempotent_writes()` to retry automatically.
-Read and validation methods ignore the
+Writes are never automatically retried. Read and validation methods ignore the
 key. `response.metadata.is_idempotent_replay()` reports server-side replay.
 
 Retrieve palettes with `client.brand_styles().get().await?` and files with
@@ -293,25 +290,9 @@ To opt into retries, import `mailerlite_rs::RetryPolicy` and add
 `.retry_policy(RetryPolicy::safe_reads().max_retries(2))`. Reviewed reads can then
 retry with bounded exponential backoff and jitter. A valid `Retry-After` is a
 minimum delay; the SDK will not retry early to fit an operation deadline.
-If a retry delay cannot fit, the last error is returned; `Error::Timeout` means
-the operation deadline actually expired. A terminal API or decoding error can
-still leave a dispatched write's outcome uncertain.
 
-To also retry email writes carrying an idempotency key, use
-`.retry_policy(RetryPolicy::safe_reads().with_idempotent_writes())`. Attempts keep
-the same serialized body, key, and etag and share one operation deadline. Transient
-transport failures, incomplete bodies, retryable HTTP errors, and recognized
-in-progress conflicts can retry; size limits, unexpected success statuses,
-schema errors, and empty success bodies cannot. Nonempty JSON EOF failures can
-retry for both safe reads and opted-in keyed writes. In-progress conflicts and
-interrupted conflict bodies wait at least one second. In-progress detection
-requires the API's current message because it provides no stable error code;
-an unrecognized conflict does not establish that the original write stopped.
-Keep the original request until its outcome is known, and reconcile before retrying after
-the API's 24-hour key retention expires.
-
-Unkeyed writes and batches are never automatically replayed by the SDK.
-Shop listing and counting also disable retries because the
+Writes and batches are never automatically replayed by the SDK, even with
+retries enabled. Shop listing and counting also disable retries because the
 server may initialize an internal shop. After a write times out, check its
 outcome before submitting it again.
 

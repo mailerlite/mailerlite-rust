@@ -128,21 +128,6 @@ impl ApiError {
     pub fn is_version_conflict(&self) -> bool {
         self.status() == StatusCode::CONFLICT && self.code() == Some("version_conflict")
     }
-    /// Whether the API reports that a request with this idempotency key is still running.
-    ///
-    /// The API supplies no error code for this condition, so this recognizes only
-    /// its specific HTTP 409 message without a code. Other conflicts remain unclassified.
-    /// A reworded or translated message returns `false`; this is a conservative
-    /// check, not proof that the request is no longer running. Do not infer a
-    /// version conflict or start a new keyed write from `false` alone. Reliable
-    /// classification across message changes requires a stable server error code.
-    /// Wait before retrying the same key, body, and etag; do not start a new write
-    /// while the original outcome is uncertain.
-    pub fn is_idempotency_in_progress(&self) -> bool {
-        self.status() == StatusCode::CONFLICT
-            && self.code().is_none()
-            && self.message() == Some("A request with this Idempotency-Key is still in progress.")
-    }
     /// HTTP status returned by MailerLite.
     pub fn status(&self) -> StatusCode {
         self.metadata.status

@@ -2,11 +2,11 @@
 //!
 //! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_EMAIL_ID`, `MAILERLITE_EMAIL_ETAG`,
 //! `MAILERLITE_IDEMPOTENCY_KEY`.
-//! Opts into bounded client retries with the same key, etag, and payload. The API retains keys for
+//! Reuses the same key, etag, and payload for one retry. The API retains keys for
 //! 24 hours; after that, reconcile the original write before retrying it.
 use mailerlite_rs::{
-    Error, MailerLite, RetryPolicy,
-    models::emails::BlockContent,
+    Error, MailerLite, Response,
+    models::emails::{BlockContent, EmailBlock, EmailResponseMetadata, WithEtag},
     resources::emails::{Emails, NewBlock},
 };
 
@@ -14,9 +14,7 @@ use mailerlite_rs::{
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let api_key: String = std::env::var("MAILERLITE_API_TOKEN")?;
 
-    let mailerlite: MailerLite = MailerLite::builder(api_key)
-        .retry_policy(RetryPolicy::safe_reads().with_idempotent_writes())
-        .build()?;
+    let mailerlite: MailerLite = MailerLite::new(api_key)?;
 
     let email_id: String = std::env::var("MAILERLITE_EMAIL_ID")?;
 
@@ -30,24 +28,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let email: Emails = mailerlite.emails().with_idempotency_key(idempotency_key);
 
-    // The client retries transient failures within one deadline. Any final error
-    // can still leave the write's outcome uncertain; retain the original request.
-    let response = match email.create_block(&email_id, &etag, &block).await {
-        Ok(response) => response,
-        Err(Error::Api(error)) if error.is_idempotency_in_progress() => {
-            eprintln!(
-                "The original write is still running. Wait, then retry with the same key, body, and etag."
-            );
-            return Err(Error::Api(error).into());
-        }
-        Err(Error::Api(error)) if error.is_version_conflict() => {
-            eprintln!(
-                "The email version changed. Reconcile the original write before preparing another write."
-            );
-            return Err(Error::Api(error).into());
-        }
-        Err(error) => return Err(error.into()),
-    };
+    let response = create_block_with_retry(&email, &email_id, &etag, &block).await?;
 
     println!(
         "Block ID: {}, replay: {}",
@@ -56,4 +37,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     Ok(())
+}
+
+// A bounded retry cannot establish success if the server keeps returning an unreadable
+// response. Keep the original key and payload for reconciliation or a later retry.
+pub(crate) async fn create_block_with_retry(
+    email: &Emails<'_>,
+    email_id: &str,
+    etag: &str,
+    block: &NewBlock,
+) -> mailerlite_rs::Result<Response<WithEtag<EmailBlock>, EmailResponseMetadata>> {
+    match email.create_block(email_id, etag, block).await {
+        // The server may have committed the write before the failure. Retry once
+        // with the same key, etag, and body, even if its response was unreadable.
+        Err(Error::Transport(_) | Error::Timeout | Error::Decode(_)) => {
+            email.create_block(email_id, etag, block).await
+        }
+        result => result,
+    }
 }

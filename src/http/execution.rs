@@ -1,12 +1,12 @@
 //! Execute requests with authentication, deadlines, pacing, and retry policy.
-use super::{deadline::Deadline, endpoint::endpoint, request::Request};
+use super::{RequestBody, RequestOptions, deadline::Deadline, endpoint::endpoint};
 use crate::{
     ApiVersion, Error, MailerLite, ResponseMetadata, Result,
     error::{ApiError, DecodeError},
 };
 use bytes::Bytes;
 use reqwest::{
-    StatusCode,
+    Method, StatusCode, Url,
     header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE, HeaderMap, USER_AGENT},
 };
 use std::time::{Duration, SystemTime};
@@ -44,25 +44,30 @@ fn metadata(status: StatusCode, headers: &HeaderMap) -> ResponseMetadata {
     }
 }
 
-pub(super) async fn execute<T>(
+pub(super) async fn execute(
     client: &MailerLite,
-    request: Request<'_>,
+    method: Method,
+    path: &[&str],
+    query: &[(String, String)],
+    body: Option<&dyn RequestBody>,
+    options: RequestOptions,
     deadline: Deadline,
-    decode: impl Fn(&ResponseMetadata, &[u8]) -> Result<T>,
-) -> Result<(ResponseMetadata, T, bool)> {
-    let Request {
-        method,
-        path,
-        query,
-        body,
-        options,
-    } = request;
+) -> Result<(ResponseMetadata, Vec<u8>, bool)> {
     let url = endpoint(&client.inner.base_url, path)?;
+    execute_until(client, method, url, query, body, options, deadline).await
+}
+
+async fn execute_until(
+    client: &MailerLite,
+    method: Method,
+    url: Url,
+    query: &[(String, String)],
+    body: Option<&dyn RequestBody>,
+    options: RequestOptions,
+    deadline: Deadline,
+) -> Result<(ResponseMetadata, Vec<u8>, bool)> {
     let inner = &client.inner;
     let policy = options.policy;
-    let retry_keyed_write =
-        !policy.read_only && options.idempotency_key.is_some() && inner.retry.idempotent_writes;
-    let retry_safe = policy.read_only || retry_keyed_write;
     let serialized = body.map(|body| body.serialize()).transpose();
     deadline.check()?;
     // Take ownership of the buffer; each attempt clones only a shared handle.
@@ -99,7 +104,7 @@ pub(super) async fn execute<T>(
             Ok(response) => response,
             Err(error) => {
                 let transient = error.is_connect() || error.is_timeout() || error.is_body();
-                if retry_safe
+                if policy.read_only
                     && transient
                     && let Some(delay) = inner.retry.delay_for(attempt, None)
                     && delay < deadline.remaining()
@@ -157,19 +162,9 @@ pub(super) async fn execute<T>(
             bytes.extend_from_slice(&chunk);
         }
         if let Some(error) = body_failure {
-            // A torn conflict body cannot reliably distinguish a pending key
-            // from other conflicts. Recover its response with the same write;
-            // stop if a complete machine-readable conflict code was received.
-            let interrupted_conflict = retry_keyed_write
-                && meta.status == StatusCode::CONFLICT
-                && ApiError::new(meta.clone(), &bytes).code().is_none();
-            let retry_after = conflict_delay(meta.retry_after, interrupted_conflict);
-            if retry_safe
-                && ((meta.status.is_success()
-                    && policy.success_statuses.contains(&meta.status.as_u16()))
-                    || inner.retry.permits_status(meta.status)
-                    || interrupted_conflict)
-                && let Some(delay) = inner.retry.delay_for(attempt, retry_after)
+            if policy.read_only
+                && (meta.status.is_success() || inner.retry.permits_status(meta.status))
+                && let Some(delay) = inner.retry.delay_for(attempt, meta.retry_after)
                 && delay < deadline.remaining()
             {
                 tokio::time::sleep(delay).await;
@@ -190,51 +185,17 @@ pub(super) async fn execute<T>(
             )));
         }
         if meta.status.is_success() {
-            deadline.check()?;
-            match decode(&meta, &bytes) {
-                Ok(data) => return Ok((meta, data, replayed)),
-                Err(error) => {
-                    deadline.check()?;
-                    // Only a started JSON document with an EOF error suggests
-                    // truncation. Empty bodies and schema errors need investigation.
-                    let incomplete = bytes.iter().any(|byte| !byte.is_ascii_whitespace())
-                        && matches!(&error, Error::Decode(error)
-                            if error.json_error().is_some_and(serde_json::Error::is_eof));
-                    if retry_safe
-                        && incomplete
-                        && let Some(delay) = inner.retry.delay_for(attempt, meta.retry_after)
-                        && delay < deadline.remaining()
-                    {
-                        tokio::time::sleep(delay).await;
-                        attempt += 1;
-                        continue;
-                    }
-                    return Err(error);
-                }
-            }
+            return Ok((meta, bytes, replayed));
         }
-        let error = ApiError::new(meta, &bytes);
-        let in_progress = retry_keyed_write && error.is_idempotency_in_progress();
-        // The API supplies no Retry-After for pending keys. Avoid polling the
-        // still-running write immediately even when jitter selects zero delay.
-        let retry_after = conflict_delay(error.metadata().retry_after, in_progress);
-        if retry_safe
-            && (inner.retry.permits_status(error.status()) || in_progress)
-            && let Some(delay) = inner.retry.delay_for(attempt, retry_after)
+        if policy.read_only
+            && inner.retry.permits_status(meta.status)
+            && let Some(delay) = inner.retry.delay_for(attempt, meta.retry_after)
             && delay < deadline.remaining()
         {
             tokio::time::sleep(delay).await;
             attempt += 1;
             continue;
         }
-        return Err(Error::Api(error));
-    }
-}
-
-fn conflict_delay(retry_after: Option<Duration>, pending_or_interrupted: bool) -> Option<Duration> {
-    if pending_or_interrupted {
-        Some(retry_after.unwrap_or_default().max(Duration::from_secs(1)))
-    } else {
-        retry_after
+        return Err(Error::Api(ApiError::new(meta, &bytes)));
     }
 }

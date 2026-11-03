@@ -2,10 +2,10 @@
 use reqwest::StatusCode;
 use std::time::Duration;
 
-/// Bounded retry timing for operations explicitly classified as safe to replay.
+/// Retry timing for operations explicitly classified as safe reads.
 ///
 /// Automatic retries are disabled by default. Opt in with [`Self::safe_reads`].
-/// Keyed email writes require the additional [`Self::with_idempotent_writes`] opt-in.
+/// Writes are never automatically replayed, irrespective of this configuration.
 /// For automatic retries, a server's `Retry-After` is a minimum delay and is not
 /// shortened by the backoff cap or the five-minute shared server cooldown cap.
 #[derive(Debug, Clone)]
@@ -13,7 +13,6 @@ pub struct RetryPolicy {
     max_retries: u32,
     initial_delay: Duration,
     max_delay: Duration,
-    pub(crate) idempotent_writes: bool,
 }
 impl Default for RetryPolicy {
     fn default() -> Self {
@@ -22,50 +21,16 @@ impl Default for RetryPolicy {
 }
 impl RetryPolicy {
     /// Retry safe reads at most twice, with 500 ms initial and 8 s capped backoff.
-    /// Nonempty JSON responses ending prematurely may retry; complete empty bodies and
-    /// schema mismatches do not. All attempts share one operation deadline.
     pub fn safe_reads() -> Self {
         Self {
             max_retries: 2,
             initial_delay: Duration::from_millis(500),
             max_delay: Duration::from_secs(8),
-            idempotent_writes: false,
         }
     }
     /// Disable automatic retries.
     pub fn none() -> Self {
         Self::safe_reads().max_retries(0)
-    }
-    /// Also retry email writes carrying a caller-supplied idempotency key.
-    ///
-    /// Each attempt preserves the key, serialized body, and etag. Retries share
-    /// one operation deadline and the configured retry limit and backoff. This
-    /// does not enable retries for unkeyed writes or batches, or increase the limit.
-    ///
-    /// Retries cover transient transport failures, incomplete response bodies,
-    /// HTTP 408/429/500/502/503/504, and the API's recognized idempotency-in-progress
-    /// 409. An interrupted 409 body may also retry when no complete error code
-    /// was received. Both conflict cases wait at least one second before retrying.
-    /// Recognized version conflicts, complete empty or whitespace-only success bodies,
-    /// response size limits, unexpected success statuses, and complete responses
-    /// with invalid JSON or incompatible schemas are not retried.
-    ///
-    /// Expiry of the operation deadline returns [`crate::Error::Timeout`]. If a
-    /// retry delay will not fit in the remaining budget, the SDK stops early and
-    /// returns the last API, transport, or decoding error instead. Reaching the
-    /// retry limit also returns the last error. None of these outcomes proves
-    /// that a dispatched write failed on the server; retain its key and request.
-    ///
-    /// In-progress detection currently relies on the API's exact message because
-    /// it supplies no stable error code. Unrecognized complete conflicts are not
-    /// retried; see [`crate::ApiError::is_idempotency_in_progress`].
-    ///
-    /// Retain the key and original request until the outcome is known. The API
-    /// retains keys for 24 hours; reconcile an uncertain write before retrying
-    /// after expiry. An error does not establish that the write failed on the server.
-    pub fn with_idempotent_writes(mut self) -> Self {
-        self.idempotent_writes = true;
-        self
     }
     /// Set the number of retries after the original request.
     pub fn max_retries(mut self, retries: u32) -> Self {

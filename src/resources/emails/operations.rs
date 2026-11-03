@@ -42,26 +42,11 @@ impl<'a> Emails<'a> {
         }
     }
 
-    /// Sends the `Idempotency-Key` header with the writes of this value.
-    /// To retry transient failures with backoff, configure
-    /// [`crate::RetryPolicy::with_idempotent_writes`] on the client as well.
-    /// [`crate::RetryPolicy::safe_reads`] alone does not retry writes.
+    /// Sends the `Idempotency-Key` header with the writes of this value. If a write fails with a network
+    /// error, timeout, or unreadable response, send the same write again with the same key, body,
+    /// and etag. Writes are never retried automatically, even with [`crate::RetryPolicy::safe_reads`].
     /// If the first request was a success, the API returns the stored response, and
     /// `response.metadata.is_idempotent_replay()` is `true`.
-    ///
-    /// A timeout or incomplete response may leave the write's outcome uncertain.
-    /// Retain the same key, body, and etag. Response size limits, unexpected success
-    /// statuses, and complete responses with invalid JSON or incompatible schemas
-    /// require investigation instead of replaying the write. An in-progress 409
-    /// ([`crate::ApiError::is_idempotency_in_progress`]) requires waiting before a
-    /// retry of the original request; it is not a stale-etag conflict.
-    /// Detection depends on the server's current message; an unrecognized 409
-    /// does not prove the original write stopped. An interrupted 409 body can
-    /// retry with the same key without being classified as in progress.
-    ///
-    /// If the next retry delay cannot fit within the operation deadline, the
-    /// client returns the last error, which may be an API error rather than
-    /// [`Error::Timeout`]. Retain the original request after any uncertain outcome.
     ///
     /// - Only these methods send the key: `create_block`, `update_block`, `delete_block`, `move_block`,
     ///   `update_settings`, `create_template`, `create_version` and `restore_version`. The read methods and
@@ -237,10 +222,8 @@ impl<'a> Emails<'a> {
     /// An idempotency key that cannot be encoded as an HTTP header also fails locally.
     /// HTTP failures return [`Error::Api`]; inspect its status and validation messages.
     /// Transport, serialization, decoding, and deadline failures retain the shared client error contract.
-    /// Automatic retries require a key and [`crate::RetryPolicy::with_idempotent_writes`].
-    /// A failure after dispatch may leave the outcome uncertain; retain the original key and request.
-    /// An in-progress 409 is distinct from a version conflict; see
-    /// [`crate::ApiError::is_idempotency_in_progress`].
+    /// Writes are never automatically retried. A failure after dispatch may leave the
+    /// server outcome uncertain; reuse the same idempotency key only for the same write.
     /// A stale etag can return HTTP 409; inspect [`crate::ApiError::is_version_conflict`].
     pub async fn create_block(
         &self,
@@ -287,10 +270,8 @@ impl<'a> Emails<'a> {
     /// An idempotency key that cannot be encoded as an HTTP header also fails locally.
     /// HTTP failures return [`Error::Api`]; inspect its status and validation messages.
     /// Transport, serialization, decoding, and deadline failures retain the shared client error contract.
-    /// Automatic retries require a key and [`crate::RetryPolicy::with_idempotent_writes`].
-    /// A failure after dispatch may leave the outcome uncertain; retain the original key and request.
-    /// An in-progress 409 is distinct from a version conflict; see
-    /// [`crate::ApiError::is_idempotency_in_progress`].
+    /// Writes are never automatically retried. A failure after dispatch may leave the
+    /// server outcome uncertain; reuse the same idempotency key only for the same write.
     /// A stale etag can return HTTP 409; inspect [`crate::ApiError::is_version_conflict`].
     pub async fn update_block(
         &self,
@@ -337,10 +318,8 @@ impl<'a> Emails<'a> {
     /// An idempotency key that cannot be encoded as an HTTP header also fails locally.
     /// HTTP failures return [`Error::Api`]; inspect its status and validation messages.
     /// Transport, serialization, decoding, and deadline failures retain the shared client error contract.
-    /// Automatic retries require a key and [`crate::RetryPolicy::with_idempotent_writes`].
-    /// A failure after dispatch may leave the outcome uncertain; retain the original key and request.
-    /// An in-progress 409 is distinct from a version conflict; see
-    /// [`crate::ApiError::is_idempotency_in_progress`].
+    /// Writes are never automatically retried. A failure after dispatch may leave the
+    /// server outcome uncertain; reuse the same idempotency key only for the same write.
     /// A stale etag can return HTTP 409; inspect [`crate::ApiError::is_version_conflict`].
     pub async fn delete_block(
         &self,
@@ -391,10 +370,8 @@ impl<'a> Emails<'a> {
     /// An idempotency key that cannot be encoded as an HTTP header also fails locally.
     /// HTTP failures return [`Error::Api`]; inspect its status and validation messages.
     /// Transport, serialization, decoding, and deadline failures retain the shared client error contract.
-    /// Automatic retries require a key and [`crate::RetryPolicy::with_idempotent_writes`].
-    /// A failure after dispatch may leave the outcome uncertain; retain the original key and request.
-    /// An in-progress 409 is distinct from a version conflict; see
-    /// [`crate::ApiError::is_idempotency_in_progress`].
+    /// Writes are never automatically retried. A failure after dispatch may leave the
+    /// server outcome uncertain; reuse the same idempotency key only for the same write.
     /// A stale etag can return HTTP 409; inspect [`crate::ApiError::is_version_conflict`].
     pub async fn move_block(
         &self,
@@ -486,10 +463,8 @@ impl<'a> Emails<'a> {
     /// A top-level `etag` extension key is rejected because the SDK supplies it.
     /// HTTP failures return [`Error::Api`]; inspect its status and validation messages.
     /// Transport, serialization, decoding, and deadline failures retain the shared client error contract.
-    /// Automatic retries require a key and [`crate::RetryPolicy::with_idempotent_writes`].
-    /// A failure after dispatch may leave the outcome uncertain; retain the original key and request.
-    /// An in-progress 409 is distinct from a version conflict; see
-    /// [`crate::ApiError::is_idempotency_in_progress`].
+    /// Writes are never automatically retried. A failure after dispatch may leave the
+    /// server outcome uncertain; reuse the same idempotency key only for the same write.
     /// A stale etag can return HTTP 409; inspect [`crate::ApiError::is_version_conflict`].
     pub async fn update_settings(
         &self,
@@ -580,10 +555,8 @@ impl<'a> Emails<'a> {
     /// An idempotency key that cannot be encoded as an HTTP header also fails locally.
     /// HTTP failures return [`Error::Api`]; inspect its status and validation messages.
     /// Transport, serialization, decoding, and deadline failures retain the shared client error contract.
-    /// Automatic retries require a key and [`crate::RetryPolicy::with_idempotent_writes`].
-    /// A failure after dispatch may leave the outcome uncertain; retain the original key and request.
-    /// An in-progress 409 is distinct from a version conflict; see
-    /// [`crate::ApiError::is_idempotency_in_progress`].
+    /// Writes are never automatically retried. A failure after dispatch may leave the
+    /// server outcome uncertain; reuse the same idempotency key only for the same write.
     pub async fn create_template(
         &self,
         email_id: impl AsRef<str>,
@@ -671,10 +644,8 @@ impl<'a> Emails<'a> {
     /// An idempotency key that cannot be encoded as an HTTP header also fails locally.
     /// HTTP failures return [`Error::Api`]; inspect its status and validation messages.
     /// Transport, serialization, decoding, and deadline failures retain the shared client error contract.
-    /// Automatic retries require a key and [`crate::RetryPolicy::with_idempotent_writes`].
-    /// A failure after dispatch may leave the outcome uncertain; retain the original key and request.
-    /// An in-progress 409 is distinct from a version conflict; see
-    /// [`crate::ApiError::is_idempotency_in_progress`].
+    /// Writes are never automatically retried. A failure after dispatch may leave the
+    /// server outcome uncertain; reuse the same idempotency key only for the same write.
     pub async fn create_version(
         &self,
         email_id: impl AsRef<str>,
@@ -715,10 +686,8 @@ impl<'a> Emails<'a> {
     /// An idempotency key that cannot be encoded as an HTTP header also fails locally.
     /// HTTP failures return [`Error::Api`]; inspect its status and validation messages.
     /// Transport, serialization, decoding, and deadline failures retain the shared client error contract.
-    /// Automatic retries require a key and [`crate::RetryPolicy::with_idempotent_writes`].
-    /// A failure after dispatch may leave the outcome uncertain; retain the original key and request.
-    /// An in-progress 409 is distinct from a version conflict; see
-    /// [`crate::ApiError::is_idempotency_in_progress`].
+    /// Writes are never automatically retried. A failure after dispatch may leave the
+    /// server outcome uncertain; reuse the same idempotency key only for the same write.
     /// A stale etag can return HTTP 409; inspect [`crate::ApiError::is_version_conflict`].
     pub async fn restore_version(
         &self,
