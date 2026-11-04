@@ -1,25 +1,8 @@
-//! Simple-editor email documents, optional typed content helpers, settings, and response envelopes.
-mod attributes;
+//! Simple-editor email documents, settings, and response envelopes.
 mod choices;
-mod content;
 mod models;
 mod wire;
-pub use attributes::{
-    BlockquoteAttributes, ButtonAttributes, CodeAttributes, DividerAttributes,
-    EditorNumberOrString, HeadingAttributes, ImageAttributes, LinkMarkAttributes,
-    ParagraphAttributes, SocialIconAttributes, SocialIconItem, TextStyleMarkAttributes,
-    VariableAttributes, VideoAttributes,
-};
-pub use choices::{
-    BlockAlignment, BlockVisibility, ButtonSize, ButtonStyle, ButtonWidth, DividerStyle,
-    EmailOwnerType, EmailTemplateType, EmailType, FooterRole, SocialIconColor, SocialIconShape,
-    SocialLinkType, TextAlignment, VideoPreview,
-};
-pub use content::{
-    BlockContent, BlockData, BlockType, EmptyNode, InlineNode, InlineText, LinkMark, ListBlockData,
-    ListItem, ListItemType, MediaBlockData, MobileOverrides, OpenAttributes, TextMark,
-    TextStyleMark, TitleBlockData, VariableNode,
-};
+pub use choices::{BlockType, EmailOwnerType, EmailTemplateType, EmailType, SocialLinkType};
 pub use models::{
     BlockPlacement, Brand, BrandMode, Button, EditorText, EmailBlock, EmailDocument, EmailHtml,
     EmailResponseMetadata, EmailSettings, EmailTemplate, EmailVersion, EtagOnly, FontWeight,

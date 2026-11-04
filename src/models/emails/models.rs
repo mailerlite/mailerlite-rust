@@ -769,4 +769,89 @@ mod tests {
             );
         }
     }
+    #[test]
+    fn nullable_attributes_decode() {
+        for (kind, attrs) in [
+            (
+                "image",
+                json!({"src":"https://example.test/image.png","url":null,"alt":null,"caption":null,"linkType":null}),
+            ),
+            ("button", json!({"url":null,"linkType":null})),
+            ("paragraph", json!({"class":null})),
+            ("video", json!({"alt":null,"videoCode":null})),
+            (
+                "social_icon",
+                json!({"items":[{"uuid":"one","type":"website","url":"https://example.test","label":null}]}),
+            ),
+        ] {
+            let result = serde_json::from_value::<EmailBlock>(
+                json!({"id":"57","type":kind,"editor_content":{"attrs":attrs}}),
+            );
+            assert!(result.is_ok(), "{kind}: {result:?}");
+        }
+    }
+
+    #[test]
+    fn placeholder_and_fractional_images_decode() {
+        for attrs in [
+            json!({}),
+            json!({"src":null}),
+            json!({"src":"https://example.test/image.png","width":300.5,"height":150.25}),
+        ] {
+            let result = serde_json::from_value::<EmailBlock>(
+                json!({"id":"57","type":"image","editor_content":{"attrs":attrs}}),
+            );
+            assert!(result.is_ok(), "{result:?}");
+            if attrs.get("width").is_some() {
+                assert_eq!(
+                    result.unwrap().editor_content["attrs"]["width"],
+                    json!(300.5)
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn nullable_document_fields_decode_consistently() {
+        for kind in [
+            "paragraph",
+            "heading",
+            "button",
+            "image",
+            "bulleted_list",
+            "title",
+        ] {
+            let result = serde_json::from_value::<EmailBlock>(
+                json!({"id":"57","type":kind,"editor_content":{"attrs":null,"content":null,"mobile":null,"visibility":null}}),
+            );
+            assert!(result.is_ok(), "{kind}: {result:?}");
+        }
+    }
+
+    #[test]
+    fn null_block_documents_preserve_kind_and_default_children() {
+        for kind in ["paragraph", "image", "future_block"] {
+            let block: EmailBlock = serde_json::from_value(
+                json!({"id":"57","type":kind,"editor_content":null,"children":null}),
+            )
+            .unwrap();
+            assert!(block.children.is_empty());
+            assert_eq!(block.editor_content, Value::Null);
+            assert_eq!(block.block_type.as_str(), kind);
+        }
+    }
+
+    #[test]
+    fn empty_documents_and_unknown_block_variants_remain_usable() {
+        for kind in ["paragraph", "future_block"] {
+            for content in [json!({}), json!([]), json!({"opaque":[null,{"x":42}]})] {
+                let block: EmailBlock = serde_json::from_value(
+                    json!({"id":"001","type":kind,"editor_content":content}),
+                )
+                .unwrap();
+                assert_eq!(block.editor_content, content);
+                assert_eq!(block.block_type.as_str(), kind);
+            }
+        }
+    }
 }

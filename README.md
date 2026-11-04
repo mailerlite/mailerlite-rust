@@ -148,9 +148,8 @@ Blocks expose `block_type` and free-form `editor_content: serde_json::Value`.
 Editor documents, including footer text, retain their JSON values unchanged,
 including nulls, unknown nodes, and schema-specific attribute types.
 Call `update_block` with a block ID, etag, and the replacement JSON document;
-the API validates it against the stored block kind. Optional `BlockContent`
-helpers can produce JSON through `editor_content()`, but are never required
-for reading or writing editor documents.
+the API validates it against the stored block kind. Build editor documents with
+`serde_json::json!` or serialize your application's own types with `serde_json::to_value`.
 Use `Placement::before(id)`, `after(id)`, `start()`, or `end()` for convenience,
 or construct `Placement { position, block_id }` directly. The SDK passes these
 fields through; the API validates their combination.
