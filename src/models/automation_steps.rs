@@ -1,4 +1,4 @@
-//! Automation step reports and subscriber executions verified against backend resources.
+//! Automation step reports and subscriber executions.
 use crate::models::common::Rate;
 use serde::Deserialize;
 use std::collections::BTreeMap;
@@ -57,7 +57,7 @@ pub struct AbPathStats {
     pub click_to_open_rate: Rate,
 }
 
-/// A/B step results returned by `AbTestStatsResource`.
+/// A/B step results with traffic allocation and statistics for each active path.
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct AbTestStats {
@@ -93,7 +93,7 @@ pub struct StepSubscriberIdentity {
     pub email: String,
 }
 
-/// A subscriber execution returned by `AutomationStepSubscribersResource`.
+/// A subscriber execution of an automation step.
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct StepSubscriber {

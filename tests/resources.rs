@@ -40,3 +40,18 @@ mod segments;
 mod subscribers;
 #[path = "resources/webhooks.rs"]
 mod webhooks;
+
+#[path = "support/editor.rs"]
+mod editor_support;
+
+#[path = "resources/emails.rs"]
+mod emails;
+
+#[path = "resources/files.rs"]
+mod files;
+
+#[path = "resources/brand_styles.rs"]
+mod brand_styles;
+
+#[path = "resources/campaign_editor.rs"]
+mod campaign_editor;

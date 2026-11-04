@@ -1,4 +1,4 @@
-//! Automation templates verified against `AutomationTemplateResource`.
+//! Reusable automation workflow templates.
 use serde::Deserialize;
 
 /// A reusable automation workflow template.

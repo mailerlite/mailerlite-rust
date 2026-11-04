@@ -1,8 +1,6 @@
-//! Automation actions and reports backed by MailerLite route, request, and resource schemas.
+//! Automation management, subscriber enrollment, and reporting operations.
 //!
-//! These methods preserve v1 capabilities through the v2 transport. The additional
-//! contracts were checked against the MailerLite backend source. Availability of
-//! these additional routes depends on the deployment.
+//! Availability of additional automation routes depends on the deployment.
 use super::automations::{ActivityStatus, Automations};
 use crate::{
     Error, Response, Result,
