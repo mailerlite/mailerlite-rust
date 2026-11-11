@@ -119,6 +119,8 @@ when using HTTP, JSON, serialization, or stream types directly.
 Create a draft using `CreateCampaign::simple_editor()` or
 `.simple_editor_template(template_id)`, then edit its returned email IDs through
 `mailerlite.emails()`. Simple-editor creation cannot include HTML `content`.
+The `template_id` can be a shared gallery template or a simple-editor template
+that you saved from your own email with `emails().create_template()`.
 
 ```rust
 use mailerlite_rs::{MailerLite, resources::campaigns::{CreateCampaign, Email}};

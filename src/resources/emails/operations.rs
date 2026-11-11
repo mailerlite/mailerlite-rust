@@ -549,6 +549,8 @@ impl<'a> Emails<'a> {
     }
 
     /// Saves a copy of an email as a new template (status `201`). The API cannot delete templates.
+    /// To start a campaign from the template, give its `id` to
+    /// [`CreateCampaign::simple_editor_template`](crate::resources::campaigns::CreateCampaign::simple_editor_template).
     ///
     /// # Examples
     /// ```no_run
