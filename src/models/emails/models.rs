@@ -380,7 +380,8 @@ pub struct Validation {
     pub errors: BTreeMap<String, Vec<String>>,
     /// Version and hash of the validation rules used by the server.
     pub schema: ValidationSchema,
-    /// The keys of the unsafe values that the API removed. Only the settings validation has it.
+    /// The keys that the API removed, if there are some. The block validation and the settings
+    /// validation have it. The API omits it when `valid` is `false`.
     #[serde(default)]
     pub rejected: Option<Rejected>,
 }
@@ -395,13 +396,15 @@ pub struct ValidationSchema {
     pub hash: Option<String>,
 }
 
-/// The unsafe values that the API removed or replaced.
+/// The values that the API removed or replaced. The block writes, the settings update and the two
+/// validations can return it.
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct Rejected {
-    /// Server explanation of rejected settings.
+    /// Server explanation of the rejected values.
     pub message: String,
-    /// The paths of the keys, for example `footer.social_links[0].url`.
+    /// The paths of the keys, for example `editor_content.attrs.onclick` or
+    /// `footer.social_links[0].url`.
     #[serde(default)]
     pub keys: Vec<String>,
 }
@@ -415,6 +418,20 @@ pub struct SettingsResult {
     /// Send this etag with the next write to the email.
     pub etag: String,
     /// The keys of the unsafe values that the API removed or replaced, if there are some.
+    #[serde(default)]
+    pub rejected: Option<Rejected>,
+}
+
+/// The response of `Emails::create_block` and `Emails::update_block`.
+#[derive(Debug, Clone, Deserialize)]
+#[non_exhaustive]
+pub struct BlockWriteResult {
+    /// Typed payload returned inside the API envelope.
+    pub data: EmailBlock,
+    /// Send this etag with the next write to the email.
+    pub etag: String,
+    /// The keys of the attributes that the block type does not declare. The API removed them and
+    /// saved the rest of the block.
     #[serde(default)]
     pub rejected: Option<Rejected>,
 }

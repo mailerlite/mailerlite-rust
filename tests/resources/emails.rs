@@ -5,9 +5,10 @@ use crate::editor_support::{BAD_IDS, assert_no_request, expect_request, fixture,
 use mailerlite_rs::{
     Error, Response,
     models::emails::{
-        BlockType, BrandMode, EditorText, EmailBlock, EmailDocument, EmailHtml, EmailOwnerType,
-        EmailResponseMetadata, EmailTemplate, EmailTemplateType, EmailType, EmailVersion, EtagOnly,
-        Position, SettingsResult, SocialLinkType, VERSION_CONFLICT, Validation, WithEtag,
+        BlockType, BlockWriteResult, BrandMode, EditorText, EmailBlock, EmailDocument, EmailHtml,
+        EmailOwnerType, EmailResponseMetadata, EmailTemplate, EmailTemplateType, EmailType,
+        EmailVersion, EtagOnly, Position, SettingsResult, SocialLinkType, VERSION_CONFLICT,
+        Validation, WithEtag,
     },
     pagination::NumberedPage,
     resources::emails::{
@@ -314,7 +315,7 @@ async fn create_block_sends_the_block_and_the_etag() {
     )
     .await;
 
-    let response: Response<WithEtag<EmailBlock>, EmailResponseMetadata> = mailerlite(&server)
+    let response: Response<BlockWriteResult, EmailResponseMetadata> = mailerlite(&server)
         .emails()
         .create_block("123", "42", &new_paragraph(Some(Placement::after("57"))))
         .await
@@ -327,6 +328,38 @@ async fn create_block_sends_the_block_and_the_etag() {
     let placement = response.data.data.placement.as_ref().unwrap();
     assert_eq!(placement.after.as_deref(), Some("57"));
     assert_eq!(placement.before, None);
+    assert!(response.data.rejected.is_none());
+}
+
+#[tokio::test]
+async fn create_block_gives_the_keys_that_the_api_rejected() {
+    let server: MockServer = MockServer::start().await;
+    let mock: MockGuard = expect_request(
+        &server,
+        "POST",
+        "/emails/123/blocks",
+        Some(json!({
+            "type": "paragraph",
+            "editor_content": {"attrs": {"textAlign": "center"}, "content": [{"type": "text", "text": "Hi"}]},
+            "etag": "42"
+        })),
+        201,
+        &fixture("email_block_created_rejected"),
+    )
+    .await;
+
+    let response: Response<BlockWriteResult, EmailResponseMetadata> = mailerlite(&server)
+        .emails()
+        .create_block("123", "42", &new_paragraph(None))
+        .await
+        .unwrap();
+
+    assert_eq!(mock.received_requests().await.len(), 1);
+    assert_eq!(response.data.etag, "43");
+    assert_eq!(response.data.data.id, "58");
+    let rejected = response.data.rejected.as_ref().unwrap();
+    assert_eq!(rejected.message, "Some attributes were rejected.");
+    assert_eq!(rejected.keys, vec!["editor_content.attrs.onclick"]);
 }
 
 #[tokio::test]
@@ -537,7 +570,7 @@ async fn update_block_patches_the_content() {
     )
     .await;
 
-    let response: Response<WithEtag<EmailBlock>, EmailResponseMetadata> = mailerlite(&server)
+    let response: Response<BlockWriteResult, EmailResponseMetadata> = mailerlite(&server)
         .emails()
         .update_block("123", "57", "43", &hello_again())
         .await
@@ -552,6 +585,37 @@ async fn update_block_patches_the_content() {
     let placement = response.data.data.placement.as_ref().unwrap();
     assert_eq!(placement.after.as_deref(), Some("56"));
     assert_eq!(placement.before.as_deref(), Some("58"));
+    assert!(response.data.rejected.is_none());
+}
+
+#[tokio::test]
+async fn update_block_gives_the_keys_that_the_api_rejected() {
+    let server: MockServer = MockServer::start().await;
+    let mock: MockGuard = expect_request(
+        &server,
+        "PATCH",
+        "/emails/123/blocks/57",
+        Some(json!({
+            "editor_content": {"content": [{"type": "text", "text": "Hello again"}]},
+            "etag": "43"
+        })),
+        200,
+        &fixture("email_block_updated_rejected"),
+    )
+    .await;
+
+    let response: Response<BlockWriteResult, EmailResponseMetadata> = mailerlite(&server)
+        .emails()
+        .update_block("123", "57", "43", &hello_again())
+        .await
+        .unwrap();
+
+    assert_eq!(mock.received_requests().await.len(), 1);
+    assert_eq!(response.data.etag, "44");
+    assert_eq!(response.data.data.id, "57");
+    let rejected = response.data.rejected.as_ref().unwrap();
+    assert_eq!(rejected.message, "Some attributes were rejected.");
+    assert_eq!(rejected.keys, vec!["editor_content.mobile.onclick"]);
 }
 
 #[tokio::test]
@@ -902,6 +966,35 @@ async fn validate_block_sends_the_block_without_an_etag() {
     assert_eq!(response.data.schema.version.as_deref(), Some("2.73.2"));
     assert_eq!(response.data.schema.hash.as_deref(), Some("0f3a9c"));
     assert!(response.data.rejected.is_none());
+}
+
+#[tokio::test]
+async fn validate_block_gives_the_keys_that_the_api_rejected() {
+    let server: MockServer = MockServer::start().await;
+    let mock: MockGuard = expect_request(
+        &server,
+        "POST",
+        "/emails/blocks/validate",
+        Some(json!({
+            "type": "paragraph",
+            "editor_content": {"attrs": {"textAlign": "center"}, "content": [{"type": "text", "text": "Hi"}]}
+        })),
+        200,
+        &fixture("email_block_validation_rejected"),
+    )
+    .await;
+
+    let response: Response<Validation, EmailResponseMetadata> = mailerlite(&server)
+        .emails()
+        .validate_block(&new_paragraph(None))
+        .await
+        .unwrap();
+
+    assert_eq!(mock.received_requests().await.len(), 1);
+    assert!(response.data.valid);
+    let rejected = response.data.rejected.as_ref().unwrap();
+    assert_eq!(rejected.message, "Some attributes were rejected.");
+    assert_eq!(rejected.keys, vec!["editor_content.attrs.onclick"]);
 }
 
 #[tokio::test]
@@ -1925,9 +2018,9 @@ async fn placeholder_images_decode_on_reads_and_writes() {
         )
         .await
         .unwrap();
-    for response in [fetched, created, updated] {
-        assert_eq!(response.data.data.block_type, BlockType::Image);
-        assert_eq!(response.data.data.editor_content, image["editor_content"]);
+    for block in [fetched.data.data, created.data.data, updated.data.data] {
+        assert_eq!(block.block_type, BlockType::Image);
+        assert_eq!(block.editor_content, image["editor_content"]);
     }
     assert_eq!(get.received_requests().await.len(), 1);
     assert_eq!(create.received_requests().await.len(), 1);

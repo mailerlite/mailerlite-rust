@@ -159,6 +159,10 @@ from `models::emails`. Versioned operations return
 `Response<WithEtag<T>, EmailResponseMetadata>`: HTTP metadata is in
 `response.metadata.http`, the current version is `response.data.etag`, and the
 resource is `response.data.data`. Pass the latest etag to the next write.
+`create_block` and `update_block` return `BlockWriteResult`, and
+`update_settings` returns `SettingsResult`. Both have the same `data` and
+`etag`, and `rejected` names the keys that the API removed before it saved the
+write. `validate_block` and `validate_settings` also return `rejected`.
 For HTTP 409 conflicts, inspect `ApiError::is_version_conflict()` and `etag()`;
 refetch and reconcile before attempting another write.
 

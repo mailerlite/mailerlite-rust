@@ -1,0 +1,16 @@
+{
+  "data": {
+    "id": "58",
+    "type": "paragraph",
+    "editor_content": {
+      "attrs": {"textAlign": "center"},
+      "content": [{"text": "Hi", "type": "text"}]
+    },
+    "placement": {"after": "57", "before": null}
+  },
+  "etag": "43",
+  "rejected": {
+    "message": "Some attributes were rejected.",
+    "keys": ["editor_content.attrs.onclick"]
+  }
+}
