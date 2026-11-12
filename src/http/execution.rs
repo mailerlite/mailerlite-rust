@@ -1,5 +1,5 @@
 //! Execute requests with authentication, deadlines, pacing, and retry policy.
-use super::{OperationPolicy, RequestBody, deadline::Deadline, endpoint::endpoint};
+use super::{RequestBody, RequestOptions, deadline::Deadline, endpoint::endpoint};
 use crate::{
     ApiVersion, Error, MailerLite, ResponseMetadata, Result,
     error::{ApiError, DecodeError},
@@ -50,11 +50,11 @@ pub(super) async fn execute(
     path: &[&str],
     query: &[(String, String)],
     body: Option<&dyn RequestBody>,
-    policy: OperationPolicy,
+    options: RequestOptions,
     deadline: Deadline,
-) -> Result<(ResponseMetadata, Vec<u8>)> {
+) -> Result<(ResponseMetadata, Vec<u8>, bool)> {
     let url = endpoint(&client.inner.base_url, path)?;
-    execute_until(client, method, url, query, body, policy, deadline).await
+    execute_until(client, method, url, query, body, options, deadline).await
 }
 
 async fn execute_until(
@@ -63,10 +63,11 @@ async fn execute_until(
     url: Url,
     query: &[(String, String)],
     body: Option<&dyn RequestBody>,
-    policy: OperationPolicy,
+    options: RequestOptions,
     deadline: Deadline,
-) -> Result<(ResponseMetadata, Vec<u8>)> {
+) -> Result<(ResponseMetadata, Vec<u8>, bool)> {
     let inner = &client.inner;
+    let policy = options.policy;
     let serialized = body.map(|body| body.serialize()).transpose();
     deadline.check()?;
     // Take ownership of the buffer; each attempt clones only a shared handle.
@@ -88,6 +89,9 @@ async fn execute_until(
                 concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION")),
             )
             .timeout(inner.request_timeout);
+        if let Some(key) = &options.idempotency_key {
+            request = request.header("Idempotency-Key", key.clone());
+        }
         if let ApiVersion::Pinned(version) = &inner.version {
             request = request.header("X-Version", version.as_str());
         }
@@ -112,6 +116,11 @@ async fn execute_until(
                 return Err(Error::Transport(error.without_url()));
             }
         };
+        let replayed = response
+            .headers()
+            .get("Idempotent-Replayed")
+            .and_then(|value| value.to_str().ok())
+            .is_some_and(|value| value.trim().eq_ignore_ascii_case("true"));
         let meta = metadata(response.status(), response.headers());
         #[cfg(feature = "tracing")]
         tracing::debug!(
@@ -176,7 +185,7 @@ async fn execute_until(
             )));
         }
         if meta.status.is_success() {
-            return Ok((meta, bytes));
+            return Ok((meta, bytes, replayed));
         }
         if policy.read_only
             && inner.retry.permits_status(meta.status)

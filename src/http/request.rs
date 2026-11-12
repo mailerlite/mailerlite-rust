@@ -1,5 +1,6 @@
 //! Internal operation classification and request serialization.
 use crate::{Error, Result};
+use reqwest::header::HeaderValue;
 
 /// Retry and local rate-limit policy attached to an operation.
 #[derive(Debug, Clone, Copy)]
@@ -32,6 +33,22 @@ impl OperationPolicy {
         import: true,
         success_statuses: &[200, 202],
     };
+}
+
+/// Per-request state kept separate from reusable operation classification.
+#[derive(Debug)]
+pub(crate) struct RequestOptions {
+    pub policy: OperationPolicy,
+    pub idempotency_key: Option<HeaderValue>,
+}
+
+impl From<OperationPolicy> for RequestOptions {
+    fn from(policy: OperationPolicy) -> Self {
+        Self {
+            policy,
+            idempotency_key: None,
+        }
+    }
 }
 
 /// Borrow a typed payload until serialization inside the operation deadline.

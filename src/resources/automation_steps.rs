@@ -1,7 +1,6 @@
 //! Automation workflow steps, counts, A/B results, and subscriber activity.
 //!
-//! Contracts are verified against the MailerLite backend's step controllers,
-//! request validators, and JSON resources. Step edits require an inactive automation.
+//! Step edits require an inactive automation.
 use crate::models::automation_configuration::{
     STEP_FIELDS, StepConfiguration, configuration_fields,
 };

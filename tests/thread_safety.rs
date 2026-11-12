@@ -355,3 +355,40 @@ mod streams {
         });
     }
 }
+
+#[test]
+fn simple_editor_resource_futures_are_send() {
+    use mailerlite_rs::{
+        models::emails::BlockType,
+        resources::emails::{EmailSettingsUpdate, NewBlock},
+    };
+    let client = client();
+    let emails = client.emails();
+    let block = NewBlock {
+        block_type: BlockType::Divider,
+        editor_content: serde_json::json!({}),
+        placement: None,
+    };
+    let settings = EmailSettingsUpdate::default();
+    assert_send_future(emails.get("123"));
+    assert_send_future(emails.html("123"));
+    assert_send_future(emails.get_block("123", "456"));
+    assert_send_future(emails.update_block("123", "456", "42", &block.editor_content));
+    assert_send_future(emails.delete_block("123", "456", "42"));
+    assert_send_future(emails.move_block(
+        "123",
+        "456",
+        "42",
+        &mailerlite_rs::resources::emails::Placement::end(),
+    ));
+    assert_send_future(emails.validate_block(&block));
+    assert_send_future(emails.validate_settings("123", &settings));
+    assert_send_future(emails.create_template("123", "Newsletter"));
+    assert_send_future(emails.create_version("123"));
+    assert_send_future(emails.restore_version("123", "901", "42"));
+    assert_send_future(emails.create_block("123", "42", &block));
+    assert_send_future(emails.update_settings("123", "42", &settings));
+    assert_send_future(emails.versions("123", Default::default()));
+    assert_send_future(client.brand_styles().get());
+    assert_send_future(client.files().list().send());
+}

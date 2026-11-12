@@ -197,6 +197,12 @@ operations. Known discriminators should select typed variants. Malformed known
 payloads must fail decoding; future variants and genuinely open fields need
 explicit extension boundaries.
 
+Email `editor_content` is an explicit open boundary: preserve it as
+`serde_json::Value` in block and footer models and write parameters. Keep the
+block discriminator typed, but leave editor document validation to the API.
+Do not add public types for editor nodes, marks, or attributes; callers can
+construct JSON directly or serialize their own application types.
+
 Treat server-owned resource, report, activity, webhook-delivery, and enriched
 response configuration structs as extensible records: use `#[non_exhaustive]`
 so new fields do not require downstream struct literals to change. Evolving

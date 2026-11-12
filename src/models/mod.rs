@@ -23,10 +23,13 @@ pub mod automation_templates;
 pub mod automation_triggers;
 pub mod automations;
 pub mod batch;
+pub mod brand_styles;
 pub mod campaigns;
 pub mod common;
 pub mod ecommerce;
+pub mod emails;
 pub mod fields;
+pub mod files;
 pub mod forms;
 pub mod groups;
 pub mod ids;
@@ -42,3 +45,4 @@ pub use ids::{
     AutomationId, CampaignId, CartId, CartItemId, CategoryId, CustomerId, FieldId, FormId, GroupId,
     ImportId, OrderId, ProductId, SegmentId, ShopId, SubscriberId, WebhookId,
 };
+mod open_enum;

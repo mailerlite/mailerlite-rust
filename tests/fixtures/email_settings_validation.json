@@ -1,0 +1,5 @@
+{
+  "valid": false,
+  "errors": {"layout.width": ["The layout.width field cannot be changed."]},
+  "schema": {"version": "2.73.2", "hash": "0f3a9c"}
+}
