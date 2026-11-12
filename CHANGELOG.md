@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.1.0](https://github.com/mailerlite/mailerlite-rust/compare/v2.0.0...v2.1.0) (2026-11-12)
+
+
+### Features
+
+* **emails:** add typed editor content and request models ([770116a](https://github.com/mailerlite/mailerlite-rust/commit/770116a2b34beccb27861299d003573cd9169a6f))
+* **emails:** return the rejected keys on block create and update ([b6b5a07](https://github.com/mailerlite/mailerlite-rust/commit/b6b5a07149bde359077e70bf6f921dc36471dafe))
+* **transport:** add opt-in retries for idempotent email writes ([8eef540](https://github.com/mailerlite/mailerlite-rust/commit/8eef54004cdcffea62cc19528d32fcd18ca4a349))
+
+
+### Bug Fixes
+
+* **emails:** address review feedback on examples and shared queries ([3b0cdc4](https://github.com/mailerlite/mailerlite-rust/commit/3b0cdc452e426c541b9481433e601d88e674565c))
+* **emails:** align editor APIs with v2 contracts and compatibility ([7958197](https://github.com/mailerlite/mailerlite-rust/commit/7958197f49ae26c2adbbbe8385e952247b5cb67f))
+* **emails:** handle nullable content and validate block updates ([5017a7a](https://github.com/mailerlite/mailerlite-rust/commit/5017a7a29998bde7499bbe19b23a797ca56cc423))
+* **emails:** preserve write identity across ambiguous failures ([b688ea7](https://github.com/mailerlite/mailerlite-rust/commit/b688ea76de1dda33436f099c877dfc2612953623))
+* **emails:** simplify block updates and preserve nullable content ([7bfd4f5](https://github.com/mailerlite/mailerlite-rust/commit/7bfd4f51156d244c05bb70cab0f4f1673ae15c2c))
+* **transport:** retry incomplete responses through typed decoding ([457b96b](https://github.com/mailerlite/mailerlite-rust/commit/457b96b6c92dfc05a856762d2f200ce4e290eb50))
+
 ## [2.0.0](https://github.com/mailerlite/mailerlite-rust/compare/v1.1.0...v2.0.0) (2026-10-31)
 
 
