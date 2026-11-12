@@ -1262,15 +1262,32 @@ async fn validate_settings_gives_the_keys_that_the_api_would_reject() {
         &server,
         "POST",
         "/emails/123/settings/validate",
-        Some(settings_update_json()),
+        Some(json!({
+            "footer": {
+                "social_links": [
+                    {"url": "javascript:alert(1)", "type": "facebook", "label": "Facebook"}
+                ]
+            }
+        })),
         200,
         &fixture("email_settings_validation_rejected"),
     )
     .await;
 
+    let settings: EmailSettingsUpdate = EmailSettingsUpdate {
+        footer: Some(FooterUpdate {
+            social_links: Some(vec![SocialLinkUpdate::new(
+                "javascript:alert(1)",
+                SocialLinkType::Facebook,
+                "Facebook",
+            )]),
+            ..Default::default()
+        }),
+        ..Default::default()
+    };
     let response: Response<Validation, EmailResponseMetadata> = mailerlite(&server)
         .emails()
-        .validate_settings("123", &settings_update())
+        .validate_settings("123", &settings)
         .await
         .unwrap();
 
