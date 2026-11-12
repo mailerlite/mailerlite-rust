@@ -30,6 +30,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if !response.data.valid {
         println!("{:#?}", response.data.errors);
+    } else if let Some(rejected) = &response.data.rejected {
+        println!("Rejected keys: {:?}", rejected.keys);
     }
 
     Ok(())

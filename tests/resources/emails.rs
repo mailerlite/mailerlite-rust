@@ -1250,10 +1250,34 @@ async fn validate_settings_sends_the_settings_without_an_etag() {
         vec!["The layout.width field cannot be changed."]
     );
     assert_eq!(response.data.schema.version.as_deref(), Some("2.73.2"));
-    assert_eq!(
-        response.data.rejected.as_ref().unwrap().keys,
-        vec!["footer.social_links[0].url"]
-    );
+    assert!(response.data.rejected.is_none());
+}
+
+#[tokio::test]
+async fn validate_settings_gives_the_keys_that_the_api_would_reject() {
+    let server: MockServer = MockServer::start().await;
+    let mock: MockGuard = expect_request(
+        &server,
+        "POST",
+        "/emails/123/settings/validate",
+        Some(settings_update_json()),
+        200,
+        &fixture("email_settings_validation_rejected"),
+    )
+    .await;
+
+    let response: Response<Validation, EmailResponseMetadata> = mailerlite(&server)
+        .emails()
+        .validate_settings("123", &settings_update())
+        .await
+        .unwrap();
+
+    assert_eq!(mock.received_requests().await.len(), 1);
+    assert!(response.data.valid);
+    assert!(response.data.errors.is_empty());
+    let rejected = response.data.rejected.as_ref().unwrap();
+    assert_eq!(rejected.message, "Some attributes were rejected.");
+    assert_eq!(rejected.keys, vec!["footer.social_links[0].url"]);
 }
 
 #[tokio::test]

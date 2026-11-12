@@ -203,8 +203,9 @@ impl<'a> Emails<'a> {
     }
 
     /// Inserts a block into an email. Returns the new block (status `201`), the new etag and the rejected
-    /// keys. The API removes the attributes and the `mobile` keys that the block type does not declare,
-    /// and saves the rest of the block. `rejected` names the removed keys.
+    /// keys. The API removes the keys that the block type does not declare, at the top level of the
+    /// content, in `attrs` and in `mobile`, and saves the rest of the block. `rejected` names the
+    /// removed keys.
     ///
     /// # Examples
     /// ```no_run
@@ -217,7 +218,7 @@ impl<'a> Emails<'a> {
     /// let response = client.emails().create_block("123", "current-etag", &block).await?;
     ///
     /// if let Some(rejected) = &response.data.rejected {
-    ///     println!("Removed keys: {:?}", rejected.keys);
+    ///     println!("Rejected keys: {:?}", rejected.keys);
     /// }
     /// # Ok(())
     /// # }
@@ -269,7 +270,7 @@ impl<'a> Emails<'a> {
     /// let response = client.emails().update_block("123", "456", "current-etag", &content).await?;
     ///
     /// if let Some(rejected) = &response.data.rejected {
-    ///     println!("Removed keys: {:?}", rejected.keys);
+    ///     println!("Rejected keys: {:?}", rejected.keys);
     /// }
     /// # Ok(())
     /// # }

@@ -380,8 +380,9 @@ pub struct Validation {
     pub errors: BTreeMap<String, Vec<String>>,
     /// Version and hash of the validation rules used by the server.
     pub schema: ValidationSchema,
-    /// The keys that the API removed, if there are some. The block validation and the settings
-    /// validation have it. The API omits it when `valid` is `false`.
+    /// The keys that the write would remove or replace, if there are some. The block validation and
+    /// the settings validation have it. The API omits it when `valid` is `false`, because a write
+    /// that fails stores nothing.
     #[serde(default)]
     pub rejected: Option<Rejected>,
 }
@@ -396,8 +397,9 @@ pub struct ValidationSchema {
     pub hash: Option<String>,
 }
 
-/// The values that the API removed or replaced. The block writes, the settings update and the two
-/// validations can return it.
+/// The keys that the API removed or replaced instead of storing them. `Emails::create_block`,
+/// `Emails::update_block`, `Emails::update_settings`, `Emails::validate_block` and
+/// `Emails::validate_settings` can return it.
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct Rejected {
@@ -417,7 +419,9 @@ pub struct SettingsResult {
     pub data: EmailSettings,
     /// Send this etag with the next write to the email.
     pub etag: String,
-    /// The keys of the unsafe values that the API removed or replaced, if there are some.
+    /// The keys of the unsafe values that the API removed or replaced, if there are some. The API
+    /// checks the whole footer after it merges your changes, so a key can name a value that was
+    /// already stored.
     #[serde(default)]
     pub rejected: Option<Rejected>,
 }
@@ -430,8 +434,8 @@ pub struct BlockWriteResult {
     pub data: EmailBlock,
     /// Send this etag with the next write to the email.
     pub etag: String,
-    /// The keys of the attributes that the block type does not declare. The API removed them and
-    /// saved the rest of the block.
+    /// The keys that the block type does not declare, at the top level of `editor_content`, in
+    /// `attrs` or in `mobile`. The API removed them and saved the rest of the block.
     #[serde(default)]
     pub rejected: Option<Rejected>,
 }

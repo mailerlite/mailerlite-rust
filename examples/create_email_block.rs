@@ -33,7 +33,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("New etag: {}", response.data.etag);
 
     if let Some(rejected) = &response.data.rejected {
-        println!("Removed keys: {:?}", rejected.keys);
+        println!("Rejected keys: {:?}", rejected.keys);
     }
 
     Ok(())

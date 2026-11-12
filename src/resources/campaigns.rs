@@ -973,7 +973,8 @@ impl CreateCampaign {
     /// [`Emails::create_template`](crate::resources::emails::Emails::create_template).
     /// This sets the simple editor on every email, and every email gets the same template ID.
     /// The API copies the template into the new email and does not change the template.
-    /// The API validates the template ID.
+    /// The API refuses a deleted template, another account's template and a template that was not
+    /// made with the simple editor.
     pub fn simple_editor_template(mut self, id: impl Into<String>) -> Self {
         let id = id.into();
         for email in &mut self.emails {
