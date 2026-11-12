@@ -1,9 +1,0 @@
-{
-  "valid": true,
-  "errors": {},
-  "schema": {"version": "2.73.2", "hash": "0f3a9c"},
-  "rejected": {
-    "message": "Some attributes were rejected.",
-    "keys": ["footer.social_links[0].url"]
-  }
-}

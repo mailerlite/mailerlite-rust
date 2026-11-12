@@ -382,7 +382,6 @@ pub struct Validation {
     pub schema: ValidationSchema,
     /// The keys that the same write would name in [`Rejected`], if there are some. The API omits it
     /// when `valid` is `false`.
-    #[serde(default)]
     pub rejected: Option<Rejected>,
 }
 
@@ -426,34 +425,26 @@ pub struct Rejected {
     pub keys: Vec<String>,
 }
 
-/// The response of [`Emails::update_settings`](crate::resources::emails::Emails::update_settings).
+/// The response of a versioned write that can remove or replace values: [`BlockWriteResult`] and
+/// [`SettingsResult`].
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
-pub struct SettingsResult {
+pub struct WriteResult<T> {
     /// Typed payload returned inside the API envelope.
-    pub data: EmailSettings,
+    pub data: T,
     /// Send this etag with the next write to the email.
     pub etag: String,
-    /// The keys of the unsafe values that the API removed or replaced, if there are some. See
-    /// [`Rejected`].
-    #[serde(default)]
+    /// The keys that the API removed or replaced, if there are some. See [`Rejected`] for what they
+    /// mean for each method.
     pub rejected: Option<Rejected>,
 }
 
 /// The response of [`Emails::create_block`](crate::resources::emails::Emails::create_block) and
 /// [`Emails::update_block`](crate::resources::emails::Emails::update_block).
-#[derive(Debug, Clone, Deserialize)]
-#[non_exhaustive]
-pub struct BlockWriteResult {
-    /// Typed payload returned inside the API envelope.
-    pub data: EmailBlock,
-    /// Send this etag with the next write to the email.
-    pub etag: String,
-    /// The keys that the block type does not declare, which the API removed, if there are some. See
-    /// [`Rejected`].
-    #[serde(default)]
-    pub rejected: Option<Rejected>,
-}
+pub type BlockWriteResult = WriteResult<EmailBlock>;
+
+/// The response of [`Emails::update_settings`](crate::resources::emails::Emails::update_settings).
+pub type SettingsResult = WriteResult<EmailSettings>;
 
 /// A template that the API made from an email.
 #[derive(Debug, Clone, Deserialize)]

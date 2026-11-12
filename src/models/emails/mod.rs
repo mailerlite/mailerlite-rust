@@ -8,5 +8,5 @@ pub use models::{
     EmailDocument, EmailHtml, EmailResponseMetadata, EmailSettings, EmailTemplate, EmailVersion,
     EtagOnly, FontWeight, Footer, HeadingStyle, Layout, LayoutAlignment, LetterSpacing, LineHeight,
     LinkStyle, ParagraphStyle, Position, Rejected, SettingsResult, SocialLink, TextStyle,
-    Typography, VERSION_CONFLICT, Validation, ValidationSchema, WidthMode, WithEtag,
+    Typography, VERSION_CONFLICT, Validation, ValidationSchema, WidthMode, WithEtag, WriteResult,
 };

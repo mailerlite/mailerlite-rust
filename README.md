@@ -163,8 +163,8 @@ from `models::emails`. Versioned operations return
 `response.metadata.http`, the current version is `response.data.etag`, and the
 resource is `response.data.data`. Pass the latest etag to the next write.
 `create_block` and `update_block` return `BlockWriteResult`, and
-`update_settings` returns `SettingsResult`. Both have `data`, `etag` and
-`rejected`. For a block, `rejected` names the keys that the block type does not
+`update_settings` returns `SettingsResult`. Both are aliases of
+`WriteResult<T>`, which has `data`, `etag` and `rejected`. For a block, `rejected` names the keys that the block type does not
 declare, which the API removed before it saved the block. For settings, it names
 the keys of the unsafe values that the API removed or replaced, for example a
 URL that it replaced with `#`. `validate_block` and `validate_settings` return
