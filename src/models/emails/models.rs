@@ -380,9 +380,8 @@ pub struct Validation {
     pub errors: BTreeMap<String, Vec<String>>,
     /// Version and hash of the validation rules used by the server.
     pub schema: ValidationSchema,
-    /// The keys that the write would remove or replace, if there are some. The block validation and
-    /// the settings validation have it. The API omits it when `valid` is `false`, because a write
-    /// that fails stores nothing.
+    /// The keys that the same write would name in [`Rejected`], if there are some. The API omits it
+    /// when `valid` is `false`.
     #[serde(default)]
     pub rejected: Option<Rejected>,
 }
@@ -397,9 +396,25 @@ pub struct ValidationSchema {
     pub hash: Option<String>,
 }
 
-/// The keys that the API removed or replaced instead of storing them. `Emails::create_block`,
-/// `Emails::update_block`, `Emails::update_settings`, `Emails::validate_block` and
-/// `Emails::validate_settings` can return it.
+/// The keys of the values that the API removes, or replaces with a safe value, before it stores a
+/// write. The write still succeeds.
+///
+/// - [`Emails::create_block`] and [`Emails::update_block`]: the keys that the block type does not
+///   declare, at the top level of `editor_content`, in `attrs` or in `mobile`. The API removes them
+///   and stores the rest of the block. A value that is not allowed in email content is not
+///   rejected this way: it fails the whole write with HTTP 422.
+/// - [`Emails::update_settings`]: the keys of unsafe values. The API removes the value, or replaces
+///   it with a safe one and keeps the key, for example a URL becomes `#`. The API checks the whole
+///   footer after it merges your changes, so a key can name a value that was already stored.
+/// - [`Emails::validate_block`] and [`Emails::validate_settings`]: the keys that the same write
+///   would name. Nothing is stored. The API omits `rejected` when `valid` is `false`, because a
+///   write that fails stores nothing.
+///
+/// [`Emails::create_block`]: crate::resources::emails::Emails::create_block
+/// [`Emails::update_block`]: crate::resources::emails::Emails::update_block
+/// [`Emails::update_settings`]: crate::resources::emails::Emails::update_settings
+/// [`Emails::validate_block`]: crate::resources::emails::Emails::validate_block
+/// [`Emails::validate_settings`]: crate::resources::emails::Emails::validate_settings
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct Rejected {
@@ -411,7 +426,7 @@ pub struct Rejected {
     pub keys: Vec<String>,
 }
 
-/// The response of `Emails::update_settings`.
+/// The response of [`Emails::update_settings`](crate::resources::emails::Emails::update_settings).
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct SettingsResult {
@@ -419,14 +434,14 @@ pub struct SettingsResult {
     pub data: EmailSettings,
     /// Send this etag with the next write to the email.
     pub etag: String,
-    /// The keys of the unsafe values that the API removed or replaced, if there are some. The API
-    /// checks the whole footer after it merges your changes, so a key can name a value that was
-    /// already stored.
+    /// The keys of the unsafe values that the API removed or replaced, if there are some. See
+    /// [`Rejected`].
     #[serde(default)]
     pub rejected: Option<Rejected>,
 }
 
-/// The response of `Emails::create_block` and `Emails::update_block`.
+/// The response of [`Emails::create_block`](crate::resources::emails::Emails::create_block) and
+/// [`Emails::update_block`](crate::resources::emails::Emails::update_block).
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct BlockWriteResult {
@@ -434,8 +449,8 @@ pub struct BlockWriteResult {
     pub data: EmailBlock,
     /// Send this etag with the next write to the email.
     pub etag: String,
-    /// The keys that the block type does not declare, at the top level of `editor_content`, in
-    /// `attrs` or in `mobile`. The API removed them and saved the rest of the block.
+    /// The keys that the block type does not declare, which the API removed, if there are some. See
+    /// [`Rejected`].
     #[serde(default)]
     pub rejected: Option<Rejected>,
 }
