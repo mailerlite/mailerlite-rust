@@ -334,15 +334,15 @@ async fn create_block_sends_the_block_and_the_etag() {
 #[tokio::test]
 async fn create_block_gives_the_keys_that_the_api_rejected() {
     let server: MockServer = MockServer::start().await;
+    let content: serde_json::Value = json!({
+        "attrs": {"textAlign": "center", "onclick": "track()"},
+        "content": [{"type": "text", "text": "Hi"}]
+    });
     let mock: MockGuard = expect_request(
         &server,
         "POST",
         "/emails/123/blocks",
-        Some(json!({
-            "type": "paragraph",
-            "editor_content": {"attrs": {"textAlign": "center"}, "content": [{"type": "text", "text": "Hi"}]},
-            "etag": "42"
-        })),
+        Some(json!({"type": "paragraph", "editor_content": content, "etag": "42"})),
         201,
         &fixture("email_block_created_rejected"),
     )
@@ -350,7 +350,7 @@ async fn create_block_gives_the_keys_that_the_api_rejected() {
 
     let response: Response<BlockWriteResult, EmailResponseMetadata> = mailerlite(&server)
         .emails()
-        .create_block("123", "42", &new_paragraph(None))
+        .create_block("123", "42", &NewBlock::new(BlockType::Paragraph, content))
         .await
         .unwrap();
 
@@ -591,14 +591,15 @@ async fn update_block_patches_the_content() {
 #[tokio::test]
 async fn update_block_gives_the_keys_that_the_api_rejected() {
     let server: MockServer = MockServer::start().await;
+    let content: serde_json::Value = json!({
+        "mobile": {"onclick": "track()"},
+        "content": [{"type": "text", "text": "Hello again"}]
+    });
     let mock: MockGuard = expect_request(
         &server,
         "PATCH",
         "/emails/123/blocks/57",
-        Some(json!({
-            "editor_content": {"content": [{"type": "text", "text": "Hello again"}]},
-            "etag": "43"
-        })),
+        Some(json!({"editor_content": content, "etag": "43"})),
         200,
         &fixture("email_block_updated_rejected"),
     )
@@ -606,7 +607,7 @@ async fn update_block_gives_the_keys_that_the_api_rejected() {
 
     let response: Response<BlockWriteResult, EmailResponseMetadata> = mailerlite(&server)
         .emails()
-        .update_block("123", "57", "43", &hello_again())
+        .update_block("123", "57", "43", &content)
         .await
         .unwrap();
 
@@ -971,14 +972,15 @@ async fn validate_block_sends_the_block_without_an_etag() {
 #[tokio::test]
 async fn validate_block_gives_the_keys_that_the_api_rejected() {
     let server: MockServer = MockServer::start().await;
+    let content: serde_json::Value = json!({
+        "attrs": {"textAlign": "center", "onclick": "track()"},
+        "content": [{"type": "text", "text": "Hi"}]
+    });
     let mock: MockGuard = expect_request(
         &server,
         "POST",
         "/emails/blocks/validate",
-        Some(json!({
-            "type": "paragraph",
-            "editor_content": {"attrs": {"textAlign": "center"}, "content": [{"type": "text", "text": "Hi"}]}
-        })),
+        Some(json!({"type": "paragraph", "editor_content": content})),
         200,
         &fixture("email_block_validation_rejected"),
     )
@@ -986,7 +988,7 @@ async fn validate_block_gives_the_keys_that_the_api_rejected() {
 
     let response: Response<Validation, EmailResponseMetadata> = mailerlite(&server)
         .emails()
-        .validate_block(&new_paragraph(None))
+        .validate_block(&NewBlock::new(BlockType::Paragraph, content))
         .await
         .unwrap();
 
