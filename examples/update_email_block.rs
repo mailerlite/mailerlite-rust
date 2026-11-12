@@ -9,7 +9,7 @@
 //! Replaces the complete block document; omitted content keys are removed.
 use mailerlite_rs::{
     MailerLite, Response,
-    models::emails::{EmailBlock, EmailResponseMetadata, WithEtag},
+    models::emails::{BlockWriteResult, EmailResponseMetadata},
 };
 
 #[tokio::main]
@@ -27,12 +27,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let editor_content: serde_json::Value =
         serde_json::from_str(&std::env::var("MAILERLITE_EDITOR_CONTENT_JSON")?)?;
 
-    let response: Response<WithEtag<EmailBlock>, EmailResponseMetadata> = mailerlite
+    let response: Response<BlockWriteResult, EmailResponseMetadata> = mailerlite
         .emails()
         .update_block(email_id, block_id, etag, &editor_content)
         .await?;
 
     println!("New etag: {}", response.data.etag);
+
+    if let Some(rejected) = &response.data.rejected {
+        println!("Rejected keys: {:?}", rejected.keys);
+    }
 
     Ok(())
 }

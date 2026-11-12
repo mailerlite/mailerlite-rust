@@ -10,8 +10,8 @@ use crate::{
     Error, MailerLite, Response,
     http::{OperationPolicy, RequestOptions},
     models::emails::{
-        EmailBlock, EmailDocument, EmailHtml, EmailResponseMetadata, EmailTemplate, EmailVersion,
-        EtagOnly, SettingsResult, Validation, WithEtag,
+        BlockWriteResult, EmailBlock, EmailDocument, EmailHtml, EmailResponseMetadata,
+        EmailTemplate, EmailVersion, EtagOnly, SettingsResult, Validation, WithEtag,
     },
     pagination::NumberedPage,
     resources::query::query_pairs,
@@ -202,7 +202,10 @@ impl<'a> Emails<'a> {
         .await
     }
 
-    /// Inserts a block into an email. Returns the new block (status `201`) and the new etag.
+    /// Inserts a block into an email. Returns the new block (status `201`), the new etag and the
+    /// [`Rejected`](crate::models::emails::Rejected) keys: the keys that the block type does not
+    /// declare, which the API removed before it stored the block. A value that is not allowed in
+    /// email content fails the whole write with HTTP 422.
     ///
     /// # Examples
     /// ```no_run
@@ -213,6 +216,10 @@ impl<'a> Emails<'a> {
     /// let block = NewBlock::new(BlockType::Divider, serde_json::json!({}));
     ///
     /// let response = client.emails().create_block("123", "current-etag", &block).await?;
+    ///
+    /// if let Some(rejected) = &response.data.rejected {
+    ///     println!("Rejected keys: {:?}", rejected.keys);
+    /// }
     /// # Ok(())
     /// # }
     /// ```
@@ -230,7 +237,7 @@ impl<'a> Emails<'a> {
         email_id: impl AsRef<str>,
         etag: impl AsRef<str>,
         block: &NewBlock,
-    ) -> Result<Response<WithEtag<EmailBlock>, EmailResponseMetadata>, Error> {
+    ) -> Result<Response<BlockWriteResult, EmailResponseMetadata>, Error> {
         let (email_id, etag): (&str, &str) = (email_id.as_ref(), etag.as_ref());
         validate::path_id("email_id", email_id)?;
 
@@ -250,7 +257,8 @@ impl<'a> Emails<'a> {
 
     /// Replaces the content of a block. The API removes the keys that you do not send. The type and the
     /// position of the block do not change. The document is sent unchanged. The server validates content
-    /// against the stored block kind. No implicit read is performed. Returns the block and new etag.
+    /// against the stored block kind. No implicit read is performed. Returns the block, the new etag and
+    /// the rejected keys, as for [`create_block`](Self::create_block).
     ///
     /// # Examples
     /// ```no_run
@@ -260,6 +268,10 @@ impl<'a> Emails<'a> {
     /// let content = serde_json::json!({"content": [{"type": "text", "text": "Updated text"}]});
     ///
     /// let response = client.emails().update_block("123", "456", "current-etag", &content).await?;
+    ///
+    /// if let Some(rejected) = &response.data.rejected {
+    ///     println!("Rejected keys: {:?}", rejected.keys);
+    /// }
     /// # Ok(())
     /// # }
     /// ```
@@ -278,7 +290,7 @@ impl<'a> Emails<'a> {
         block_id: impl AsRef<str>,
         etag: impl AsRef<str>,
         editor_content: &Value,
-    ) -> Result<Response<WithEtag<EmailBlock>, EmailResponseMetadata>, Error> {
+    ) -> Result<Response<BlockWriteResult, EmailResponseMetadata>, Error> {
         let (email_id, block_id, etag): (&str, &str, &str) =
             (email_id.as_ref(), block_id.as_ref(), etag.as_ref());
         validate::path_id("email_id", email_id)?;
@@ -437,7 +449,8 @@ impl<'a> Emails<'a> {
     }
 
     /// Changes the design settings of an email. The SDK sends only the values that you set.
-    /// Returns the settings, the new etag and the keys of the unsafe values that the API removed.
+    /// Returns the settings, the new etag and the keys of the unsafe values that the API removed or
+    /// replaced (see [`Rejected`](crate::models::emails::Rejected)).
     ///
     /// # Examples
     /// ```no_run
@@ -538,6 +551,8 @@ impl<'a> Emails<'a> {
     }
 
     /// Saves a copy of an email as a new template (status `201`). The API cannot delete templates.
+    /// To start a campaign from the template, give its `id` to
+    /// [`CreateCampaign::simple_editor_template`](crate::resources::campaigns::CreateCampaign::simple_editor_template).
     ///
     /// # Examples
     /// ```no_run

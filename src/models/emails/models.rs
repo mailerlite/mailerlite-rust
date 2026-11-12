@@ -380,8 +380,8 @@ pub struct Validation {
     pub errors: BTreeMap<String, Vec<String>>,
     /// Version and hash of the validation rules used by the server.
     pub schema: ValidationSchema,
-    /// The keys of the unsafe values that the API removed. Only the settings validation has it.
-    #[serde(default)]
+    /// The keys that the same write would name in [`Rejected`], if there are some. The API omits it
+    /// when `valid` is `false`.
     pub rejected: Option<Rejected>,
 }
 
@@ -395,29 +395,56 @@ pub struct ValidationSchema {
     pub hash: Option<String>,
 }
 
-/// The unsafe values that the API removed or replaced.
+/// The keys of the values that the API removes, or replaces with a safe value, before it stores a
+/// write. The write still succeeds.
+///
+/// - [`Emails::create_block`] and [`Emails::update_block`]: the keys that the block type does not
+///   declare, at the top level of `editor_content`, in `attrs` or in `mobile`. The API removes them
+///   and stores the rest of the block. A value that is not allowed in email content is not
+///   rejected this way: it fails the whole write with HTTP 422.
+/// - [`Emails::update_settings`]: the keys of unsafe values. The API removes the value, or replaces
+///   it with a safe one and keeps the key, for example a URL becomes `#`. The API checks the whole
+///   footer after it merges your changes, so a key can name a value that was already stored.
+/// - [`Emails::validate_block`] and [`Emails::validate_settings`]: the keys that the same write
+///   would name. Nothing is stored. The API omits `rejected` when `valid` is `false`, because a
+///   write that fails stores nothing.
+///
+/// [`Emails::create_block`]: crate::resources::emails::Emails::create_block
+/// [`Emails::update_block`]: crate::resources::emails::Emails::update_block
+/// [`Emails::update_settings`]: crate::resources::emails::Emails::update_settings
+/// [`Emails::validate_block`]: crate::resources::emails::Emails::validate_block
+/// [`Emails::validate_settings`]: crate::resources::emails::Emails::validate_settings
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
 pub struct Rejected {
-    /// Server explanation of rejected settings.
+    /// Server explanation of the rejected values.
     pub message: String,
-    /// The paths of the keys, for example `footer.social_links[0].url`.
+    /// The paths of the keys, for example `editor_content.attrs.onclick` or
+    /// `footer.social_links[0].url`.
     #[serde(default)]
     pub keys: Vec<String>,
 }
 
-/// The response of `Emails::update_settings`.
+/// The response of a versioned write that can remove or replace values: [`BlockWriteResult`] and
+/// [`SettingsResult`].
 #[derive(Debug, Clone, Deserialize)]
 #[non_exhaustive]
-pub struct SettingsResult {
+pub struct WriteResult<T> {
     /// Typed payload returned inside the API envelope.
-    pub data: EmailSettings,
+    pub data: T,
     /// Send this etag with the next write to the email.
     pub etag: String,
-    /// The keys of the unsafe values that the API removed or replaced, if there are some.
-    #[serde(default)]
+    /// The keys that the API removed or replaced, if there are some. See [`Rejected`] for what they
+    /// mean for each method.
     pub rejected: Option<Rejected>,
 }
+
+/// The response of [`Emails::create_block`](crate::resources::emails::Emails::create_block) and
+/// [`Emails::update_block`](crate::resources::emails::Emails::update_block).
+pub type BlockWriteResult = WriteResult<EmailBlock>;
+
+/// The response of [`Emails::update_settings`](crate::resources::emails::Emails::update_settings).
+pub type SettingsResult = WriteResult<EmailSettings>;
 
 /// A template that the API made from an email.
 #[derive(Debug, Clone, Deserialize)]

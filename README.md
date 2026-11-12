@@ -119,6 +119,9 @@ when using HTTP, JSON, serialization, or stream types directly.
 Create a draft using `CreateCampaign::simple_editor()` or
 `.simple_editor_template(template_id)`, then edit its returned email IDs through
 `mailerlite.emails()`. Simple-editor creation cannot include HTML `content`.
+The `template_id` must be a simple-editor template, from the shared gallery or
+from your account, for example one that you saved with
+`emails().create_template()`. The API refuses a deleted template.
 
 ```rust
 use mailerlite_rs::{MailerLite, resources::campaigns::{CreateCampaign, Email}};
@@ -159,6 +162,13 @@ from `models::emails`. Versioned operations return
 `Response<WithEtag<T>, EmailResponseMetadata>`: HTTP metadata is in
 `response.metadata.http`, the current version is `response.data.etag`, and the
 resource is `response.data.data`. Pass the latest etag to the next write.
+`create_block` and `update_block` return `BlockWriteResult`, and
+`update_settings` returns `SettingsResult`. Both are aliases of
+`WriteResult<T>`, which has `data`, `etag` and `rejected`. For a block, `rejected` names the keys that the block type does not
+declare, which the API removed before it saved the block. For settings, it names
+the keys of the unsafe values that the API removed or replaced, for example a
+URL that it replaced with `#`. `validate_block` and `validate_settings` return
+the same `rejected` when the input is valid. See `models::emails::Rejected`.
 For HTTP 409 conflicts, inspect `ApiError::is_version_conflict()` and `etag()`;
 refetch and reconcile before attempting another write.
 

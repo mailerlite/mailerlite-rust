@@ -968,8 +968,13 @@ impl CreateCampaign {
         }
         self
     }
-    /// Start all simple-editor emails from the same shared-gallery template.
-    /// The API validates template ownership and availability.
+    /// Set the simple editor on every email and start each one from the same template.
+    /// The template must be made with the simple editor. It can be from the shared gallery or from
+    /// your account, for example one that you saved from an email with
+    /// [`Emails::create_template`](crate::resources::emails::Emails::create_template).
+    /// The API refuses a deleted template, another account's template and a template that was not
+    /// made with the simple editor. The API copies the template into the new email and does not
+    /// change the template.
     pub fn simple_editor_template(mut self, id: impl Into<String>) -> Self {
         let id = id.into();
         for email in &mut self.emails {

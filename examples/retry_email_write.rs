@@ -6,7 +6,7 @@
 //! 24 hours; after that, reconcile the original write before retrying it.
 use mailerlite_rs::{
     Error, MailerLite, Response,
-    models::emails::{BlockType, EmailBlock, EmailResponseMetadata, WithEtag},
+    models::emails::{BlockType, BlockWriteResult, EmailResponseMetadata},
     resources::emails::{Emails, NewBlock},
 };
 
@@ -46,7 +46,7 @@ pub(crate) async fn create_block_with_retry(
     email_id: &str,
     etag: &str,
     block: &NewBlock,
-) -> mailerlite_rs::Result<Response<WithEtag<EmailBlock>, EmailResponseMetadata>> {
+) -> mailerlite_rs::Result<Response<BlockWriteResult, EmailResponseMetadata>> {
     match email.create_block(email_id, etag, block).await {
         // The server may have committed the write before the failure. Retry once
         // with the same key, etag, and body, even if its response was unreadable.

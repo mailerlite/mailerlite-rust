@@ -3,7 +3,7 @@
 //! Requires `MAILERLITE_API_TOKEN`, `MAILERLITE_EMAIL_ID`.
 use mailerlite_rs::{
     MailerLite, Response,
-    models::emails::{BlockType, EmailBlock, EmailDocument, EmailResponseMetadata, WithEtag},
+    models::emails::{BlockType, BlockWriteResult, EmailDocument, EmailResponseMetadata, WithEtag},
     resources::emails::{NewBlock, Placement},
 };
 
@@ -24,13 +24,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     )
     .placement(Placement::start());
 
-    let response: Response<WithEtag<EmailBlock>, EmailResponseMetadata> = mailerlite
+    let response: Response<BlockWriteResult, EmailResponseMetadata> = mailerlite
         .emails()
         .create_block(&email_id, &email.data.etag, &block)
         .await?;
 
     println!("Block ID: {}", response.data.data.id);
     println!("New etag: {}", response.data.etag);
+
+    if let Some(rejected) = &response.data.rejected {
+        println!("Rejected keys: {:?}", rejected.keys);
+    }
 
     Ok(())
 }
