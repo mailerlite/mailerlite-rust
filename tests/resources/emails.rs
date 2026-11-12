@@ -7,8 +7,8 @@ use mailerlite_rs::{
     models::emails::{
         BlockType, BlockWriteResult, BrandMode, EditorText, EmailBlock, EmailDocument, EmailHtml,
         EmailOwnerType, EmailResponseMetadata, EmailTemplate, EmailTemplateType, EmailType,
-        EmailVersion, EtagOnly, Position, SettingsResult, SocialLinkType, VERSION_CONFLICT,
-        Validation, WithEtag,
+        EmailVersion, EtagOnly, Position, Rejected, SettingsResult, SocialLinkType,
+        VERSION_CONFLICT, Validation, WithEtag,
     },
     pagination::NumberedPage,
     resources::emails::{
@@ -289,6 +289,19 @@ async fn find_block_rejects_bad_ids_without_a_request() {
     assert_no_request(&server).await;
 }
 
+/// A fixture with the `rejected` object that the API adds when it removes or replaces values.
+fn rejected_body(base: &str, keys: &[&str]) -> serde_json::Value {
+    let mut body: serde_json::Value = serde_json::from_str(&fixture(base)).unwrap();
+    body["rejected"] = json!({"message": "Some attributes were rejected.", "keys": keys});
+    body
+}
+
+fn assert_rejected(rejected: &Option<Rejected>, keys: &[&str]) {
+    let rejected: &Rejected = rejected.as_ref().unwrap();
+    assert_eq!(rejected.message, "Some attributes were rejected.");
+    assert_eq!(rejected.keys, keys);
+}
+
 fn new_paragraph(placement: Option<Placement>) -> NewBlock {
     NewBlock {
         block_type: BlockType::Paragraph,
@@ -344,7 +357,7 @@ async fn create_block_gives_the_keys_that_the_api_rejected() {
         "/emails/123/blocks",
         Some(json!({"type": "paragraph", "editor_content": content, "etag": "42"})),
         201,
-        &fixture("email_block_created_rejected"),
+        &rejected_body("email_block_created", &["editor_content.attrs.onclick"]).to_string(),
     )
     .await;
 
@@ -357,9 +370,7 @@ async fn create_block_gives_the_keys_that_the_api_rejected() {
     assert_eq!(mock.received_requests().await.len(), 1);
     assert_eq!(response.data.etag, "43");
     assert_eq!(response.data.data.id, "58");
-    let rejected = response.data.rejected.as_ref().unwrap();
-    assert_eq!(rejected.message, "Some attributes were rejected.");
-    assert_eq!(rejected.keys, vec!["editor_content.attrs.onclick"]);
+    assert_rejected(&response.data.rejected, &["editor_content.attrs.onclick"]);
 }
 
 #[tokio::test]
@@ -595,13 +606,17 @@ async fn update_block_gives_the_keys_that_the_api_rejected() {
         "mobile": {"onclick": "track()"},
         "content": [{"type": "text", "text": "Hello again"}]
     });
+    let mut reply: serde_json::Value =
+        rejected_body("email_block_updated", &["editor_content.mobile.onclick"]);
+    // The API keeps the emptied `mobile` object and sends it back as `{}`.
+    reply["data"]["editor_content"]["mobile"] = json!({});
     let mock: MockGuard = expect_request(
         &server,
         "PATCH",
         "/emails/123/blocks/57",
         Some(json!({"editor_content": content, "etag": "43"})),
         200,
-        &fixture("email_block_updated_rejected"),
+        &reply.to_string(),
     )
     .await;
 
@@ -614,9 +629,7 @@ async fn update_block_gives_the_keys_that_the_api_rejected() {
     assert_eq!(mock.received_requests().await.len(), 1);
     assert_eq!(response.data.etag, "44");
     assert_eq!(response.data.data.id, "57");
-    let rejected = response.data.rejected.as_ref().unwrap();
-    assert_eq!(rejected.message, "Some attributes were rejected.");
-    assert_eq!(rejected.keys, vec!["editor_content.mobile.onclick"]);
+    assert_rejected(&response.data.rejected, &["editor_content.mobile.onclick"]);
 }
 
 #[tokio::test]
@@ -982,7 +995,11 @@ async fn validate_block_gives_the_keys_that_the_api_rejected() {
         "/emails/blocks/validate",
         Some(json!({"type": "paragraph", "editor_content": content})),
         200,
-        &fixture("email_block_validation_rejected"),
+        &rejected_body(
+            "email_block_validation_valid",
+            &["editor_content.attrs.onclick"],
+        )
+        .to_string(),
     )
     .await;
 
@@ -994,9 +1011,7 @@ async fn validate_block_gives_the_keys_that_the_api_rejected() {
 
     assert_eq!(mock.received_requests().await.len(), 1);
     assert!(response.data.valid);
-    let rejected = response.data.rejected.as_ref().unwrap();
-    assert_eq!(rejected.message, "Some attributes were rejected.");
-    assert_eq!(rejected.keys, vec!["editor_content.attrs.onclick"]);
+    assert_rejected(&response.data.rejected, &["editor_content.attrs.onclick"]);
 }
 
 #[tokio::test]
@@ -1172,9 +1187,7 @@ async fn update_settings_sends_only_the_keys_that_are_set() {
     let brand = response.data.data.brand.as_ref().unwrap();
     assert_eq!(brand.mode, Some(BrandMode::Custom));
     assert_eq!(brand.background_color.as_deref(), Some("#f4f4f4"));
-    let rejected = response.data.rejected.as_ref().unwrap();
-    assert_eq!(rejected.message, "Some attributes were rejected.");
-    assert_eq!(rejected.keys, vec!["footer.social_links[0].url"]);
+    assert_rejected(&response.data.rejected, &["footer.social_links[0].url"]);
 }
 
 #[tokio::test]
@@ -1270,7 +1283,11 @@ async fn validate_settings_gives_the_keys_that_the_api_would_reject() {
             }
         })),
         200,
-        &fixture("email_settings_validation_rejected"),
+        &rejected_body(
+            "email_block_validation_valid",
+            &["footer.social_links[0].url"],
+        )
+        .to_string(),
     )
     .await;
 
@@ -1294,9 +1311,7 @@ async fn validate_settings_gives_the_keys_that_the_api_would_reject() {
     assert_eq!(mock.received_requests().await.len(), 1);
     assert!(response.data.valid);
     assert!(response.data.errors.is_empty());
-    let rejected = response.data.rejected.as_ref().unwrap();
-    assert_eq!(rejected.message, "Some attributes were rejected.");
-    assert_eq!(rejected.keys, vec!["footer.social_links[0].url"]);
+    assert_rejected(&response.data.rejected, &["footer.social_links[0].url"]);
 }
 
 #[tokio::test]
